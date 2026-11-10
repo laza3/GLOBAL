@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="fr" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>15 secondes pour connaître Madagascar</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Baloo 2"; font-weight: 700; src: url("assets/fonts/Baloo2-700.woff2") format("woff2"); }
+      @font-face { font-family: "Baloo 2"; font-weight: 800; src: url("assets/fonts/Baloo2-800.woff2") format("woff2"); }
+      @font-face { font-family: "Nunito"; font-weight: 700; src: url("assets/fonts/Nunito-700.woff2") format("woff2"); }
+      @font-face { font-family: "Nunito"; font-weight: 900; src: url("assets/fonts/Nunito-900.woff2") format("woff2"); }
+
+      :root {
+        --ocean-deep: #0a2a4f;
+        --ocean: #11497a;
+        --ink: #fff8ee;
+        --gold: #f6b93b;
+        --green: #2fb46a;
+        --red: #ef4136;
+        --ocher: #c8582c;
+        --night: #0b1d33;
+        --font-display: "Baloo 2", "Nunito", sans-serif;
+        --font-body: "Nunito", "Baloo 2", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1080px; height: 1920px; overflow: hidden;
+        background: var(--ocean-deep);
+        font-family: var(--font-body);
+        color: var(--ink);
+      }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden;
+        background: radial-gradient(120% 90% at 50% 40%, #16507f 0%, #0f3a66 45%, #0a2a4f 100%); }
+      .clip { position: absolute; inset: 0; }
+
+      /* ---------- monde isométrique ---------- */
+      #world { transform-origin: 540px 960px; will-change: transform; }
+      #world svg { position: absolute; left: -1460px; top: -1040px; width: 4000px; height: 4000px; overflow: visible; }
+      .wtxt { font-family: var(--font-display); font-weight: 800; }
+
+      /* ---------- vignette & lumière ---------- */
+      #vignette { pointer-events: none;
+        background: radial-gradient(90% 70% at 50% 50%, rgba(0,0,0,0) 55%, rgba(5,15,30,0.55) 100%); }
+
+      /* ---------- UI / textes ---------- */
+      .ui { position: absolute; left: 0; right: 0; }
+      .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+      /* scène 1 : titre */
+      #s1 { top: 0; height: 1920px; }
+      .t-small { font-family: var(--font-display); font-weight: 800; font-size: 150px; line-height: 0.95; color: var(--gold);
+        text-shadow: 0 10px 0 rgba(0,0,0,0.25), 0 24px 50px rgba(0,0,0,0.45); letter-spacing: -0.01em; }
+      .t-mid { font-family: var(--font-display); font-weight: 700; font-size: 70px; color: var(--ink); margin-top: 6px;
+        text-shadow: 0 6px 24px rgba(0,0,0,0.5); letter-spacing: 0.04em; text-transform: uppercase; }
+      .t-big { font-family: var(--font-display); font-weight: 800; font-size: 136px; line-height: 1; color: #fff; margin-top: 14px;
+        background: linear-gradient(90deg, #ff6a3d, #f6b93b 50%, #2fb46a); -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; filter: drop-shadow(0 12px 0 rgba(0,0,0,0.3)) drop-shadow(0 30px 60px rgba(0,0,0,0.5)); }
+      .title-wrap { position: absolute; left: 60px; right: 60px; top: 300px; }
+      .flag { display: inline-grid; grid-template-columns: 1fr 2fr; grid-template-rows: 1fr 1fr; width: 150px; height: 100px;
+        border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.45); margin-top: 48px; }
+      .flag i:nth-child(1) { grid-row: 1 / span 2; background: #fff; }
+      .flag i:nth-child(2) { background: #fc3d32; }
+      .flag i:nth-child(3) { background: #007e3a; }
+
+      /* en-têtes de scène */
+      .head { position: absolute; left: 70px; right: 70px; top: 190px; display: flex; justify-content: center; }
+      .head span { display: inline-block; font-family: var(--font-display); font-weight: 800; font-size: 60px; line-height: 1;
+        padding: 26px 46px 22px; border-radius: 999px; color: var(--night); background: var(--gold);
+        box-shadow: 0 14px 0 rgba(0,0,0,0.22), 0 30px 60px rgba(0,0,0,0.4); letter-spacing: 0.02em; }
+
+      /* puces d'information */
+      .chips { position: absolute; left: 70px; right: 70px; top: 330px; display: flex; flex-direction: column; gap: 22px; align-items: flex-start; }
+      .chips.right { align-items: flex-end; }
+      .chip { display: inline-flex; align-items: center; gap: 18px; font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1.1;
+        color: var(--night); background: rgba(255, 248, 238, 0.96); padding: 18px 34px 16px 22px; border-radius: 999px;
+        box-shadow: 0 10px 0 rgba(0,0,0,0.2), 0 26px 50px rgba(0,0,0,0.35); border-left: 14px solid var(--green); }
+      .chip.red { border-left-color: var(--red); }
+      .chip.gold { border-left-color: var(--gold); }
+      .chip.blue { border-left-color: #2f6bff; }
+      .chip.ocher { border-left-color: var(--ocher); }
+      .chip em { font-style: normal; font-size: 48px; }
+      .chip b { color: #b5301f; }
+
+      /* gros chiffre */
+      .stat { position: absolute; right: 70px; top: 900px; text-align: right; }
+      .stat .n { font-family: var(--font-display); font-weight: 800; font-size: 210px; line-height: 0.9; color: var(--gold);
+        text-shadow: 0 12px 0 rgba(0,0,0,0.28), 0 30px 60px rgba(0,0,0,0.5); }
+      .stat .l { font-family: var(--font-display); font-weight: 700; font-size: 46px; color: var(--ink); text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+
+      /* scène 6 : outro */
+      #s6 { top: 0; height: 1920px; }
+      .o-big { font-family: var(--font-display); font-weight: 800; font-size: 160px; line-height: 1; color: #fff;
+        background: linear-gradient(90deg, #ff6a3d, #f6b93b 50%, #2fb46a); -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; filter: drop-shadow(0 12px 0 rgba(0,0,0,0.3)) drop-shadow(0 30px 60px rgba(0,0,0,0.5)); }
+      .o-mid { font-family: var(--font-display); font-weight: 700; font-size: 72px; color: var(--ink); margin-top: 10px; text-shadow: 0 6px 24px rgba(0,0,0,0.55); }
+      .o-cta { margin-top: 44px; font-family: var(--font-display); font-weight: 800; font-size: 52px; color: var(--night); background: var(--gold);
+        padding: 22px 44px 18px; border-radius: 999px; box-shadow: 0 12px 0 rgba(0,0,0,0.22), 0 26px 50px rgba(0,0,0,0.4); }
+      .outro-wrap { position: absolute; left: 60px; right: 60px; top: 260px; }
+
+      /* sous-titres */
+      .cap { position: absolute; left: 80px; right: 80px; top: 1420px; text-align: center; font-family: var(--font-display); font-weight: 800;
+        font-size: 60px; line-height: 1.15; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.6);
+        -webkit-text-stroke: 1.5px rgba(0,0,0,0.35); }
+      .cap b { color: var(--gold); }
+      .cap span { display: inline-block; background: rgba(8, 24, 44, 0.55); padding: 14px 34px 10px; border-radius: 28px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="15" data-width="1080" data-height="1920">
+
+      <!-- ====== MONDE 3D ISOMÉTRIQUE ====== -->
+      <div id="world" class="clip" data-start="0" data-duration="15" data-track-index="0">
+        <svg id="svg" viewBox="-2000 -2000 4000 4000" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="oceanG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#17568a" /><stop offset="1" stop-color="#0b2d52" />
+            </linearGradient>
+            <pattern id="waves" width="140" height="80" patternUnits="userSpaceOnUse">
+              <path d="M0 40 q17 -12 35 0 t35 0 t35 0 t35 0" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3" />
+              <path d="M-20 75 q17 -12 35 0 t35 0 t35 0 t35 0 t35 0" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="3" />
+            </pattern>
+          </defs>
+          <rect x="-8000" y="-8000" width="16000" height="16000" fill="url(#oceanG)" />
+          <rect x="-8000" y="-8000" width="16000" height="16000" fill="url(#waves)" />
+          <g id="g-africa"></g>
+          <g id="g-island"></g>
+          <g id="g-objects"></g>
+        </svg>
+      </div>
+      <div id="vignette" class="clip" data-start="0" data-duration="15" data-track-index="1"></div>
+
+      <!-- ====== SCÈNE 1 : HOOK ====== -->
+      <div id="s1" class="clip ui" data-start="0" data-duration="2.2" data-track-index="2">
+        <div class="title-wrap center">
+          <div class="t-small" id="t1">15 SECONDES</div>
+          <div class="t-mid" id="t2">pour connaître</div>
+          <div class="t-big" id="t3">MADAGASCAR</div>
+          <div class="flag" id="t4"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+
+      <!-- ====== SCÈNE 2 : OÙ ? ====== -->
+      <div id="s2" class="clip ui" data-start="2.2" data-duration="2.9" data-track-index="2">
+        <div class="head"><span id="h2">OÙ EST MADAGASCAR ?</span></div>
+        <div class="chips">
+          <div class="chip red" id="c2a"><em>📍</em>Océan Indien, à l'est de l'Afrique</div>
+          <div class="chip gold" id="c2b"><em>🏝️</em>4ᵉ plus grande île du monde</div>
+          <div class="chip" id="c2c"><em>👥</em>≈ 30 millions d'habitants</div>
+          <div class="chip blue" id="c2d"><em>🏛️</em>Capitale : Antananarivo</div>
+        </div>
+      </div>
+
+      <!-- ====== SCÈNE 3 : ÉCONOMIE ====== -->
+      <div id="s3" class="clip ui" data-start="5.1" data-duration="3.9" data-track-index="2">
+        <div class="head"><span id="h3">ÉCONOMIE & EXPORTATIONS</span></div>
+        <div class="chips">
+          <div class="chip red" id="c3d"><em>🚢</em>Exportations vers le <b>monde entier</b></div>
+        </div>
+        <div class="stat" id="st3"><div class="n">80 %</div><div class="l">de la vanille mondiale</div></div>
+      </div>
+
+      <!-- ====== SCÈNE 4 : SAVOIR-FAIRE & NATURE ====== -->
+      <div id="s4" class="clip ui" data-start="9.0" data-duration="2.6" data-track-index="2">
+        <div class="head"><span id="h4">SAVOIR-FAIRE & NATURE</span></div>
+        <div class="chips right">
+          <div class="chip ocher" id="c4a"><em>🧵</em>Artisanat reconnu dans le monde</div>
+          <div class="chip" id="c4c"><em>🐒</em><b>90 %</b>&nbsp;d'espèces uniques au monde</div>
+        </div>
+      </div>
+
+      <!-- ====== SCÈNE 5 : LES GENS ====== -->
+      <div id="s5" class="clip ui" data-start="11.6" data-duration="2.1" data-track-index="2">
+        <div class="head"><span id="h5">UN PEUPLE CHALEUREUX</span></div>
+        <div class="chips">
+          <div class="chip red" id="c5a"><em>🤝</em>Fihavanana : l'esprit de solidarité</div>
+          <div class="chip gold" id="c5b"><em>😊</em>Accueil, sourire, entraide</div>
+        </div>
+      </div>
+
+      <!-- ====== SCÈNE 6 : OUTRO ====== -->
+      <div id="s6" class="clip ui" data-start="13.6" data-duration="1.4" data-track-index="2">
+        <div class="outro-wrap center">
+          <div class="o-big" id="o1">MADAGASCAR</div>
+          <div class="o-mid" id="o2">À découvrir absolument</div>
+          <div class="o-cta" id="o3">Abonne-toi pour la suite 👉</div>
+        </div>
+      </div>
+
+      <!-- ====== SOUS-TITRES ====== -->
+      <div class="clip cap" id="k1" data-start="0.0" data-duration="3.5" data-track-index="3"><span><b>15 secondes</b> pour connaître Madagascar !<br />Une île géante dans l'océan Indien,</span></div>
+      <div class="clip cap" id="k2" data-start="3.5" data-duration="1.6" data-track-index="3"><span>à l'est de <b>l'Afrique</b>.</span></div>
+      <div class="clip cap" id="k3" data-start="5.1" data-duration="1.6" data-track-index="3"><span>Premier producteur mondial de <b>vanille</b>,</span></div>
+      <div class="clip cap" id="k4" data-start="6.7" data-duration="2.3" data-track-index="3"><span>terre de <b>nickel</b>, de <b>cobalt</b> et de <b>saphirs</b>.</span></div>
+      <div class="clip cap" id="k5" data-start="9.0" data-duration="1.2" data-track-index="3"><span>Un <b>savoir-faire</b> unique,</span></div>
+      <div class="clip cap" id="k6" data-start="10.2" data-duration="1.3" data-track-index="3"><span>une <b>nature</b> exceptionnelle,</span></div>
+      <div class="clip cap" id="k7" data-start="11.5" data-duration="2.3" data-track-index="3"><span>et un peuple à la <b>bonté légendaire</b>.</span></div>
+      <div class="clip cap" id="k8" data-start="13.8" data-duration="1.2" data-track-index="3"><span><b>Madagascar</b> : à découvrir absolument !</span></div>
+
+      <!-- ====== AUDIO ====== -->
+      <audio id="voix-off" src="assets/audio/voix-fr.wav" data-start="0" data-duration="14.8" data-volume="1" data-track-index="4"></audio>
+      <audio id="musique" src="assets/audio/musique.mp3" data-start="0" data-duration="15" data-volume="0.16" data-fade-in="0.2" data-fade-out="1.2" data-track-index="5"></audio>
+    </div>
+
+    <script>
+      /* =====================================================================
+         MONDE ISOMÉTRIQUE — tout est dessiné en SVG de façon déterministe
+         ===================================================================== */
+      const K = 62;                     // pixels par degré de longitude/latitude
+      const SX = 0.866, SY = 0.62;      // projection dimétrique (vue un peu plongeante)
+      const C45 = Math.SQRT1_2;
+
+      // carte (lon, lat) -> sol (x, y) : rotation de -45° pour que le nord soit en haut
+      function g(lon, lat) {
+        const u = (lon - 47.0) * K, v = (-lat - 19.0) * K;
+        return { x: u * C45 + v * C45, y: -u * C45 + v * C45 };
+      }
+      // sol (x, y, z) -> écran
+      function sc(x, y, z = 0) { return [(x - y) * SX, (x + y) * SY - z]; }
+      const pt = (p) => p[0].toFixed(1) + "," + p[1].toFixed(1);
+
+      function shade(hex, amt) {
+        const n = parseInt(hex.slice(1), 16);
+        let r = n >> 16, gg = (n >> 8) & 255, b = n & 255;
+        const t = amt < 0 ? 0 : 255, a = Math.abs(amt);
+        r = Math.round(r + (t - r) * a); gg = Math.round(gg + (t - gg) * a); b = Math.round(b + (t - b) * a);
+        return "#" + ((r << 16) | (gg << 8) | b).toString(16).padStart(6, "0");
+      }
+      function poly(points, fill, extra = "") {
+        return `<polygon points="${points.map(pt).join(" ")}" fill="${fill}" ${extra}/>`;
+      }
+      // boîte isométrique centrée en (gx, gy) au sol, largeur w (x), profondeur d (y), hauteur h, base à z0
+      function box(gx, gy, w, d, h, col, z0 = 0, extra = "") {
+        const x0 = gx - w / 2, x1 = gx + w / 2, y0 = gy - d / 2, y1 = gy + d / 2;
+        const top = [sc(x0, y0, z0 + h), sc(x1, y0, z0 + h), sc(x1, y1, z0 + h), sc(x0, y1, z0 + h)];
+        const left = [sc(x0, y1, z0 + h), sc(x1, y1, z0 + h), sc(x1, y1, z0), sc(x0, y1, z0)];
+        const right = [sc(x1, y0, z0 + h), sc(x1, y1, z0 + h), sc(x1, y1, z0), sc(x1, y0, z0)];
+        return poly(left, shade(col, -0.14), extra) + poly(right, shade(col, -0.3), extra) + poly(top, shade(col, 0.1), extra);
+      }
+      // disque posé au sol (ellipse projetée)
+      function disc(gx, gy, r, col, z0 = 0, extra = "") {
+        const c = sc(gx, gy, z0);
+        return `<ellipse cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" rx="${(r * SX * 1.414).toFixed(1)}" ry="${(r * SY * 1.414).toFixed(1)}" fill="${col}" ${extra}/>`;
+      }
+      // extrusion d'un polygone au sol (liste de points sol) de hauteur h
+      function slab(ground, h, topCol, sideCol, opts = {}) {
+        let s = "";
+        const n = ground.length;
+        let area = 0;
+        for (let i = 0; i < n; i++) { const a = ground[i], b = ground[(i + 1) % n]; area += a.x * b.y - b.x * a.y; }
+        const sign = area > 0 ? 1 : -1;
+        // ombre portée sur l'eau
+        if (opts.shadow) s += poly(ground.map(p => { const q = sc(p.x, p.y, 0); return [q[0] + 18, q[1] + 34]; }), "#061a33", 'opacity="0.45"');
+        // faces latérales
+        for (let i = 0; i < n; i++) {
+          const a = ground[i], b = ground[(i + 1) % n];
+          let nx = (b.y - a.y) * sign, ny = -(b.x - a.x) * sign;
+          const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
+          if (nx + ny <= 0) continue; // face cachée
+          const amt = -0.18 - 0.14 * (nx - ny);
+          s += poly([sc(a.x, a.y, h), sc(b.x, b.y, h), sc(b.x, b.y, 0), sc(a.x, a.y, 0)], shade(sideCol, amt));
+        }
+        // plage (bord clair) puis dessus
+        s += poly(ground.map(p => sc(p.x, p.y, h)), opts.rim || topCol);
+        if (opts.rim) {
+          let cx = 0, cy = 0; ground.forEach(p => { cx += p.x; cy += p.y; }); cx /= n; cy /= n;
+          const inner = ground.map(p => ({ x: cx + (p.x - cx) * 0.95, y: cy + (p.y - cy) * 0.95 }));
+          s += poly(inner.map(p => sc(p.x, p.y, h)), topCol);
+        }
+        return s;
+      }
+
+      /* ---------- Madagascar ---------- */
+      const MADA = [
+        [49.25, -12.0], [49.6, -12.55], [50.15, -13.5], [50.45, -14.9], [50.3, -15.55], [49.7, -15.75], [49.85, -16.4],
+        [49.5, -17.2], [49.4, -18.3], [48.9, -19.9], [48.4, -21.5], [47.9, -23.0], [47.4, -24.4], [47.0, -25.1], [46.3, -25.3],
+        [45.6, -25.6], [44.6, -25.3], [44.0, -24.5], [43.7, -23.4], [43.7, -22.3], [44.0, -21.2], [44.4, -20.1], [44.0, -19.0],
+        [44.3, -17.9], [44.1, -16.8], [44.4, -16.2], [45.2, -15.9], [46.2, -15.7], [47.0, -15.1], [47.5, -14.6], [47.9, -13.8],
+        [48.4, -13.2], [48.8, -12.6],
+      ];
+      const H_ISLAND = 56;
+      const islandGround = MADA.map(p => g(p[0], p[1]));
+      let islandSvg = slab(islandGround, H_ISLAND, "#3fbd6c", "#b9542b", { rim: "#f1dfae", shadow: true });
+      // hautes terres centrales (teinte plus olive) + forêt de l'est (vert profond)
+      const HIGH = [[46.6, -17.6], [47.6, -17.3], [48.0, -18.4], [47.9, -20.2], [47.2, -21.6], [46.4, -21.0], [46.0, -19.4]];
+      islandSvg += poly(HIGH.map(p => { const q = g(p[0], p[1]); return sc(q.x, q.y, H_ISLAND); }), "#7cc24a", 'opacity="0.9"');
+      const EAST = [[49.5, -14.0], [50.1, -14.9], [49.5, -17.0], [49.1, -18.6], [48.6, -20.4], [48.1, -22.0], [48.3, -19.8], [48.8, -17.4], [49.2, -15.6]];
+      islandSvg += poly(EAST.map(p => { const q = g(p[0], p[1]); return sc(q.x, q.y, H_ISLAND); }), "#1f9a55", 'opacity="0.85"');
+      // sud aride (ocre clair)
+      const SOUTH = [[44.2, -24.2], [45.4, -23.6], [46.6, -24.2], [46.4, -25.0], [45.6, -25.3], [44.6, -25.0]];
+      islandSvg += poly(SOUTH.map(p => { const q = g(p[0], p[1]); return sc(q.x, q.y, H_ISLAND); }), "#d9b26a", 'opacity="0.9"');
+      document.getElementById("g-island").innerHTML = islandSvg;
+
+      /* ---------- Afrique (côte est, Mozambique / Tanzanie) ---------- */
+      const AFR = [[40.5, -9.0], [40.4, -11.5], [40.7, -14.4], [40.1, -16.4], [38.2, -17.4], [36.4, -18.6], [35.3, -19.9], [35.0, -21.6],
+        [35.5, -23.6], [33.4, -25.6], [32.6, -28.5], [24.0, -28.5], [24.0, -9.0]];
+      let afrSvg = slab(AFR.map(p => g(p[0], p[1])), H_ISLAND, "#d8b56e", "#a3683c", { shadow: true });
+      const afLab = sc(g(36.5, -15.0).x, g(36.5, -15.0).y, H_ISLAND);
+      afrSvg += `<text class="wtxt" x="${afLab[0]}" y="${afLab[1]}" font-size="120" fill="#7a4a1e" opacity="0.75" text-anchor="middle" letter-spacing="14">AFRIQUE</text>`;
+      const ocLab = sc(g(52.6, -20.5).x, g(52.6, -20.5).y, 0);
+      afrSvg += `<text class="wtxt" x="${ocLab[0]}" y="${ocLab[1]}" font-size="80" fill="#ffffff" opacity="0.5" text-anchor="middle" letter-spacing="10" transform="rotate(-18 ${ocLab[0]} ${ocLab[1]})">OCÉAN INDIEN</text>`;
+      document.getElementById("g-africa").innerHTML = afrSvg;
+
+      /* ---------- objets (tri peintre par profondeur) ---------- */
+      const objs = [];
+      function add(id, lon, lat, svg, dz = 0) {
+        const p = g(lon, lat);
+        objs.push({ depth: p.x + p.y + dz, id, svg, anchor: sc(p.x, p.y, H_ISLAND) });
+      }
+      // primitives composées (toutes posées sur l'île : z0 = H_ISLAND)
+      const Z = H_ISLAND;
+      function tree(lon, lat, s = 1, col = "#2f9e4f") {
+        const p = g(lon, lat);
+        return box(p.x, p.y, 6 * s, 6 * s, 16 * s, "#7a4b2a", Z) + box(p.x, p.y, 22 * s, 22 * s, 18 * s, col, Z + 16 * s) + box(p.x, p.y, 14 * s, 14 * s, 12 * s, shade(col, 0.15), Z + 34 * s);
+      }
+      function baobab(lon, lat, s = 1) {
+        const p = g(lon, lat);
+        let o = box(p.x, p.y, 16 * s, 16 * s, 64 * s, "#b07a45", Z) + box(p.x, p.y, 12 * s, 12 * s, 14 * s, "#9a6a3a", Z + 64 * s);
+        o += box(p.x - 10 * s, p.y, 16 * s, 10 * s, 7 * s, "#4caf50", Z + 76 * s) + box(p.x + 8 * s, p.y - 8 * s, 14 * s, 14 * s, 7 * s, "#5bbf5a", Z + 78 * s)
+          + box(p.x + 2 * s, p.y + 10 * s, 14 * s, 12 * s, 6 * s, "#3e9e4a", Z + 77 * s);
+        return o;
+      }
+      function house(lon, lat, s = 1, wall = "#f1d9b2", roof = "#c9452f") {
+        const p = g(lon, lat);
+        return box(p.x, p.y, 26 * s, 22 * s, 22 * s, wall, Z) + box(p.x, p.y, 30 * s, 26 * s, 9 * s, roof, Z + 22 * s) + box(p.x, p.y, 16 * s, 12 * s, 8 * s, roof, Z + 31 * s);
+      }
+      function terrace(lon, lat, s = 1) {
+        const p = g(lon, lat);
+        return box(p.x, p.y, 70 * s, 70 * s, 8 * s, "#8ed15c", Z) + box(p.x, p.y, 52 * s, 52 * s, 8 * s, "#6fc34a", Z + 8 * s) + box(p.x, p.y, 34 * s, 34 * s, 8 * s, "#56b23c", Z + 16 * s) + disc(p.x, p.y, 7 * s, "#9fe0ff", Z + 24 * s);
+      }
+      function person(lon, lat, col, s = 1) {
+        const p = g(lon, lat);
+        const head = sc(p.x, p.y, Z + 30 * s);
+        return box(p.x, p.y, 12 * s, 12 * s, 20 * s, col, Z) +
+          box(p.x + 9 * s, p.y, 5 * s, 5 * s, 20 * s, col, Z + 8 * s) + box(p.x - 9 * s, p.y, 5 * s, 5 * s, 20 * s, col, Z + 8 * s) +
+          `<circle cx="${head[0]}" cy="${head[1] - 8 * s}" r="${9 * s}" fill="#8d5a3c"/>` +
+          `<path d="M${head[0] - 4 * s} ${head[1] - 6 * s} q${4 * s} ${4 * s} ${8 * s} 0" stroke="#3b1f12" stroke-width="${1.6 * s}" fill="none" stroke-linecap="round"/>` +
+          `<circle cx="${head[0] - 3 * s}" cy="${head[1] - 10 * s}" r="${1.2 * s}" fill="#3b1f12"/><circle cx="${head[0] + 3 * s}" cy="${head[1] - 10 * s}" r="${1.2 * s}" fill="#3b1f12"/>`;
+      }
+      function stall(lon, lat, a = "#ef4136", b = "#fff8ee") {
+        const p = g(lon, lat);
+        let o = box(p.x, p.y, 34, 22, 14, "#c08a4e", Z);
+        o += box(p.x - 14, p.y - 9, 3, 3, 30, "#8a5a2b", Z) + box(p.x + 14, p.y - 9, 3, 3, 30, "#8a5a2b", Z);
+        for (let i = 0; i < 4; i++) o += box(p.x - 13 + i * 9, p.y, 9, 26, 4, i % 2 ? b : a, Z + 30);
+        o += disc(p.x - 8, p.y, 4, "#ffcc33", Z + 14) + disc(p.x + 2, p.y + 2, 4, "#ff6a3d", Z + 14) + disc(p.x + 11, p.y - 3, 4, "#7cc24a", Z + 14);
+        return o;
+      }
+      function lemur(lon, lat) {
+        const p = g(lon, lat);
+        let o = box(p.x, p.y, 14, 10, 12, "#9a9a9a", Z);
+        const h = sc(p.x - 7, p.y, Z + 16);
+        o += `<circle cx="${h[0]}" cy="${h[1]}" r="7" fill="#d9d9d9"/><circle cx="${h[0] - 2.5}" cy="${h[1] - 1}" r="1.6" fill="#f6b93b"/><circle cx="${h[0] + 2.5}" cy="${h[1] - 1}" r="1.6" fill="#f6b93b"/>`;
+        o += `<circle cx="${h[0] - 2.5}" cy="${h[1] - 1}" r="0.8" fill="#000"/><circle cx="${h[0] + 2.5}" cy="${h[1] - 1}" r="0.8" fill="#000"/>`;
+        for (let i = 0; i < 7; i++) o += box(p.x + 8 + i * 3.2, p.y + 2, 3.4, 3.4, 3.4, i % 2 ? "#111" : "#eee", Z + 4 + i * 5.5);
+        return o;
+      }
+      function cargoShip(lon, lat) {
+        const p = g(lon, lat);
+        let o = disc(p.x, p.y, 34, "#061a33", 0, 'opacity="0.35"');
+        o += box(p.x, p.y, 110, 30, 16, "#24344f", 2) + box(p.x - 40, p.y, 22, 24, 30, "#f4f4f4", 18) + box(p.x - 40, p.y, 8, 8, 10, "#ef4136", 48);
+        const cols = ["#ef4136", "#f6b93b", "#2fb46a", "#2f6bff", "#ff6a3d", "#f6b93b"];
+        for (let i = 0; i < 6; i++) o += box(p.x - 18 + i * 12, p.y - 6 + (i % 2) * 12, 11, 10, 10 + (i % 3) * 6, cols[i], 18);
+        return o;
+      }
+      function crane(lon, lat) {
+        const p = g(lon, lat);
+        return box(p.x, p.y, 8, 8, 70, "#f6b93b", Z) + box(p.x + 20, p.y, 56, 6, 5, "#f6b93b", Z + 70) + box(p.x + 40, p.y, 6, 6, 24, "#333", Z + 44);
+      }
+      function mine(lon, lat) {
+        const p = g(lon, lat);
+        let o = box(p.x, p.y, 48, 48, 34, "#6f6f73", Z) + box(p.x, p.y, 30, 30, 18, "#5a5a5f", Z + 34);
+        // entrée (face droite)
+        const e = [sc(p.x + 24, p.y - 6, Z + 20), sc(p.x + 24, p.y + 8, Z + 20), sc(p.x + 24, p.y + 8, Z), sc(p.x + 24, p.y - 6, Z)];
+        o += poly(e, "#1b1b22");
+        // rails + wagonnets
+        o += box(p.x + 44, p.y + 14, 20, 12, 10, "#8a5a2b", Z) + box(p.x + 44, p.y + 14, 14, 8, 8, "#8fa3b3", Z + 10) + box(p.x + 44, p.y + 14, 8, 6, 6, "#2f6bff", Z + 18);
+        o += box(p.x + 62, p.y + 22, 16, 10, 9, "#8a5a2b", Z) + box(p.x + 62, p.y + 22, 11, 7, 7, "#9aa7b5", Z + 9);
+        return o;
+      }
+      function hut(lon, lat) {
+        const p = g(lon, lat);
+        let o = box(p.x, p.y, 34, 28, 20, "#d9a066", Z) + box(p.x, p.y, 40, 34, 10, "#c9a24a", Z + 20) + box(p.x, p.y, 24, 20, 9, "#b8902f", Z + 30);
+        o += box(p.x + 30, p.y + 6, 12, 12, 12, "#e4b56f", Z) + box(p.x + 30, p.y + 6, 9, 9, 3, "#c98d3f", Z + 12); // panier en raphia
+        o += box(p.x + 30, p.y - 14, 8, 8, 20, "#5a3a1e", Z) + box(p.x + 30, p.y - 14, 10, 10, 6, "#7a4b2a", Z + 20); // sculpture bois
+        o += box(p.x - 26, p.y + 10, 16, 12, 6, "#ef4136", Z) + box(p.x - 26, p.y + 10, 16, 12, 3, "#f6b93b", Z + 6); // tissus
+        return o;
+      }
+      // étiquette isométrique (carte blanche flottante avec icône 2D + texte)
+      function callout(lon, lat, icon, title, sub, col, z = Z + 150, size = 1) {
+        const p = g(lon, lat);
+        const a = sc(p.x, p.y, Z), t = sc(p.x, p.y, z);
+        const w = (124 + Math.max(title.length * 18.5, (sub || "").length * 13.5)) * size, h = (sub ? 112 : 84) * size, f = (v) => (v * size).toFixed(1);
+        let o = `<line x1="${a[0]}" y1="${a[1]}" x2="${t[0]}" y2="${t[1]}" stroke="#ffffff" stroke-width="${f(4)}" stroke-dasharray="${f(8)} ${f(8)}" opacity="0.8"/>`;
+        o += `<circle cx="${a[0]}" cy="${a[1]}" r="${f(9)}" fill="${col}" stroke="#fff" stroke-width="${f(3)}"/>`;
+        o += `<rect x="${t[0] - w / 2}" y="${t[1] - h - 8 * size}" width="${w}" height="${h}" rx="${f(22)}" fill="#fff8ee" stroke="${col}" stroke-width="${f(6)}"/>`;
+        o += `<text x="${t[0] - w / 2 + 24 * size}" y="${t[1] - h + 54 * size}" font-size="${f(54)}">${icon}</text>`;
+        o += `<text class="wtxt" x="${t[0] - w / 2 + 96 * size}" y="${t[1] - h + (sub ? 46 : 50) * size}" font-size="${f(34)}" fill="#0b1d33">${title}</text>`;
+        if (sub) o += `<text x="${t[0] - w / 2 + 96 * size}" y="${t[1] - h + 86 * size}" font-size="${f(26)}" font-family="Nunito" font-weight="700" fill="${shade(col, -0.42)}">${sub}</text>`;
+        return o;
+      }
+      function heart(lon, lat, z, s) {
+        const p = g(lon, lat); const c = sc(p.x, p.y, Z + z);
+        return `<path transform="translate(${c[0]} ${c[1]}) scale(${s})" d="M0 8 C-12 -2 -14 -14 -4 -14 C0 -14 0 -10 0 -9 C0 -10 0 -14 4 -14 C14 -14 12 -2 0 8Z" fill="#ff4f6d" stroke="#fff" stroke-width="1.2"/>`;
+      }
+      function arrow(lon, lat, lon2, lat2, col) {
+        const a = g(lon, lat), b = g(lon2, lat2); const p0 = sc(a.x, a.y, 20), p1 = sc(b.x, b.y, 20);
+        const mx = (p0[0] + p1[0]) / 2, my = Math.min(p0[1], p1[1]) - 120;
+        const ang = Math.atan2(p1[1] - my, p1[0] - mx) * 180 / Math.PI;
+        return `<path d="M${p0[0]} ${p0[1]} Q${mx} ${my} ${p1[0]} ${p1[1]}" fill="none" stroke="${col}" stroke-width="8" stroke-dasharray="18 14" stroke-linecap="round"/>` +
+          `<polygon points="0,-14 26,0 0,14" fill="${col}" transform="translate(${p1[0]} ${p1[1]}) rotate(${ang})"/>`;
+      }
+
+      // --- végétation & relief de base (toujours visibles)
+      [[48.2, -14.6], [48.8, -15.2], [49.2, -16.8], [48.6, -18.2], [48.0, -20.8], [47.6, -22.4], [48.4, -16.0], [49.0, -19.2], [47.2, -23.5], [45.9, -16.9], [45.4, -18.4], [45.0, -21.5], [46.2, -18.2]]
+        .forEach((t, i) => add("tree" + i, t[0], t[1], tree(t[0], t[1], 0.9 + (i % 3) * 0.2, i % 2 ? "#2f9e4f" : "#1f8a4a")));
+      // capitale Antananarivo (grappe de maisons sur les hautes terres)
+      [[47.45, -18.85], [47.58, -18.92], [47.52, -19.02], [47.4, -19.0], [47.63, -18.8], [47.5, -18.75]].forEach((h, i) => add("city" + i, h[0], h[1], house(h[0], h[1], 0.9 + (i % 2) * 0.25, i % 2 ? "#f1d9b2" : "#ffe9c7", i % 3 ? "#c9452f" : "#e0603f")));
+      add("terr1", 46.45, -19.3, terrace(46.45, -19.3, 1.0));
+      add("terr2", 46.3, -20.4, terrace(46.3, -20.4, 0.8));
+      // --- scène 3 : port de Toamasina, mine d'Ambatovy, étiquettes
+      add("dock", 49.65, -18.15, box(g(49.65, -18.15).x, g(49.65, -18.15).y, 70, 30, 10, "#9a9a9a", Z - 20));
+      add("crane1", 49.58, -18.08, crane(49.58, -18.08));
+      add("crane2", 49.72, -18.22, crane(49.72, -18.22));
+      add("mine", 48.25, -18.85, mine(48.25, -18.85));
+      add("ship", 50.25, -18.1, cargoShip(50.25, -18.1), 400);
+      add("arrows", 50.3, -18.1, arrow(50.3, -18.1, 51.4, -17.0, "#f6b93b") + arrow(50.3, -18.1, 51.9, -18.6, "#2fb46a") + arrow(50.3, -18.1, 51.6, -20.3, "#ff6a3d"), 500);
+      add("co-van", 49.9, -14.2, callout(49.9, -14.2, "🌿", "Vanille", "n°1 mondial", "#2fb46a", Z + 140), 600);
+      add("co-nick", 48.25, -18.85, callout(48.25, -18.85, "⛏️", "Nickel · Cobalt", "mine d'Ambatovy", "#c8582c", Z + 250), 600);
+      add("co-saph", 45.25, -22.7, callout(45.25, -22.7, "💎", "Saphirs", "Ilakaka", "#2f6bff", Z + 150), 600);
+      add("co-lit", 49.2, -19.3, callout(49.2, -19.3, "🍒", "Litchis · Girofle", "Toamasina", "#ef4136", Z + 60), 600);
+      // --- scène 4 : Allée des Baobabs (Morondava), artisanat, lémurien
+      [[44.3, -20.25], [44.42, -20.33], [44.54, -20.41], [44.66, -20.49], [44.2, -20.42], [44.32, -20.5], [44.44, -20.58], [44.56, -20.66]].forEach((b, i) => add("bao" + i, b[0], b[1], baobab(b[0], b[1], i < 4 ? 1.05 : 0.95)));
+      add("road", 44.45, -20.45, box(g(44.45, -20.45).x, g(44.45, -20.45).y, 12, 150, 3, "#d2652f", Z));
+      add("hut", 45.5, -22.1, hut(45.5, -22.1));
+      add("lemur", 45.3, -19.9, lemur(45.3, -19.9));
+      add("co-bao", 44.45, -20.45, callout(44.45, -20.45, "🌳", "Allée des Baobabs", "Morondava", "#f6b93b", Z + 150, 0.45), 600);
+      add("co-art", 45.5, -22.1, callout(45.5, -22.1, "🧺", "Savoir-faire", "raphia · bois · broderie", "#c8582c", Z + 30, 0.45), 600);
+      add("co-lem", 45.3, -19.9, callout(45.3, -19.9, "🐒", "Lémuriens", "espèces uniques", "#2fb46a", Z + 60, 0.45), 600);
+      // --- scène 5 : village / marché (hautes terres, Antsirabe)
+      add("stall1", 46.95, -19.75, stall(46.95, -19.75, "#ef4136", "#fff8ee"));
+      add("stall2", 47.2, -19.85, stall(47.2, -19.85, "#2fb46a", "#fff8ee"));
+      add("mango", 47.42, -19.55, tree(47.42, -19.55, 1.0, "#2f9e4f"));
+      const people = [[46.78, -19.9, "#ef4136"], [46.95, -20.05, "#f6b93b"], [47.12, -19.93, "#2f6bff"], [47.3, -20.06, "#2fb46a"], [47.45, -19.92, "#ff6a3d"], [47.05, -19.78, "#8e44ad"]];
+      people.forEach((q, i) => add("pers" + i, q[0], q[1], person(q[0], q[1], q[2], 1.5), 50));
+      add("hearts", 47.1, -19.95, heart(46.95, -19.95, 80, 1.6) + heart(47.12, -20.02, 100, 2.0) + heart(47.28, -19.95, 85, 1.5), 700);
+      add("co-fih", 47.1, -19.95, callout(47.1, -19.95, "😊", "Tonga soa !", "« Bienvenue ! » en malgache", "#ef4136", Z + 150, 0.55), 700);
+
+      objs.sort((a, b) => a.depth - b.depth);
+      document.getElementById("g-objects").innerHTML = objs.map(o => `<g id="${o.id}" data-ax="${o.anchor[0].toFixed(1)}" data-ay="${o.anchor[1].toFixed(1)}">${o.svg}</g>`).join("");
+
+      // repère d'Antananarivo (épingle 2D) — ajouté en dernier pour être au-dessus
+      const capP = g(47.52, -18.9), capS = sc(capP.x, capP.y, Z);
+      document.getElementById("g-objects").insertAdjacentHTML("beforeend",
+        `<g id="pin"><ellipse cx="${capS[0]}" cy="${capS[1]}" rx="22" ry="12" fill="#000" opacity="0.35"/>
+         <g id="pin-body"><path transform="translate(${capS[0]} ${capS[1]})" d="M0 0 C-30 -36 -38 -52 -38 -72 A38 38 0 1 1 38 -72 C38 -52 30 -36 0 0Z" fill="#ef4136" stroke="#fff" stroke-width="5"/>
+         <circle cx="${capS[0]}" cy="${capS[1] - 72}" r="15" fill="#fff"/></g></g>`);
+
+      /* =====================================================================
+         ANIMATION — une seule timeline GSAP, pilotée par HyperFrames
+         ===================================================================== */
+      const tl = gsap.timeline({ paused: true });
+      const P = (lon, lat, z = Z) => { const q = g(lon, lat); return sc(q.x, q.y, z); };
+      // place le point monde p (coordonnées svg) au décalage (ox, oy) du centre de l'écran, à l'échelle s
+      const cam = (p, s, ox = 0, oy = 0) => ({ x: ox - s * p[0], y: oy - s * p[1], scale: s });
+      const center = P(46.9, -19.2, Z);
+
+      // ---------- caméra ----------
+      tl.set("#world", cam(center, 1.2, 0, 360), 0);
+      tl.to("#world", { ...cam(center, 1.0, 0, 330), duration: 2.2, ease: "power2.out" }, 0);
+      tl.to("#world", { ...cam(P(42.6, -18.0, 0), 0.5, 0, 160), duration: 0.9, ease: "power3.inOut" }, 2.2);
+      tl.to("#world", { ...cam(P(42.4, -18.2, 0), 0.52, 0, 160), duration: 1.7, ease: "none" }, 3.1);
+      tl.to("#world", { ...cam(P(48.6, -17.6, Z), 1.2, 0, 140), duration: 0.9, ease: "power3.inOut" }, 4.6);
+      tl.to("#world", { ...cam(P(48.3, -18.9, Z), 1.2, 0, 160), duration: 3.6, ease: "none" }, 5.5);
+      tl.to("#world", { ...cam(P(44.45, -20.45, Z), 2.4, -160, 90), duration: 0.8, ease: "power3.inOut" }, 9.0);
+      tl.to("#world", { ...cam(P(44.45, -20.45, Z), 2.5, -150, 100), duration: 1.9, ease: "none" }, 9.8);
+      tl.to("#world", { ...cam(P(47.1, -19.85, Z), 2.0, 0, 140), duration: 0.8, ease: "power3.inOut" }, 11.6);
+      tl.to("#world", { ...cam(P(47.1, -19.85, Z), 2.15, 0, 130), duration: 1.5, ease: "none" }, 12.4);
+      tl.to("#world", { ...cam(center, 0.95, 0, 180), duration: 1.0, ease: "power3.inOut" }, 13.6);
+
+      // ---------- île qui émerge + ombre ----------
+      tl.fromTo("#g-island", { y: 260, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, ease: "back.out(1.4)" }, 0);
+      tl.fromTo("#g-objects", { y: 260, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, ease: "back.out(1.4)" }, 0.05);
+      tl.fromTo("#g-africa", { opacity: 0, y: 140 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 2.3);
+
+      // ---------- scène 1 : titre ----------
+      tl.fromTo("#t1", { scale: 0.2, opacity: 0, rotation: -8 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.5, ease: "back.out(2.2)" }, 0.05);
+      tl.fromTo("#t2", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.5);
+      tl.fromTo("#t3", { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "elastic.out(1, 0.55)" }, 0.75);
+      tl.fromTo("#t4", { scale: 0, opacity: 0, rotation: 20 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: "back.out(2)" }, 1.2);
+      tl.to("#s1 .title-wrap", { scale: 1.08, y: -30, opacity: 0, duration: 0.35, ease: "power2.in" }, 1.85);
+
+      // ---------- helpers pour en-têtes & puces ----------
+      const popHead = (id, t) => tl.fromTo(id, { scale: 0.4, opacity: 0, y: -40 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: "back.out(2)" }, t);
+      const popChip = (id, t, fromX = -120) => tl.fromTo(id, { x: fromX, opacity: 0, scale: 0.8 }, { x: 0, opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.7)" }, t);
+      const popWorld = (id, t, dur = 0.5) => tl.fromTo(id, { scale: 0, opacity: 0, transformOrigin: "50% 100%" }, { scale: 1, opacity: 1, duration: dur, ease: "back.out(1.8)" }, t);
+      const fadeOut = (id, t, dur = 0.3) => tl.to(id, { opacity: 0, y: -30, duration: dur, ease: "power2.in" }, t);
+
+      // ---------- scène 2 : où ? ----------
+      popHead("#h2", 2.25);
+      popChip("#c2a", 2.45); popChip("#c2b", 3.0); popChip("#c2c", 3.5); popChip("#c2d", 3.95);
+      tl.set("#pin", { opacity: 0 }, 0);
+      tl.fromTo("#pin", { opacity: 0, y: -320 }, { opacity: 1, y: 0, duration: 0.6, ease: "bounce.out" }, 3.3);
+      tl.to("#pin", { opacity: 0, duration: 0.3 }, 4.7);
+      tl.to("#pin", { opacity: 1, duration: 0.3 }, 13.9);
+      fadeOut("#s2 .head, #s2 .chips", 4.8);
+
+      // ---------- scène 3 : économie ----------
+      ["#co-van", "#co-nick", "#co-saph", "#co-lit", "#arrows", "#co-bao", "#co-art", "#co-lem", "#co-fih", "#hearts"].forEach(id => tl.set(id, { opacity: 0 }, 0));
+      tl.set("#ship", { x: -120, y: -70 }, 0);
+      popHead("#h3", 5.15);
+      popWorld("#co-van", 5.25);
+      tl.fromTo("#st3", { scale: 0.2, opacity: 0, rotation: 6 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.55, ease: "back.out(2)" }, 5.9);
+      tl.to("#st3", { scale: 0.6, opacity: 0, duration: 0.3, ease: "power2.in" }, 7.4);
+      popWorld("#co-nick", 6.8);
+      popWorld("#co-saph", 7.7);
+      popWorld("#co-lit", 8.15); popChip("#c3d", 7.6);
+      tl.to("#ship", { x: 240, y: 140, duration: 3.6, ease: "power1.inOut" }, 5.4);
+      tl.fromTo("#arrows", { opacity: 0, scale: 0.3, transformOrigin: "0% 50%" }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, 8.0);
+      fadeOut("#s3 .head, #s3 .chips, #s3 .stat", 8.75);
+      tl.to("#co-van, #co-nick, #co-saph, #co-lit, #arrows", { opacity: 0, duration: 0.4 }, 8.9);
+
+      // ---------- scène 4 : savoir-faire & nature ----------
+      popHead("#h4", 9.05);
+      popWorld("#co-art", 9.2); popChip("#c4a", 9.3, 120);
+      popWorld("#co-bao", 10.0);
+      popWorld("#co-lem", 10.6); popChip("#c4c", 10.3, 120);
+      // les baobabs ondulent légèrement, le lémurien saute
+      tl.to("#lemur", { y: -26, duration: 0.3, ease: "power2.out", yoyo: true, repeat: 5 }, 10.4);
+      fadeOut("#s4 .head, #s4 .chips", 11.35);
+      tl.to("#co-art, #co-bao, #co-lem", { opacity: 0, duration: 0.4 }, 11.45);
+
+      // ---------- scène 5 : les gens ----------
+      popHead("#h5", 11.65);
+      people.forEach((q, i) => tl.to("#pers" + i, { y: -22, duration: 0.28, ease: "power2.out", yoyo: true, repeat: 7 }, 11.8 + i * 0.09));
+      popWorld("#co-fih", 12.0); popChip("#c5a", 12.1);
+      tl.fromTo("#hearts", { opacity: 0, y: 30, scale: 0.4, transformOrigin: "50% 100%" }, { opacity: 1, y: -60, scale: 1, duration: 1.4, ease: "power2.out" }, 12.3);
+      popChip("#c5b", 12.45);
+      fadeOut("#s5 .head, #s5 .chips", 13.4);
+      tl.to("#co-fih, #hearts", { opacity: 0, duration: 0.4 }, 13.5);
+
+      // ---------- scène 6 : outro ----------
+      tl.fromTo("#o1", { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "elastic.out(1, 0.6)" }, 13.65);
+      tl.fromTo("#o2", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 13.95);
+      tl.fromTo("#o3", { scale: 0.4, opacity: 0, rotation: -6 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: "back.out(2)" }, 14.15);
+
+      // ---------- sous-titres : pop d'entrée ----------
+      [["#k1", 0.0], ["#k2", 3.5], ["#k3", 5.1], ["#k4", 6.7], ["#k5", 9.0], ["#k6", 10.2], ["#k7", 11.5], ["#k8", 13.8]]
+        .forEach(([id, t]) => tl.fromTo(id + " span", { scale: 0.85, opacity: 0, y: 24 }, { scale: 1, opacity: 1, y: 0, duration: 0.25, ease: "back.out(1.8)" }, t));
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

@@ -1,3 +1,6 @@
 node_modules/
 stills/
 .DS_Store
+madagascar/.hyperframes/
+madagascar/renders/
+madagascar/snaps/

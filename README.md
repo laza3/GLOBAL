@@ -14,3 +14,11 @@ npm run studio       # prévisualisation
 npx remotion still Flamants stills/f120.png --frame=120
 npm run render       # → out/flamants.mp4
 ```
+
+
+---
+
+# 15 secondes pour connaître Madagascar
+
+Vidéo TikTok verticale (1080×1920, 15 s) en motion design 3D isométrique, réalisée avec HyperFrames (HTML + GSAP).
+Projet dans `madagascar/` (voir `madagascar/README.md`), rendu final : `out/madagascar.mp4`.
