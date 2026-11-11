@@ -7,6 +7,8 @@
     "studio": "remotion studio",
     "still": "remotion still",
     "render": "remotion render Flamants out/flamants.mp4 --codec=h264",
+    "render:journee": "remotion render Journee out/journee.mp4 --codec=h264 --crf=19",
+    "bande-son": "python3 scripts/bande_son.py",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
