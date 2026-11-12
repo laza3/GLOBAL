@@ -1,0 +1,58 @@
+{
+  "_lisez_moi": "Tous les textes de l'étiquette. Modifier ici puis relancer : python3 tools/build_labels.py. Les champs entre [CROCHETS] sont à compléter avant impression.",
+  "formats": [
+    {
+      "id": "1L",
+      "volume": "1 L",
+      "largeur_mm": 100,
+      "hauteur_mm": 130
+    },
+    {
+      "id": "5L",
+      "volume": "5 L",
+      "largeur_mm": 140,
+      "hauteur_mm": 182
+    },
+    {
+      "id": "10L",
+      "volume": "10 L",
+      "largeur_mm": 160,
+      "hauteur_mm": 208
+    }
+  ],
+  "reference": "N° 01",
+  "produit_ligne1": "Shampooing",
+  "produit_ligne2": "carrosserie",
+  "accroche": "Concentré · pH neutre",
+  "promesse": "Décolle la saleté de la route, mousse généreusement et se rince sans laisser de traces.",
+  "usages": "Voitures · Motos · Utilitaires",
+  "dosages": [
+    {
+      "mode": "Lavage au seau",
+      "valeur": "40 mL",
+      "precision": "pour 10 L d’eau"
+    },
+    {
+      "mode": "Canon à mousse",
+      "valeur": "1:10",
+      "precision": "produit : eau"
+    }
+  ],
+  "description": "Shampooing concentré à pH neutre pour le lavage régulier de tous les véhicules. Sa mousse dense décolle la saleté de la route, puis se rince facilement. Respecte peinture, vernis et protections (cire, scellant).",
+  "etapes": [
+    "**Rincer** le véhicule à l’eau claire, de haut en bas, pour retirer la saleté non adhérente.",
+    "**Diluer** 40 mL de produit dans un seau de 10 L d’eau, puis agiter pour faire mousser.",
+    "**Laver** panneau par panneau avec un gant microfibre, en commençant par le toit.",
+    "**Rincer** abondamment avant que le produit ne sèche, puis **sécher** avec une microfibre propre."
+  ],
+  "conseils": [
+    "Laver à l’ombre, carrosserie froide.",
+    "Ne jamais laisser sécher le produit sur la surface.",
+    "Deux seaux (lavage et rinçage du gant) limitent les micro-rayures."
+  ],
+  "precautions": "Tenir hors de portée des enfants. Ne pas avaler. En cas de contact avec les yeux, rincer immédiatement et abondamment à l’eau. En cas de consultation d’un médecin, garder à disposition le récipient ou l’étiquette. Ne pas mélanger avec d’autres produits. Conserver fermé, à l’abri du gel et de la chaleur.",
+  "composition": "[COMPOSITION À COMPLÉTER selon votre formule]",
+  "fabricant": "[NOM DE L’ENTREPRISE]",
+  "adresse": "[Adresse complète · Téléphone]",
+  "pied": "Bien refermer après usage"
+}

@@ -14,3 +14,9 @@ npm run studio       # prévisualisation
 npx remotion still Flamants stills/f120.png --frame=120
 npm run render       # → out/flamants.mp4
 ```
+
+---
+
+## AutoCare — branding et étiquettes
+
+Logo, couleurs et étiquettes d’impression (1 L, 5 L, 10 L) du shampooing carrosserie AutoCare : voir [`autocare/`](autocare/README.md).

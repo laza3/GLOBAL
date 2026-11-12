@@ -1,3 +1,7 @@
 node_modules/
 stills/
 .DS_Store
+
+# AutoCare (branding)
+autocare/build/
+autocare/tools/__pycache__/

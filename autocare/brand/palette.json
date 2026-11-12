@@ -1,0 +1,11 @@
+{
+  "note": "Valeurs CMJN indicatives : à faire valider par l'imprimeur sur épreuve couleur.",
+  "colors": [
+    {"id": "petrole", "name": "Pétrole", "role": "Couleur de marque, aplats, bande de niveau", "hex": "#1E4B45", "cmyk": "C85 M45 Y62 K40"},
+    {"id": "encre",   "name": "Encre",   "role": "Texte, logo sur fond clair", "hex": "#14201D", "cmyk": "C75 M55 Y65 K80"},
+    {"id": "ecume",   "name": "Écume",   "role": "Fond principal des étiquettes", "hex": "#F2F1EC", "cmyk": "C3 M2 Y6 K0"},
+    {"id": "brume",   "name": "Brume",   "role": "Texte secondaire sur pétrole, aplats légers", "hex": "#B7D3CB", "cmyk": "C30 M5 Y20 K0"},
+    {"id": "lin",     "name": "Lin",     "role": "Filets, cadres, zones de marquage", "hex": "#E3E1D8", "cmyk": "C10 M8 Y14 K0"},
+    {"id": "gris",    "name": "Gris route", "role": "Texte secondaire sur fond clair", "hex": "#5D6764", "cmyk": "C55 M40 Y45 K30"}
+  ]
+}
