@@ -7,6 +7,8 @@
     "studio": "remotion studio",
     "still": "remotion still",
     "render": "remotion render Flamants out/flamants.mp4 --codec=h264",
+    "render:mada": "remotion render src/mada/index.ts Mada out/mada-ebook.mp4 --codec=h264",
+    "studio:mada": "remotion studio src/mada/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
