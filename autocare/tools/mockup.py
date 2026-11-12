@@ -39,7 +39,7 @@ def defs():
 </defs>"""
 
 
-def bottle_1l(x):
+def bottle_1l(x, label=None):
     """Flacon 1 L à face plate : corps 116 × 205, épaule, col, bouchon."""
     w, h = 116, 205
     top = GROUND - h
@@ -58,7 +58,7 @@ def bottle_1l(x):
 <rect x="{cx - 22}" y="{top - neck_h - 22}" width="44" height="26" rx="3" fill="url(#cap)"/>
 <g stroke="#000" stroke-opacity=".18" stroke-width=".5">{''.join(f'<line x1="{cx - 22 + i*3.4}" y1="{top - neck_h - 20}" x2="{cx - 22 + i*3.4}" y2="{top - neck_h + 2}"/>' for i in range(1, 13))}</g>
 <path d="{body}" fill="url(#body)"/>
-<image href="{PREV / 'AutoCare_1L_recto.png'}" x="{lx}" y="{ly}" width="{lw}" height="{lh}" preserveAspectRatio="none"/>
+<image href="{label or PREV / 'AutoCare_1L_recto.png'}" x="{lx}" y="{ly}" width="{lw}" height="{lh}" preserveAspectRatio="none"/>
 <rect x="{lx}" y="{ly}" width="{lw}" height="{lh}" fill="url(#labelshade)"/>
 """
 
