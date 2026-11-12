@@ -20,7 +20,7 @@ fontFace
 const PHONE = { x: 540, y: 1130, w: 540, h: 1100 };
 
 // ——— Caméra continue ———
-const CAM_T = [0, 14, 44, 104, 150, 190, 215, 280, 310, 345, 390];
+const CAM_T = [0, 14, 44, S.explode, S.explode + 46, S.reader - 26, S.reader - 4, S.profile - 8, S.profile + 8, S.tap, 390];
 const CAM_S = [1.14, 1.12, 1.0, 1.0, 1.07, 1.04, 1.18, 1.18, 1.06, 1.0, 1.04];
 const CAM_FY = [1120, 1120, 1010, 1010, 1010, 1060, 820, 820, 1010, 1010, 1050];
 const cam = (f: number) => {
@@ -31,12 +31,12 @@ const cam = (f: number) => {
 // ——— Textes ———
 const w = (t: string, at: number, hl = false): SubWord => ({ t, at, hl });
 const SUBS = [
-  { start: 4, end: 31, size: 156, top: 300, lines: [[w("Mada", W.mada), w("ebook", W.ebook, true)]] },
-  { start: 32, end: 102, size: 84, top: 300, lines: [[w("la", W.la), w("lecture", W.lecture), w("malgache", W.malgache)], [w("dans", W.dans), w("ta", W.ta), w("poche", W.poche, true)]] },
-  { start: 108, end: 176, size: 104, top: 270, lines: [[w("Culture,", W.culture), w("histoire,", W.histoire)], [w("contes", W.contes), w("et", W.contes + 8), w("nature", W.nature, true)]] },
-  { start: 176, end: 198, size: 92, top: 300, lines: [[w("de la", 178), w("Grande Île", 186, true)]] },
-  { start: 200, end: 291, size: 96, top: 250, lines: [[w("Lis,", W.lis), w("découvre,", W.decouvre)], [w("partage,", W.partage, true)], [w("où que tu sois", W.partage + 20)]] },
-  { start: 294, end: 999, size: 118, top: 260, lines: [[w("Rejoins", W.rejoins), w("la", W.la2), w("page", W.page)], [w("Mada", W.mada2), w("ebook", W.ebook2, true), w("!", W.ebook2 + 8)]] },
+  { start: 4, end: W.la - 3, size: 156, top: 300, lines: [[w("Mada", W.mada), w("ebook", W.ebook, true)]] },
+  { start: W.la - 3, end: S.explode - 2, size: 84, top: 300, lines: [[w("la", W.la), w("lecture", W.lecture), w("malgache", W.malgache)], [w("dans", W.dans), w("ta", W.ta), w("poche", W.poche, true)]] },
+  { start: S.explode - 2, end: W.de - 3, size: 104, top: 270, lines: [[w("Culture,", W.culture), w("histoire,", W.histoire)], [w("contes", W.contes), w("et", W.et), w("nature", W.nature, true)]] },
+  { start: W.de - 3, end: S.reader - 3, size: 92, top: 300, lines: [[w("de la", W.de), w("Grande Île", W.grande, true)]] },
+  { start: S.reader - 3, end: S.profile - 3, size: 96, top: 250, lines: [[w("Lis,", W.lis), w("découvre,", W.decouvre)], [w("partage,", W.partage, true)], [w("où que tu sois", W.ou)]] },
+  { start: S.profile - 3, end: 999, size: 118, top: 260, lines: [[w("Rejoins", W.rejoins), w("la", W.la2), w("page", W.page)], [w("Mada", W.mada2), w("ebook", W.ebook2, true), w("!", W.ebook2 + 8)]] },
 ];
 
 // ——— Couvertures flottantes autour du téléphone ———
@@ -131,7 +131,7 @@ export const Mada: React.FC = () => {
           {FLOATS.map((fl, i) => {
             const s = floatsOut(i);
             const bob = Math.sin(f / 16 + i * 1.4) * 14;
-            const hit = fl.at > 0 ? Math.max(0, 1 - Math.abs(f - (fl.at + 6)) / 10) : 0;
+            const hit = fl.at > 0 ? Math.max(0, 1 - Math.abs(f - (fl.at + 5)) / 10) : 0;
             const out = 1 - floatsIn;
             const sc = (0.2 + 0.8 * s) * (1 + 0.16 * hit) * (0.3 + 0.7 * out);
             return (
@@ -179,12 +179,12 @@ export const Mada: React.FC = () => {
             <div style={{ position: "absolute", left: 18, top: 18, width: SCREEN_W, height: SCREEN_H, borderRadius: 60, background: "linear-gradient(115deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 30%)", pointerEvents: "none" }} />
 
             {/* doigt qui appuie sur « Suivre » */}
-            {f >= S.profile + 30 && f < S.tap + 22 ? (() => {
-              const m = prog(f, S.profile + 30, S.tap, Easing.inOut(Easing.cubic));
+            {f >= S.profile + 12 && f < S.tap + 22 ? (() => {
+              const m = prog(f, S.profile + 12, S.tap, Easing.inOut(Easing.cubic));
               const fx = lerp(PHONE.w / 2 + 120, PHONE.w / 2 + 110, m);
               const fy = lerp(PHONE.h - 160, 18 + 712 + 20, m);
               const press = f >= S.tap ? 1 - prog(f, S.tap, S.tap + 14) : 0;
-              const o = prog(f, S.profile + 30, S.profile + 42) * (1 - prog(f, S.tap + 8, S.tap + 22));
+              const o = prog(f, S.profile + 12, S.profile + 24) * (1 - prog(f, S.tap + 8, S.tap + 22));
               return (
                 <div style={{ position: "absolute", left: fx - 44, top: fy - 44, width: 88, height: 88, borderRadius: 44, background: "rgba(255,246,232,0.55)", border: "5px solid rgba(255,255,255,0.9)", opacity: o, transform: `scale(${0.82 + 0.18 * (1 - press) + 0.1 * (f < S.tap ? m : 0)})`, boxShadow: "0 10px 24px rgba(20,5,30,0.35)", zIndex: 30 }} />
               );

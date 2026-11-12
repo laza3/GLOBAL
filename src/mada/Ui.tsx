@@ -258,8 +258,8 @@ const Page: React.FC<{ seed: number; num: number; font: string; chapter: string 
 export const ReaderScreen: React.FC<{ f: number; font: string; start: number }> = ({ f, font, start }) => {
   const t = f - start;
   // deux tournages de page
-  const flip1 = prog(t, 22, 46);
-  const flip2 = prog(t, 62, 86);
+  const flip1 = prog(t, 20, 42);
+  const flip2 = prog(t, 50, 72);
   const bookmark = pop(f, start + 4, 12, 160, 0.7);
   const lit = prog(t, 0, 20);
   return (
@@ -280,7 +280,7 @@ export const ReaderScreen: React.FC<{ f: number; font: string; start: number }> 
       <div style={{ position: "absolute", right: 46, top: 120, width: 34, height: 96, background: P.coral, clipPath: "polygon(0 0,100% 0,100% 100%,50% 76%,0 100%)", transform: `scaleY(${bookmark})`, transformOrigin: "50% 0%", zIndex: 6 }} />
       {/* barre de progression */}
       <div style={{ position: "absolute", left: 44, right: 44, bottom: 30, height: 10, borderRadius: 6, background: "rgba(42,21,48,0.15)", zIndex: 6 }}>
-        <div style={{ width: `${lit * 20 + prog(t, 22, 86) * 40}%`, height: "100%", borderRadius: 6, background: P.green }} />
+        <div style={{ width: `${lit * 20 + prog(t, 20, 72) * 40}%`, height: "100%", borderRadius: 6, background: P.green }} />
       </div>
     </div>
   );
