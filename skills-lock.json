@@ -1,6 +1,12 @@
 {
   "version": 2,
   "skills": {
+    "agent-reach": {
+      "source": "Panniantong/Agent-Reach",
+      "sourceType": "github",
+      "skillPath": "agent_reach/skill/SKILL.md",
+      "computedHash": "05fdf9ff0759d7020c0c153d7a6963787fe93d89d25f016c41065a006340b5b0"
+    },
     "find-skills": {
       "source": "vercel-labs/skills",
       "sourceType": "github",
