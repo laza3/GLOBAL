@@ -54,7 +54,8 @@ Voir ROADMAP.md (backlog). Principaux manques assumés :
 | Suite | Résultat |
 |---|---|
 | `@gp/shared` (Vitest) — argent, panier, règlement, retours, numérotation, permissions, i18n | ✅ **21 / 21** |
-| `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **29 / 29** |
+| Récupération de mot de passe (ligne de commande) — test e2e réel | ✅ |
+| `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **30 / 30** |
 | Typecheck TypeScript (strict) | ✅ 0 erreur |
 | Audit de mise en page (écrans + fenêtres, 2 tailles d'écran) | ✅ 0 anomalie |
 | E2E Playwright sur Electron (config **production**, CSP stricte) — 3 scénarios : (1) configuration → produit → scan → encaissement espèces → dashboard → historique → stock ; (2) tous les écrans + sous-onglets, thème sombre, anglais ; (3) vente à crédit partielle → retour → solde client → clôture avec écart → dépense | ✅ **3 / 3** (31 s) |

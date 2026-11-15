@@ -220,3 +220,21 @@ export function listAudit(ctx: Ctx, q: { limit?: number; action?: string }) {
   );
 }
 void outbox;
+
+/**
+ * Récupération hors session (mot de passe oublié) : réinitialise le mot de passe d'un utilisateur (par défaut le
+ * premier administrateur actif), lève le verrouillage et journalise l'opération. Appelée uniquement depuis la
+ * ligne de commande de l'application (poste local), jamais depuis l'interface.
+ */
+export function resetPasswordOffline(db: Db, newPassword: string, username?: string): { username: string } {
+  assertStrongPassword(newPassword);
+  const u = username
+    ? db.get<any>('SELECT id, username FROM users WHERE username = ?', username.trim())
+    : db.get<any>("SELECT u.id, u.username FROM users u JOIN roles r ON r.id = u.role_id WHERE r.code = 'ADMIN' AND u.active = 1 ORDER BY u.created_at LIMIT 1");
+  if (!u) fail('NOT_FOUND', username ? `Utilisateur introuvable : ${username}` : 'Aucun administrateur actif');
+  db.tx(() => {
+    db.run('UPDATE users SET password_hash = ?, failed_logins = 0, locked_until = NULL, active = 1, updated_at = ? WHERE id = ?', hashPassword(newPassword), nowIso(), u.id);
+    db.run('INSERT INTO audit_log (id, at, user_id, username, action, details) VALUES (?,?,?,?,?,?)', uuid(), nowIso(), u.id, u.username, 'auth.password_reset_offline', JSON.stringify({ via: 'command-line' }));
+  });
+  return { username: u.username };
+}

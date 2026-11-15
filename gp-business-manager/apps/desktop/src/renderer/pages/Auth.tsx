@@ -54,6 +54,15 @@ export function LoginPage() {
         <ErrorBox error={err} />
         <Button type="submit" variant="gold" size="lg" className="w-full" loading={busy} disabled={!u || !p}>{t('Se connecter')}</Button>
       </form>
+      <details className="mt-5 text-sm text-ink-500 dark:text-ink-300">
+        <summary className="cursor-pointer select-none font-medium hover:text-gold-600">{t('Mot de passe oublié ?')}</summary>
+        <div className="mt-2 space-y-2 rounded-xl bg-ink-100/70 p-3 dark:bg-white/5">
+          <p>{t('Demandez à un autre administrateur de le réinitialiser (Administration → Utilisateurs).')}</p>
+          <p>{t('Sinon : fermez l’application, ouvrez une invite de commandes dans le dossier d’installation et lancez :')}</p>
+          <code className="block select-all break-all rounded-lg bg-white p-2 text-xs dark:bg-ink-900">{'"GP Business Manager.exe" --reset-password=NouveauMotDePasse'}</code>
+          <p className="text-xs">{t('Vos données sont conservées. Ajoutez --user=identifiant pour un autre compte.')}</p>
+        </div>
+      </details>
     </Shell>
   );
 }

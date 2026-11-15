@@ -605,4 +605,8 @@ export const en: Record<string, string> = {
   "Gérant": "Manager",
   "Magasinier": "Storekeeper",
   "Comptable": "Accountant",
+  "Mot de passe oublié ?": "Forgot your password?",
+  "Demandez à un autre administrateur de le réinitialiser (Administration → Utilisateurs).": "Ask another administrator to reset it (Administration → Users).",
+  "Sinon : fermez l’application, ouvrez une invite de commandes dans le dossier d’installation et lancez :": "Otherwise: close the application, open a command prompt in the installation folder and run:",
+  "Vos données sont conservées. Ajoutez --user=identifiant pour un autre compte.": "Your data is kept. Add --user=username for another account.",
 };

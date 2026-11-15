@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Harness } from './helpers';
+import { resetPasswordOffline } from '../src/main/core/auth';
 
 describe('authentification & permissions', () => {
   it('refuse les appels non authentifiés', async () => {
@@ -41,5 +42,19 @@ describe('authentification & permissions', () => {
     expect(r.total).toBe(0);
     expect(h.db.value<number>('SELECT COUNT(*) FROM sqlite_master WHERE name = ?', 'products')).toBe(1);
     await h.fails('stock.adjust', { warehouseId: 'x', variantId: 'y', type: 'IN', qtyMilli: 1.5 }, 'VALIDATION');
+  });
+
+  it('récupération hors session : réinitialise le mot de passe de l’administrateur, lève le verrou, journalise', async () => {
+    const h = await new Harness().boot();
+    for (let i = 0; i < 5; i++) await h.fails('auth.login', { username: 'admin', password: 'oublié' }, 'INVALID_CREDENTIALS');
+    await h.fails('auth.login', { username: 'admin', password: 'Admin#2026' }, 'ACCOUNT_LOCKED');
+    expect(() => resetPasswordOffline(h.db, 'court')).toThrow(/au moins 8/);
+    expect(resetPasswordOffline(h.db, 'NouveauMdp#1')).toEqual({ username: 'admin' });
+    await h.fails('auth.login', { username: 'admin', password: 'Admin#2026' }, 'INVALID_CREDENTIALS');
+    const ok = await h.app.call('auth.login', { username: 'admin', password: 'NouveauMdp#1' });
+    expect(ok.ok).toBe(true);
+    const audit = await h.call('audit.list', { action: 'auth.password_reset_offline' }, (ok as any).data.token);
+    expect(audit).toHaveLength(1);
+    expect(() => resetPasswordOffline(h.db, 'NouveauMdp#2', 'inconnu')).toThrow(/introuvable/);
   });
 });

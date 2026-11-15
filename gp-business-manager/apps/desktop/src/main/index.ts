@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, session, shell, type WebContents }
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { Db } from './core/db';
+import { resetPasswordOffline } from './core/auth';
 import { App } from './core/api';
 import { reportToCsv, reportToHtml, reportToXlsx, runReport } from './core/reports';
 import { nowIso } from './core/util';
@@ -22,6 +23,22 @@ function log(msg: string, err?: unknown) {
 }
 
 const dbPath = process.env.GP_DB_PATH || join(dataDir, 'gp-business.db');
+// Récupération : « GP Business Manager.exe --reset-password=NouveauMotDePasse [--user=identifiant] » (application fermée)
+const cliArg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+if (cliArg('reset-password') !== undefined) {
+  const showResult = (type: 'info' | 'error', message: string) => { if (process.env.GP_NO_DIALOG === '1') console.log(message); else dialog.showMessageBoxSync({ type, title: 'GP Business Manager', message }); };
+  try {
+    const d = new Db(dbPath);
+    const r = resetPasswordOffline(d, cliArg('reset-password')!, cliArg('user'));
+    d.close();
+    log(`Mot de passe réinitialisé en ligne de commande pour « ${r.username} »`);
+    showResult('info', `Mot de passe réinitialisé pour « ${r.username} ». Vous pouvez relancer GP Business Manager et vous connecter.`);
+  } catch (e) {
+    showResult('error', `Impossible de réinitialiser le mot de passe : ${(e as Error).message}`);
+  }
+  app.exit(0);
+  process.exit(0);
+}
 let db = new Db(dbPath);
 let core = new App(db, log);
 const tokens = new Map<number, string>(); // webContents.id → jeton : le renderer ne voit JAMAIS le jeton
