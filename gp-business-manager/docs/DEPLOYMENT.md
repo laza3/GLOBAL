@@ -20,10 +20,13 @@ npm run desktop:dist        # = build (esbuild + Vite) puis electron-builder --w
 ## Emplacement des données (par utilisateur Windows)
 | Contenu | Chemin |
 |---|---|
-| Base de données | `%APPDATA%\@gp\desktop\data\gp-business.db` (+ `-wal`, `-shm`) |
-| Sauvegardes automatiques | `%APPDATA%\@gp\desktop\backups\auto-AAAA-MM-JJ.db` (14 jours) |
-| Journal technique | `%APPDATA%\@gp\desktop\gp.log` |
+| Base de données | `%APPDATA%\GP Business Manager\data\gp-business.db` (+ `-wal`, `-shm`) |
+| Sauvegardes automatiques | `%APPDATA%\GP Business Manager\backups\auto-AAAA-MM-JJ.db` (14 jours) |
+| Journal technique | `%APPDATA%\GP Business Manager\gp.log` |
 Variable `GP_DB_PATH` : surcharge l'emplacement de la base (tests, poste de démonstration).
+
+## Repartir de zéro (nouvelle entreprise sur un poste déjà utilisé)
+La désinstallation **conserve** les données. Pour retrouver l'écran de bienvenue : application fermée, renommer `%APPDATA%\GP Business Manager` (ex. en `GP Business Manager ancien` — réversible), puis relancer. Dossier d'installation par défaut : `%LOCALAPPDATA%\Programs\GP Business Manager\` (en cas de doute : clic droit sur le raccourci → Propriétés).
 
 ## Signature de code (recommandé avant diffusion commerciale)
 Sans certificat, Windows SmartScreen affiche « Éditeur inconnu ». Acquérir un certificat de signature de code (OV ou EV), puis configurer `CSC_LINK` / `CSC_KEY_PASSWORD` (ou signature Azure Trusted Signing) avant `desktop:dist`. electron-builder signera l'exécutable et l'installateur automatiquement. **Ne jamais commiter** le certificat ni ses mots de passe.
