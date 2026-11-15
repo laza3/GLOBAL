@@ -1,0 +1,45 @@
+name: GP Business Manager — build Windows
+
+# Construit l'installateur Windows sur un vrai poste Windows, lance les tests, et publie l'installateur en artefact.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['gp-business-manager/**', '.github/workflows/gp-windows.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: gp-business-manager
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gp-business-manager/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests (unitaires + intégration, sous Windows)
+        run: npm test
+      - name: Build de l'application
+        run: npm run build -w @gp/desktop
+      - name: Installateur NSIS
+        run: npx electron-builder --win --x64 --publish never
+        working-directory: gp-business-manager/apps/desktop
+      - name: Empreinte SHA-256
+        shell: pwsh
+        run: Get-FileHash apps/desktop/release/*.exe -Algorithm SHA256 | Format-List
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GP-Business-Manager-Setup-Windows
+          path: gp-business-manager/apps/desktop/release/GP-Business-Manager-Setup-*.exe
+          retention-days: 30
+          if-no-files-found: error
