@@ -57,7 +57,7 @@ Voir ROADMAP.md (backlog). Principaux manques assumés :
 | `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **29 / 29** |
 | Typecheck TypeScript (strict) | ✅ 0 erreur |
 | E2E Playwright sur Electron (config **production**, CSP stricte) — 3 scénarios : (1) configuration → produit → scan → encaissement espèces → dashboard → historique → stock ; (2) tous les écrans + sous-onglets, thème sombre, anglais ; (3) vente à crédit partielle → retour → solde client → clôture avec écart → dépense | ✅ **3 / 3** (31 s) |
-| Génération de l'installateur NSIS | ✅ généré (123 Mo) |
+| Génération de l'installateur NSIS | ✅ `GP-Business-Manager-Setup-0.1.0.exe` (122 Mo) — SHA-256 `2447d5b825bc8a2a9524e71d2a094a9eb88096f649b12f6b59d534b34e614397` ; contenu vérifié **identique** (empreintes) au build testé en e2e |
 
 Résultat e2e le plus récent : **3 / 3**, aucune erreur console ni violation de CSP.
 
