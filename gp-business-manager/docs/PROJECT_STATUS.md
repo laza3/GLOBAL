@@ -56,13 +56,14 @@ Voir ROADMAP.md (backlog). Principaux manques assumés :
 | `@gp/shared` (Vitest) — argent, panier, règlement, retours, numérotation, permissions, i18n | ✅ **21 / 21** |
 | `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **29 / 29** |
 | Typecheck TypeScript (strict) | ✅ 0 erreur |
+| Audit de mise en page (écrans + fenêtres, 2 tailles d'écran) | ✅ 0 anomalie |
 | E2E Playwright sur Electron (config **production**, CSP stricte) — 3 scénarios : (1) configuration → produit → scan → encaissement espèces → dashboard → historique → stock ; (2) tous les écrans + sous-onglets, thème sombre, anglais ; (3) vente à crédit partielle → retour → solde client → clôture avec écart → dépense | ✅ **3 / 3** (31 s) |
 | Génération de l'installateur NSIS | ✅ `GP-Business-Manager-Setup-0.1.0.exe` (122 Mo) — SHA-256 `2447d5b825bc8a2a9524e71d2a094a9eb88096f649b12f6b59d534b34e614397` ; contenu vérifié **identique** (empreintes) au build testé en e2e |
 
 Résultat e2e le plus récent : **3 / 3**, aucune erreur console ni violation de CSP.
 
 ### Tests échoués
-Aucun à la date de mise à jour. Défauts trouvés par les tests e2e puis **corrigés** pendant le développement : (1) formulaire de dépense présélectionnant un compte à solde nul ; (2) écart de clôture de caisse non répercuté sur le solde du compte ; (3) **perte possible d'un scan de code-barres** lors de deux scans rapprochés ; (4) sélecteur de langue affichant la mauvaise langue.
+Aucun à la date de mise à jour. Défauts trouvés par les tests e2e puis **corrigés** pendant le développement : (1) formulaire de dépense présélectionnant un compte à solde nul ; (2) écart de clôture de caisse non répercuté sur le solde du compte ; (3) **perte possible d'un scan de code-barres** lors de deux scans rapprochés ; (4) sélecteur de langue affichant la mauvaise langue ; (5) **fenêtres modales (ex. « Nouveau produit ») rognées par le haut sur écran moyen** — signalé par l'utilisateur, corrigé à la racine (affichage par portal).
 
 ### Non testé
 - Installation et exécution sur **Windows réel** (SmartScreen, désinstallation, mise en veille, impression thermique, lecteur code-barres physique).

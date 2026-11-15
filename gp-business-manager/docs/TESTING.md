@@ -14,7 +14,8 @@ npm run e2e -w @gp/desktop   # Playwright pilotant l'application Electron (Xvfb 
 |---|---|---|
 | Unitaire | Vitest (`packages/shared/test`) | Argent (arrondis, conversions, répartition), panier (HT/TTC, remises, invariants), règlement (rendu, multi-paiements, crédit), retours proratisés, numérotation, permissions, i18n (variables conservées). |
 | Intégration métier | Vitest (`apps/desktop/tests`) | **Vraie base SQLite en mémoire + vraie couche d'API** (permissions, validation, transactions) : sécurité, ventes, retours, immuabilité, stock/FEFO/inventaire/transferts, achats/dettes, caisse, finances/tableau de bord, exports. |
-| Bout en bout | Playwright `_electron` | Parcours réel dans l'application : configuration → création produit → caisse → scan code-barres → encaissement → tableau de bord → historique → stock. |
+| Bout en bout | Playwright `_electron` | Parcours réel dans l'application : configuration → création produit → caisse → scan code-barres → encaissement → tableau de bord → historique → stock ; vente à crédit → retour → clôture → dépense ; tous les écrans/onglets, thème sombre, anglais. |
+| Mise en page | Playwright (`layout-audit`) | Les 12 écrans et ~20 fenêtres, à 1100×640 et 1366×768 : aucune fenêtre hors écran, fond complet, boutons visibles, aucun débordement horizontal. |
 
 ## Ce qui est couvert (opérations sensibles)
 - Atomicité d'une vente (rollback complet si une ligne est en rupture) et idempotence (rejeu du même `id`).
