@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter Variable', 'Segoe UI', system-ui, sans-serif;
+  --color-ink-50: #f6f5f1;
+  --color-ink-100: #eeece5;
+  --color-ink-200: #e0ddd2;
+  --color-ink-300: #c8c4b6;
+  --color-ink-400: #9a97a0;
+  --color-ink-500: #6f6d7a;
+  --color-ink-600: #4b4a5a;
+  --color-ink-700: #2c2f45;
+  --color-ink-800: #1b2038;
+  --color-ink-900: #121730;
+  --color-ink-950: #0b0f22;
+  --color-gold-50: #fbf6e8;
+  --color-gold-100: #f5e9c4;
+  --color-gold-200: #ecd48f;
+  --color-gold-300: #e0bb5c;
+  --color-gold-400: #d3a33a;
+  --color-gold-500: #c08f26;
+  --color-gold-600: #a0721d;
+  --color-gold-700: #7c561a;
+  --shadow-card: 0 1px 2px rgb(15 20 40 / 0.04), 0 4px 16px -6px rgb(15 20 40 / 0.07);
+  --shadow-pop: 0 12px 40px -8px rgb(10 14 32 / 0.35);
+  --radius-card: 1rem;
+  --animate-fade-in: fade-in 0.18s ease-out both;
+  --animate-pop-in: pop-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+
+:root { color-scheme: light; }
+html.dark { color-scheme: dark; }
+html, body, #root { height: 100%; }
+body { font-family: var(--font-sans); background: var(--color-ink-50); color: var(--color-ink-800); font-feature-settings: 'cv11', 'ss01'; -webkit-font-smoothing: antialiased; }
+html.dark body { background: #0d1122; color: #e7e8f0; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #c8c4b655; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+html.dark ::-webkit-scrollbar-thumb { background: #4b4a5a88; background-clip: content-box; border: 2px solid transparent; }
+.tabular { font-variant-numeric: tabular-nums; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--color-gold-400); outline-offset: 2px; }
+@media print { .no-print { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

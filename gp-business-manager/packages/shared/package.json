@@ -1,0 +1,23 @@
+{
+  "name": "@gp/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Règles métier, validations (Zod), permissions et i18n partagés entre toutes les applications GP",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "name": "@gp/desktop",
+  "productName": "GP Business Manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GP Business Manager — application Windows de gestion commerciale (hors ligne, SQLite local)",
+  "author": "GP Business Manager",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "electron . --no-sandbox",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "e2e": "node scripts/build.mjs && playwright test",
+    "dist:win": "node scripts/build.mjs && electron-builder --win --x64 --publish never",
+    "docs:api": "node scripts/gen-api-doc.mjs",
+    "icon": "node scripts/make-icon.mjs"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@gp/shared": "^0.1.0",
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@tanstack/react-query": "^5.107.1",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "45.3.2",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^1.73.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "recharts": "^3.10.1",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0",
+    "zod": "^4.6.7"
+  },
+  "build": {
+    "appId": "com.gpbusiness.manager",
+    "productName": "GP Business Manager",
+    "copyright": "Copyright © 2026 GP Business Manager",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "publish": null,
+    "compression": "maximum",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "GP-Business-Manager-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GP Business Manager",
+      "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "fr_FR",
+        "en_US"
+      ],
+      "language": "1036"
+    }
+  }
+}
