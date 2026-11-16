@@ -37,8 +37,25 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build -w @gp/desktop
-      - name: Installateur + publication en brouillon
-        run: npx electron-builder --win --x64 --publish always
+      - name: Installateur (sans publication)
+        run: npx electron-builder --win --x64 --publish never
         working-directory: gp-business-manager/apps/desktop
+      - name: Release en BROUILLON (un seul envoi, tout ou rien)
+        shell: bash
+        working-directory: gp-business-manager/apps/desktop/release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ver=$(node -p "require('../package.json').version")
+          ls -la
+          for f in "GP-Business-Manager-Setup-$ver.exe" "GP-Business-Manager-Setup-$ver.exe.blockmap" latest.yml; do
+            test -f "$f" || { echo "Fichier manquant : $f"; exit 1; }
+          done
+          if gh release list --limit 100 --json tagName --jq '.[].tagName' | grep -qx "v$ver"; then
+            echo "Une release v$ver existe déjà : abandon (rien n'est écrasé, aucune release en double)."; exit 1
+          fi
+          gh release create "v$ver" "GP-Business-Manager-Setup-$ver.exe" "GP-Business-Manager-Setup-$ver.exe.blockmap" latest.yml \
+            --draft --title "$ver" --target "$GITHUB_SHA" --notes "GP Business Manager $ver — voir docs/CHANGELOG.md"
+          echo "Fichiers de la release :"
+          gh release view "v$ver" --json assets --jq '.assets[].name'

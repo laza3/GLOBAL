@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.3.1 — 2026-11-16
+Identique à 0.3.0 (la release 0.3.0 a été publiée incomplète par erreur d'outil de publication ; la publication est désormais en un seul envoi).
+
 ## 0.3.0 — 2026-11-16
 - **Réinitialiser les données** (Administration → Réinitialisation, administrateur uniquement, mot de passe + phrase de confirmation) : efface le contenu de gestion (produits, stocks, clients, fournisseurs, ventes, achats, caisses, dépenses, trésorerie, numérotation) ; **conserve** comptes/rôles, paramètres, boutiques/entrepôts/caisses, modes de paiement, taxes, journal. Copie de sécurité automatique avant l'effacement (sauf si l'administrateur supprime aussi les sauvegardes). Une seule transaction ; triggers d'immuabilité rétablis.
 - **Suppression de comptes** par l'administrateur : suppression définitive si le compte n'a aucune activité, **archivage** sinon (historique conservé, connexion impossible, identifiant réutilisable). Impossible de se supprimer soi-même ou de supprimer le dernier administrateur. Migration `003`.
