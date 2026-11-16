@@ -80,6 +80,7 @@ const defs = {
   'users.list': d(['user.manage', 'cash.view_all'], undefined, (c) => auth.listUsers(c)),
   'users.create': d('user.manage', z.object({ username: z.string().min(3).max(40), displayName: z.string().min(1).max(100), password: z.string().min(8).max(200), roleId: id, branchId: opt(id), email: opt(text), phone: opt(text), mustChangePassword: z.boolean().optional() }), (c, p) => auth.createUser(c, p)),
   'users.update': d('user.manage', z.object({ id, displayName: z.string().min(1).max(100).optional(), roleId: id.optional(), branchId: opt(id), email: opt(text), phone: opt(text), active: z.boolean().optional(), password: z.string().min(8).max(200).optional() }), (c, p) => auth.updateUser(c, p.id, p)),
+  'users.delete': d('user.manage', z.object({ id }), (c, p) => auth.deleteUser(c, p.id)),
   'roles.list': d(['role.manage', 'user.manage'], undefined, (c) => auth.listRoles(c)),
   'roles.save': d('role.manage', z.object({ id: opt(id), name: z.string().min(1).max(80), permissions: z.array(z.string()).max(100) }), (c, p) => auth.saveRole(c, p)),
   'roles.delete': d('role.manage', z.object({ id }), (c, p) => auth.deleteRole(c, p.id)),

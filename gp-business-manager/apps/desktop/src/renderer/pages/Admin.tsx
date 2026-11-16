@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { DatabaseBackup, FolderOpen, Plus, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { DatabaseBackup, FolderOpen, Plus, RotateCcw, ShieldCheck, Trash2, TriangleAlert } from 'lucide-react';
 import { PERMISSIONS } from '@gp/shared';
 import { Badge, Button, Card, ConfirmDialog, DataTable, ErrorBox, Field, Input, Modal, PageHeader, Select, Tabs, Checkbox, Warn, useToast } from '../components/ui';
 import { system, useM, useQ } from '../lib/api';
@@ -10,20 +11,21 @@ import { dateTime, money } from '../lib/format';
 
 export function AdminPage() {
   const { t } = useT();
-  const { can } = useAuth();
+  const { can, me } = useAuth();
   const tabs = [
     ...(can('user.manage') ? [{ id: 'users', label: 'Comptes utilisateurs' }] : []),
     ...(can(['role.manage', 'user.manage']) ? [{ id: 'roles', label: 'Rôles & permissions' }] : []),
     ...(can('organization.manage') ? [{ id: 'org', label: 'Organisation' }] : []),
     ...(can('audit.view') ? [{ id: 'audit', label: 'Journal d’activité' }] : []),
     ...(can('backup.manage') ? [{ id: 'backup', label: 'Sauvegardes' }] : []),
+    ...(me?.roleCode === 'ADMIN' ? [{ id: 'reset', label: 'Réinitialisation' }] : []),
   ] as { id: string; label: string }[];
   const [tab, setTab] = useState(tabs[0]?.id ?? 'users');
   return (
     <>
       <PageHeader title="Administration" subtitle="Utilisateurs, droits, organisation, audit et sauvegardes" />
       <Tabs value={tab} onChange={setTab} tabs={tabs} />
-      {tab === 'users' && <Users />}{tab === 'roles' && <Roles />}{tab === 'org' && <Org />}{tab === 'audit' && <Audit />}{tab === 'backup' && <Backup />}
+      {tab === 'users' && <Users />}{tab === 'roles' && <Roles />}{tab === 'org' && <Org />}{tab === 'audit' && <Audit />}{tab === 'backup' && <Backup />}{tab === 'reset' && me?.roleCode === 'ADMIN' && <ResetAll />}
     </>
   );
 }
@@ -57,12 +59,17 @@ function UserForm({ initial, roles, onClose }: { initial: any; roles: any[]; onC
   const create = useM('users.create', { onSuccess: onClose });
   const update = useM('users.update', { onSuccess: onClose });
   const role = roles.find((r) => r.id === f.roleId);
+  const { me } = useAuth();
+  const { push } = useToast();
+  const [confirmDel, setConfirmDel] = useState(false);
+  const del = useM('users.delete', { onSuccess: (r) => { push('success', r.mode === 'deleted' ? t('Compte supprimé.') : t('Compte archivé : il ne peut plus se connecter ; son historique de ventes est conservé.')); onClose(); } });
   const save = () => (f.id
     ? update.mutate({ id: f.id, displayName: f.displayName, roleId: f.roleId, branchId: f.branchId || null, active: f.active, password: f.password || undefined }, { onError: setErr })
     : create.mutate({ username: f.username, displayName: f.displayName, password: f.password, roleId: f.roleId, branchId: f.branchId || undefined }, { onError: setErr }));
   return (
-    <Modal open onClose={onClose} size="md" title={f.id ? 'Modifier le compte' : 'Créer un compte'} footer={<><Button onClick={onClose}>{t('Annuler')}</Button><Button variant="primary" loading={create.isPending || update.isPending} disabled={!f.displayName || (!f.id && (!f.username || f.password.length < 8))} onClick={save}>{t('Enregistrer')}</Button></>}>
+    <Modal open onClose={onClose} size="md" title={f.id ? 'Modifier le compte' : 'Créer un compte'} footer={<>{f.id && f.id !== me?.id && <Button variant="danger" className="mr-auto" icon={<Trash2 className="size-4" />} onClick={() => setConfirmDel(true)}>{t('Supprimer le compte')}</Button>}<Button onClick={onClose}>{t('Annuler')}</Button><Button variant="primary" loading={create.isPending || update.isPending} disabled={!f.displayName || (!f.id && (!f.username || f.password.length < 8))} onClick={save}>{t('Enregistrer')}</Button></>}>
       <div className="space-y-3">
+        <ConfirmDialog open={confirmDel} danger title="Supprimer ce compte" message={`${f.displayName} (@${f.username}) ne pourra plus se connecter. Si cette personne a déjà fait des ventes ou ouvert une caisse, le compte est archivé : l'historique est conservé. Sinon il est supprimé définitivement.`} confirmLabel="Supprimer le compte" onClose={() => setConfirmDel(false)} onConfirm={() => del.mutate({ id: f.id }, { onError: setErr })} />
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Nom de la personne"><Input autoFocus value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} /></Field>
           <Field label="Identifiant de connexion" hint="Lettres, chiffres, point ou tiret"><Input disabled={!!f.id} value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} /></Field>
@@ -186,3 +193,69 @@ function Backup() {
   );
 }
 void money;
+
+const RESET_PHRASE = 'TOUT EFFACER';
+function ResetAll() {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <Card className="max-w-3xl border-red-200 p-6 dark:border-red-400/30">
+      <h3 className="flex items-center gap-2 text-lg font-semibold text-red-600 dark:text-red-400"><TriangleAlert className="size-5" />{t('Réinitialiser les données')}</h3>
+      <p className="mt-2 text-sm text-ink-600 dark:text-ink-200">{t('Efface tout le contenu de gestion — produits, stocks, clients, fournisseurs, ventes, achats, caisses, dépenses et trésorerie — et remet les numérotations à 1, comme au premier jour.')}</p>
+      <p className="mt-2 text-sm text-ink-600 dark:text-ink-200"><b>{t('Conservés :')}</b> {t('les comptes utilisateurs et leurs profils, les paramètres de l’entreprise, les boutiques, entrepôts et caisses, les modes de paiement, les taxes et le journal d’activité.')}</p>
+      <p className="mt-2 text-sm font-semibold text-red-600 dark:text-red-400">{t('Cette action est définitive et ne peut pas être annulée.')}</p>
+      <div className="mt-4"><Button variant="danger" icon={<Trash2 className="size-4" />} onClick={() => setOpen(true)}>{t('Réinitialiser les données…')}</Button></div>
+      <p className="mt-3 text-xs text-ink-400">{t('Réservé aux administrateurs. Votre mot de passe sera demandé.')}</p>
+      {open && <ResetDialog onClose={() => setOpen(false)} />}
+    </Card>
+  );
+}
+function ResetDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useT();
+  const { push } = useToast();
+  const qc = useQueryClient();
+  const [step, setStep] = useState<1 | 2>(1);
+  const [deleteBackups, setDeleteBackups] = useState(false);
+  const [phrase, setPhrase] = useState('');
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  const ok = phrase.trim().toUpperCase() === RESET_PHRASE && password.length > 0;
+  const go = async () => {
+    setBusy(true); setErr(null);
+    try {
+      await system('factoryReset', { password, confirm: phrase, deleteBackups });
+      qc.clear(); // toutes les données affichées sont périmées
+      push('success', t('Données réinitialisées. Les comptes et les paramètres sont conservés.'));
+      onClose();
+    } catch (e) { setErr(e); setBusy(false); }
+  };
+  return (
+    <Modal open danger onClose={busy ? () => {} : onClose} size="md" title={step === 1 ? 'Attention : effacement des données' : 'Confirmer la réinitialisation'}
+      footer={step === 1
+        ? <><Button onClick={onClose}>{t('Annuler')}</Button><Button variant="danger" onClick={() => setStep(2)}>{t('Je comprends, continuer')}</Button></>
+        : <><Button onClick={() => setStep(1)} disabled={busy}>{t('Retour')}</Button><Button variant="danger" loading={busy} disabled={!ok} onClick={go} icon={<Trash2 className="size-4" />}>{t('Effacer définitivement')}</Button></>}>
+      {step === 1 ? (
+        <div className="space-y-3 text-sm">
+          <div className="flex gap-3 rounded-xl bg-red-50 p-3 text-red-700 dark:bg-red-400/10 dark:text-red-300"><TriangleAlert className="mt-0.5 size-5 shrink-0" /><p className="font-semibold">{t('Seront supprimés, définitivement :')}</p></div>
+          <ul className="list-disc space-y-1 pl-6 text-ink-700 dark:text-ink-200">
+            <li>{t('tous les produits, catégories, marques et stocks ;')}</li>
+            <li>{t('tous les clients et fournisseurs, avec leurs comptes ;')}</li>
+            <li>{t('toutes les ventes, factures, retours, paiements et achats ;')}</li>
+            <li>{t('toutes les sessions de caisse, dépenses et la trésorerie (soldes remis à 0) ;')}</li>
+            <li>{t('les numéros de documents (tickets, factures…) repartent de 1.')}</li>
+          </ul>
+          <div className="rounded-xl bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"><b>{t('Conservés :')}</b> {t('comptes utilisateurs et profils, paramètres de l’entreprise, boutiques, entrepôts, caisses, modes de paiement, taxes, journal d’activité.')}</div>
+          <Checkbox checked={deleteBackups} onChange={setDeleteBackups} label="Supprimer aussi toutes les sauvegardes de cet ordinateur" />
+          <p className="text-xs text-ink-400">{deleteBackups ? t('Aucune copie ne sera conservée : il sera impossible de récupérer ces données.') : t('Par sécurité, une copie des données actuelles est créée automatiquement avant l’effacement (dossier des sauvegardes).')}</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <Field label={`Recopiez « ${RESET_PHRASE} » pour confirmer`}><Input autoFocus autoComplete="off" value={phrase} onChange={(e) => setPhrase(e.target.value)} placeholder={RESET_PHRASE} /></Field>
+          <Field label="Votre mot de passe d’administrateur"><Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ok && go()} /></Field>
+          <ErrorBox error={err} />
+        </div>
+      )}
+    </Modal>
+  );
+}

@@ -23,6 +23,10 @@ Postes partagés entre caissiers, vol/perte d'ordinateur, caissier malveillant (
 ## Mot de passe oublié (récupération)
 Application fermée : `"GP Business Manager.exe" --reset-password=NouveauMotDePasse [--user=identifiant]` (par défaut : premier administrateur actif). Sans effet sur les données ; lève le verrouillage ; journalisé (`auth.password_reset_offline`, immuable). Compromis assumé : toute personne pouvant exécuter l'application sur le poste peut réinitialiser le compte — elle pourrait déjà lire le fichier de base (non chiffré). Atténuation : session Windows protégée + BitLocker ; un chiffrement de la base rendrait cette commande inopérante sans la clé.
 
+## Réinitialisation des données & suppression de comptes
+- Réinitialisation : profil **Administrateur** uniquement (vérifié côté processus principal, pas seulement dans l'interface) + **phrase de confirmation** + **mot de passe de l'administrateur** (un mot de passe faux compte comme un échec de connexion : verrouillage après 5). Journalisée (`app.reset_business_data`, `security.reset_denied`). Le journal d'activité est conservé.
+- Suppression de compte (`user.manage`) : jamais soi-même ni le dernier administrateur ; si le compte a un historique, il est **archivé** (les écritures financières ne sont jamais orphelines ni réécrites).
+
 ## Limites connues / à faire
 - **Base non chiffrée au repos** : toute personne ayant accès au disque peut lire le fichier SQLite. Recommandation : BitLocker. Chiffrement applicatif (SQLCipher ou chiffrement des sauvegardes) à planifier.
 - **Exécutable non signé** : SmartScreen affiche un avertissement tant qu'un certificat de signature de code n'est pas utilisé (voir DEPLOYMENT.md).

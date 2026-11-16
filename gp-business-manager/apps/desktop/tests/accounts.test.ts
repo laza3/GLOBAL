@@ -119,4 +119,54 @@ describe('profils et comptes (administrateur, gérant, responsable des ventes, v
     ensureSystemRoles(h.db); // idempotent
     expect((await h.call('roles.list')).filter((r: any) => r.code === 'SALES_MANAGER')).toHaveLength(1);
   });
+
+  describe('suppression de comptes par l’administrateur', () => {
+    const mk = async (h: Harness, username: string, code: string) => {
+      const roles = await h.call('roles.list');
+      return (await h.call('users.create', { username, displayName: username, password: 'Temp0raire!', roleId: roles.find((r: any) => r.code === code).id, mustChangePassword: false })).id as string;
+    };
+
+    it('supprime définitivement un compte sans activité', async () => {
+      const h = await new Harness().boot();
+      const id = await mk(h, 'stagiaire', 'CASHIER');
+      expect(await h.call('users.delete', { id })).toMatchObject({ mode: 'deleted', username: 'stagiaire' });
+      expect(h.db.value<number>("SELECT COUNT(*) FROM users WHERE username = 'stagiaire'")).toBe(0);
+      expect((await h.call('users.list')).map((u: any) => u.username)).toEqual(['admin']);
+      await h.fails('auth.login', { username: 'stagiaire', password: 'Temp0raire!' }, 'INVALID_CREDENTIALS');
+      expect((await h.call('audit.list', { action: 'user.delete' })).length).toBe(1);
+    });
+
+    it('archive un compte qui a de l’activité : historique conservé, connexion impossible, identifiant réutilisable', async () => {
+      const h = await new Harness().boot();
+      const id = await mk(h, 'vendeuse.a', 'CASHIER');
+      const token = (await h.app.call('auth.login', { username: 'vendeuse.a', password: 'Temp0raire!' }) as any).data.token;
+      await h.openCash(0);
+      const p = await h.product('Jupe', { price: 10_000, qty: 5 });
+      const sale = await h.call('sales.create', { registerId: h.ids.register, items: [{ variantId: p.variantId, qtyMilli: 1000 }], payments: [{ methodId: h.ids.pm_CASH, amount: 10_000 }] }, token);
+      expect(await h.call('users.delete', { id })).toMatchObject({ mode: 'archived' });
+      // son jeton de session est immédiatement invalide ; elle n'est plus listée ni connectable
+      await h.fails('products.list', {}, 'UNAUTHENTICATED', token);
+      await h.fails('auth.login', { username: 'vendeuse.a', password: 'Temp0raire!' }, 'INVALID_CREDENTIALS');
+      expect((await h.call('users.list')).map((u: any) => u.username)).toEqual(['admin']);
+      // l'historique de la vente reste, avec son nom
+      expect((await h.call('sales.get', { id: sale.id })).userName).toBe('vendeuse.a');
+      // l'identifiant peut être réutilisé pour une nouvelle personne
+      await mk(h, 'vendeuse.a', 'CASHIER');
+      expect((await h.call('audit.list', { action: 'user.archive' })).length).toBe(1);
+    });
+
+    it('interdit de se supprimer, de supprimer le dernier administrateur, et aux profils sans droit', async () => {
+      const h = await new Harness().boot();
+      const adminId = (await h.call('users.list'))[0].id;
+      await h.fails('users.delete', { id: adminId }, 'SELF_DELETE');
+      const admin2 = await mk(h, 'admin.deux', 'ADMIN');
+      const t2 = (await h.app.call('auth.login', { username: 'admin.deux', password: 'Temp0raire!' }) as any).data.token;
+      await h.call('users.delete', { id: adminId }, t2); // le 2e admin peut supprimer le 1er (il en reste un)
+      await h.fails('users.delete', { id: admin2 }, 'SELF_DELETE', t2);
+      const h2 = await new Harness().boot();
+      const mgr = await h2.user('gerant.d', 'MANAGER');
+      const v = await mk(h2, 'vend.d', 'CASHIER');
+      await h2.fails('users.delete', { id: v }, 'FORBIDDEN', mgr); // le gérant ne gère pas les comptes
+    });
+  });
 });

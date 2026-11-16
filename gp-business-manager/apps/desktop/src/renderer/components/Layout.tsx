@@ -35,7 +35,7 @@ function ChangePassword({ open, onClose, forced }: { open: boolean; onClose: () 
   };
   const mismatch = n2.length > 0 && n !== n2;
   return (
-    <Modal open={open} onClose={forced ? () => {} : onClose} title={forced ? 'Choisissez votre mot de passe' : 'Changer mon mot de passe'} size="sm" footer={<>{!forced && <Button onClick={onClose}>{t('Annuler')}</Button>}<Button variant="primary" onClick={save} disabled={!o || n.length < 8 || n !== n2}>{t('Enregistrer')}</Button></>}>
+    <Modal open={open} closable={!forced} onClose={forced ? () => {} : onClose} title={forced ? 'Choisissez votre mot de passe' : 'Changer mon mot de passe'} size="sm" footer={<>{!forced && <Button onClick={onClose}>{t('Annuler')}</Button>}<Button variant="primary" onClick={save} disabled={!o || n.length < 8 || n !== n2}>{t('Enregistrer')}</Button></>}>
       <div className="space-y-3">
         {forced && <p className="rounded-xl bg-gold-50 p-3 text-sm text-gold-700 dark:bg-gold-400/10 dark:text-gold-200">{t('Votre compte a été créé avec un mot de passe temporaire. Choisissez maintenant votre propre mot de passe, que vous seul connaîtrez.')}</p>}
         <Field label={forced ? 'Mot de passe temporaire (reçu de l’administrateur)' : 'Mot de passe actuel'}><Input type="password" autoComplete="current-password" autoFocus value={o} onChange={(e) => setO(e.target.value)} /></Field>

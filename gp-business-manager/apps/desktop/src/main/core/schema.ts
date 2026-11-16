@@ -316,4 +316,9 @@ BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_RECORD: une vente validée ne peut pas êtr
     name: 'users_must_change_password',
     sql: `ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0;`,
   },
+  {
+    id: 3,
+    name: 'users_deleted_at',
+    sql: `ALTER TABLE users ADD COLUMN deleted_at TEXT;`,
+  },
 ];

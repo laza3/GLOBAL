@@ -29,7 +29,7 @@ Toutes ces fonctionnalités sont **reliées à une vraie base SQLite** et à de 
 - **UI** : design sombre/clair (bleu nuit + or), FR/EN complets (587 libellés), responsive (≥ 1024 px optimisé ; menu rétractable).
 
 ## En cours
-- **Profils et comptes** (Administrateur, Gérant, Responsable des ventes, Vendeur/Vendeuse) : code et tests d'intégration (36/36) faits ; **le test e2e `accounts.spec.ts` n'a pas encore été validé** (son sélecteur vient d'être corrigé, mais il n'a pas été relancé) et la version n'est **pas encore publiée**. Voir CHANGELOG « Non publié ».
+- Rien. **Version non publiée** : profils/comptes, limitation à une boutique, mot de passe temporaire, suppression de comptes et réinitialisation des données sont codés et testés (21 + 44 tests, 9/9 e2e) mais **pas encore dans une release** (la prochaine version publiée sera la 0.3.0).
 
 ## Restant (Windows)
 Voir ROADMAP.md (backlog). Principaux manques assumés :
@@ -57,7 +57,7 @@ Voir ROADMAP.md (backlog). Principaux manques assumés :
 | `@gp/shared` (Vitest) — argent, panier, règlement, retours, numérotation, permissions, i18n | ✅ **21 / 21** |
 | Récupération de mot de passe (ligne de commande) — test e2e réel | ✅ |
 | Mises à jour automatiques — détection/annonce testées avec un faux serveur de versions (2 e2e) | ✅ ; **téléchargement + installation réels : non testés** (nécessitent Windows + une release publiée) |
-| `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **30 / 30** |
+| `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **44 / 44** |
 | Typecheck TypeScript (strict) | ✅ 0 erreur |
 | Audit de mise en page (écrans + fenêtres, 2 tailles d'écran) | ✅ 0 anomalie |
 | E2E Playwright sur Electron (config **production**, CSP stricte) — 3 scénarios : (1) configuration → produit → scan → encaissement espèces → dashboard → historique → stock ; (2) tous les écrans + sous-onglets, thème sombre, anglais ; (3) vente à crédit partielle → retour → solde client → clôture avec écart → dépense | ✅ **3 / 3** (31 s) |

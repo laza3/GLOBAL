@@ -149,7 +149,7 @@ export function listUsers(ctx: Ctx) {
   return ctx.db.all(
     `SELECT u.id, u.username, u.display_name AS displayName, u.email, u.phone, u.active, u.last_login_at AS lastLoginAt, u.locked_until AS lockedUntil,
             u.role_id AS roleId, r.name AS roleName, r.code AS roleCode, u.branch_id AS branchId, b.name AS branchName, u.must_change_password AS mustChangePassword
-     FROM users u JOIN roles r ON r.id = u.role_id LEFT JOIN branches b ON b.id = u.branch_id ORDER BY u.display_name`,
+     FROM users u JOIN roles r ON r.id = u.role_id LEFT JOIN branches b ON b.id = u.branch_id WHERE u.deleted_at IS NULL ORDER BY u.display_name`,
   );
 }
 
@@ -264,4 +264,37 @@ export function resetPasswordOffline(db: Db, newPassword: string, username?: str
     db.run('INSERT INTO audit_log (id, at, user_id, username, action, details) VALUES (?,?,?,?,?,?)', uuid(), nowIso(), u.id, u.username, 'auth.password_reset_offline', JSON.stringify({ via: 'command-line' }));
   });
   return { username: u.username };
+}
+
+/**
+ * Supprime un compte utilisateur.
+ *  - sans aucune activité : suppression définitive ;
+ *  - avec de l'activité (ventes, sessions de caisse…) : ARCHIVAGE — le compte disparaît de la liste, ne peut plus se connecter,
+ *    son identifiant redevient disponible, mais l'historique (qui a fait quelle vente) est conservé intact.
+ * Interdit : se supprimer soi-même, supprimer le dernier administrateur actif.
+ */
+export function deleteUser(ctx: Ctx, id: string): { mode: 'deleted' | 'archived'; username: string } {
+  const u = ctx.db.get<any>('SELECT u.*, r.code AS role_code FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ? AND u.deleted_at IS NULL', id);
+  if (!u) fail('NOT_FOUND', 'Utilisateur introuvable');
+  if (id === ctx.user.id) fail('SELF_DELETE', 'Vous ne pouvez pas supprimer votre propre compte.');
+  if (u.role_code === 'ADMIN' && u.active) {
+    const others = ctx.db.value<number>("SELECT COUNT(*) FROM users x JOIN roles r ON r.id = x.role_id WHERE r.code = 'ADMIN' AND x.active = 1 AND x.deleted_at IS NULL AND x.id <> ?", id)!;
+    if (others === 0) fail('LAST_ADMIN', 'Impossible : il doit rester au moins un administrateur actif.');
+  }
+  return ctx.db.tx(() => {
+    let mode: 'deleted' | 'archived' = 'deleted';
+    try {
+      // tentative de suppression réelle (sous-transaction : annulée proprement si l'historique référence ce compte)
+      ctx.db.tx(() => {
+        ctx.db.run('DELETE FROM user_sessions WHERE user_id = ?', id);
+        ctx.db.run('DELETE FROM users WHERE id = ?', id);
+      });
+    } catch (e) {
+      if (!/FOREIGN KEY/i.test(String((e as Error).message))) throw e;
+      mode = 'archived';
+      ctx.db.run('UPDATE users SET deleted_at = ?, active = 0, username = ?, failed_logins = 0, locked_until = NULL, updated_at = ? WHERE id = ?', nowIso(), `${u.username}.archive.${id.slice(0, 6)}`, nowIso(), id);
+    }
+    audit(ctx, mode === 'deleted' ? 'user.delete' : 'user.archive', 'user', id, { username: u.username, role: u.role_code });
+    return { mode, username: u.username };
+  });
 }

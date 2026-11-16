@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-export async function launch(dir = mkdtempSync(join(tmpdir(), 'gp-e2e-'))) {
-  const app = await electron.launch({ args: ['.', '--no-sandbox', `--user-data-dir=${dir}`], env: { ...process.env, GP_DB_PATH: join(dir, 'e2e.db'), ELECTRON_DISABLE_SECURITY_WARNINGS: '1', GP_FORCE_PROD: '1' } });
+export async function launch(dir = mkdtempSync(join(tmpdir(), 'gp-e2e-')), extraEnv: Record<string, string> = {}) {
+  const app = await electron.launch({ args: ['.', '--no-sandbox', `--user-data-dir=${dir}`], env: { ...process.env, GP_DB_PATH: join(dir, 'e2e.db'), ELECTRON_DISABLE_SECURITY_WARNINGS: '1', GP_FORCE_PROD: '1', ...extraEnv } });
   const page = await app.firstWindow();
   await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.setSize(1440, 900); w.show(); });
   return { app, page, dir };

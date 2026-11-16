@@ -3,6 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSyn
 import { join, extname } from 'node:path';
 import { Db } from './core/db';
 import { resetPasswordOffline } from './core/auth';
+import { assertCanFactoryReset, deleteBackupFiles, resetBusinessData } from './core/reset';
 import { App } from './core/api';
 import { reportToCsv, reportToHtml, reportToXlsx, runReport } from './core/reports';
 import { audit, nowIso } from './core/util';
@@ -93,6 +94,17 @@ ipcMain.handle('gp:system', (e, op: string, p: any) => {
     const parent = BrowserWindow.fromWebContents(e.sender) ?? undefined;
     switch (op) {
       case 'info': return { version: app.getVersion(), dataDir, backupDir, dbPath, platform: process.platform };
+      case 'factoryReset': {
+        // Remise à zéro du CONTENU de gestion (comptes et paramètres conservés) : profil Administrateur, mot de passe + phrase exigés ICI
+        const ctx = ctxOf(e);
+        assertCanFactoryReset(ctx, String(p?.password ?? ''), String(p?.confirm ?? ''));
+        log(`Réinitialisation des données demandée par ${ctx.user.username} (sauvegardes supprimées : ${!!p?.deleteBackups})`);
+        // copie de sécurité automatique (sauf si l'administrateur demande aussi la suppression des sauvegardes)
+        if (!p?.deleteBackups) db.backupTo(join(backupDir, `avant-reinitialisation-${Date.now()}.db`));
+        const r = resetBusinessData(db);
+        if (p?.deleteBackups) deleteBackupFiles(backupDir);
+        return { ok: true, ...r };
+      }
       case 'update': {
         const ctx = ctxOf(e);
         if (p?.op === 'state') return { enabled: updaterOn, ...updateState };

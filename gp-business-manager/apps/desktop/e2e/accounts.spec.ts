@@ -44,9 +44,10 @@ test('l’administrateur crée un compte vendeuse ; elle change son mot de passe
     await page.keyboard.press('Escape');
     await expect(page.getByText('Choisissez votre mot de passe')).toBeVisible();
     await shot(app, '18-forced-password');
-    await page.getByLabel('Mot de passe temporaire (reçu de l’administrateur)').fill('Temp0raire!');
-    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('MonVraiMdp#7');
-    await page.getByLabel('Confirmer le nouveau mot de passe').fill('MonVraiMdp#7');
+    const pw = page.locator('[role=dialog] input[type=password]'); // temporaire, nouveau, confirmation
+    await pw.nth(0).fill('Temp0raire!');
+    await pw.nth(1).fill('MonVraiMdp#7');
+    await pw.nth(2).fill('MonVraiMdp#7');
     await page.getByRole('button', { name: 'Enregistrer' }).click();
     await expect(page.getByText('Choisissez votre mot de passe')).toHaveCount(0);
 

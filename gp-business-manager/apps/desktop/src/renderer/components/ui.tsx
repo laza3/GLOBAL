@@ -170,7 +170,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, empty, dense, 
 }
 
 /* ---------- Modale ---------- */
-export function Modal({ open, onClose, title, children, footer, size = 'md' }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+export function Modal({ open, onClose, title, children, footer, size = 'md', danger, closable = true }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; size?: 'sm' | 'md' | 'lg' | 'xl'; danger?: boolean; closable?: boolean }) {
   const { t } = useT();
   useEffect(() => {
     if (!open) return;
@@ -184,12 +184,12 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
   // par un ancêtre animé (transform) ; le conteneur défile et `m-auto` centre sans jamais rogner le haut.
   return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label={t(title)}>
-      <div className="fixed inset-0 animate-fade-in bg-ink-950/50 backdrop-blur-[2px]" onMouseDown={onClose} />
+      <div className="fixed inset-0 animate-fade-in bg-ink-950/50 backdrop-blur-[2px]" onMouseDown={closable ? onClose : undefined} />
       <div className="relative flex min-h-full p-3 sm:p-4">
-        <div className={cx('relative m-auto flex max-h-[calc(100dvh-1.5rem)] w-full animate-pop-in flex-col rounded-2xl bg-white shadow-pop sm:max-h-[calc(100dvh-2rem)] dark:bg-ink-900 dark:ring-1 dark:ring-white/10', w)}>
+        <div className={cx('relative m-auto flex max-h-[calc(100dvh-1.5rem)] w-full animate-pop-in flex-col overflow-hidden rounded-2xl bg-white shadow-pop sm:max-h-[calc(100dvh-2rem)] dark:bg-ink-900 dark:ring-1 dark:ring-white/10', danger && 'border-t-4 border-red-500', w)}>
           <div className="flex shrink-0 items-center justify-between border-b border-ink-100 px-5 py-4 dark:border-white/[0.07]">
-            <h2 className="text-base font-semibold text-ink-900 dark:text-white">{t(title)}</h2>
-            <button onClick={onClose} aria-label={t('Fermer')} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-white/10"><X className="size-4" /></button>
+            <h2 className={cx('text-base font-semibold', danger ? 'text-red-600 dark:text-red-400' : 'text-ink-900 dark:text-white')}>{t(title)}</h2>
+            {closable && <button onClick={onClose} aria-label={t('Fermer')} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-white/10"><X className="size-4" /></button>}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
           {footer && <div className="flex shrink-0 justify-end gap-2 border-t border-ink-100 px-5 py-3 dark:border-white/[0.07]">{footer}</div>}

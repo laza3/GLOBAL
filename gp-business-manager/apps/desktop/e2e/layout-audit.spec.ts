@@ -84,7 +84,7 @@ test('audit de mise en page : écrans et fenêtres à petite et moyenne taille',
       await page.getByRole('tab', { name: 'Dépenses' }).click();
       await openClose(`${S} dépense : nouvelle`, () => page.getByRole('button', { name: 'Nouvelle dépense' }).click());
       await nav('Administration');
-      await openClose(`${S} utilisateur : nouveau`, () => page.getByRole('button', { name: 'Nouvel utilisateur' }).click());
+      await openClose(`${S} compte : créer`, () => page.getByRole('button', { name: 'Créer un compte' }).click());
       await page.getByRole('tab', { name: 'Rôles & permissions' }).click();
       await openClose(`${S} rôle : nouveau`, () => page.getByRole('button', { name: 'Nouveau rôle' }).click());
       await nav('Sessions de caisse');
