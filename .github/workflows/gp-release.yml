@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
   push:
     tags: ['v*']
+    # Publier = modifier gp-business-manager/RELEASE_VERSION (contenu = numéro de version, identique à apps/desktop/package.json)
+    branches: ['claude/**']
+    paths: ['gp-business-manager/RELEASE_VERSION']
 
 permissions:
   contents: write
@@ -24,6 +27,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: gp-business-manager/package-lock.json
+      - name: Le numéro de version publié doit être celui du logiciel
+        shell: bash
+        run: |
+          pkg=$(node -p "require('./apps/desktop/package.json').version")
+          if [ -f RELEASE_VERSION ]; then rel=$(tr -d '[:space:]' < RELEASE_VERSION); if [ "$rel" != "$pkg" ]; then echo "RELEASE_VERSION ($rel) ≠ package.json ($pkg)"; exit 1; fi; fi
+          echo "Version publiée : $pkg"
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
