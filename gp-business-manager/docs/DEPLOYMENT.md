@@ -40,8 +40,41 @@ Tickets 80 mm et factures A4 passent par le pilote d'impression Windows (`webCon
 ## Matériel testé
 Lecteur de codes-barres : tout lecteur « clavier » (HID) terminant par Entrée. **Non testé sur matériel réel** dans l'environnement de développement.
 
-## Déploiements serveur (futur)
-Docker Compose (PostgreSQL + API NestJS + web) sera documenté lors de la phase API. Voir ARCHITECTURE.md §6.
+## Serveur web (depuis 0.4.0)
+Un serveur Node unique sert le site (ordinateur + téléphone) et l'API. **Une instance = une entreprise** (une base SQLite dans le dossier `GP_DATA_DIR`) ; pour plusieurs clients, une instance par client (ou un sous-domaine par client).
+
+### Avec Docker (recommandé)
+```bash
+cd gp-business-manager/deploy
+cp .env.example .env        # renseigner GP_DOMAIN (nom de domaine pointant vers le serveur)
+docker compose up -d --build
+docker compose logs gp | grep "code d'installation"   # code à saisir à la première configuration
+```
+Caddy obtient et renouvelle le certificat HTTPS automatiquement. Les données sont dans le volume `gp-data` (`/data` : `gp-business.db`, `backups/`, `gp-server.log`).
+
+### Sans Docker
+```bash
+npm ci && npm run server:build
+GP_DATA_DIR=/var/gp PORT=3000 GP_SECURE_COOKIES=1 GP_TRUST_PROXY=1 npm run server:start
+```
+Placer un proxy HTTPS (Caddy/nginx) devant. **Ne jamais exposer le serveur en HTTP simple sur Internet** : sans HTTPS, mots de passe et sessions circulent en clair.
+
+### Variables d'environnement
+| Variable | Rôle |
+|---|---|
+| `PORT` / `HOST` | écoute (3000 / 0.0.0.0) |
+| `GP_DATA_DIR` | dossier des données (`./gp-data`) |
+| `GP_SETUP_CODE` | code exigé pour créer la 1ʳᵉ entreprise (sinon généré et écrit dans le journal) |
+| `GP_SECURE_COOKIES=1` | cookie `Secure` + HSTS — **obligatoire derrière HTTPS** |
+| `GP_TRUST_PROXY=1` | lit l'adresse du client dans `X-Forwarded-For` (limite de connexions) — seulement derrière un proxy de confiance |
+| `GP_PUBLIC_DIR` | dossier du site compilé |
+
+### Exploitation
+- **Sauvegardes** : copie quotidienne automatique (14 conservées) dans `backups/` ; **à recopier hors du serveur** (le disque du serveur n'est pas une sauvegarde). Téléchargement manuel : Administration → Sauvegardes.
+- **Mot de passe administrateur perdu** : `docker compose exec gp node server.cjs --reset-password=NouveauMotDePasse [--user=identifiant]`.
+- **Mise à jour du serveur** : `git pull && docker compose up -d --build` ; les utilisateurs reçoivent la nouvelle version du site au prochain chargement.
+- **Restauration** : arrêter le serveur, remplacer `gp-business.db` par la copie voulue, redémarrer (non exposée dans l'interface web par sécurité).
+- **Coûts** : un petit serveur (VPS) suffit pour quelques boutiques ; prévoir hébergement + nom de domaine (prix à vérifier chez le fournisseur choisi) — c'est ce qui justifie des frais annuels d'hébergement en plus d'une vente unique.
 
 ## Mises à jour automatiques (depuis 0.2.0)
 - **Côté application** : `electron-updater` vérifie GitHub Releases 20 s après le démarrage puis toutes les 6 h ; une pastille « Version X disponible » apparaît ; **seul un utilisateur ayant `settings.manage`** peut télécharger/installer ; une **sauvegarde** (`avant-mise-a-jour-*.db`) est créée juste avant l'installation ; jamais de téléchargement ni de redémarrage sans clic. Carte « Mises à jour » dans *Administration → Sauvegardes* (vérification manuelle).

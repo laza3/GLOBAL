@@ -1,0 +1,30 @@
+# Déploiement type : le serveur GP + Caddy (HTTPS automatique).
+#   1. Copier .env.example en .env et le remplir
+#   2. docker compose up -d --build
+services:
+  gp:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    environment:
+      GP_SECURE_COOKIES: "1"
+      GP_TRUST_PROXY: "1"
+      GP_SETUP_CODE: ${GP_SETUP_CODE:-}
+    volumes:
+      - gp-data:/data
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [gp]
+    ports: ["80:80", "443:443"]
+    environment:
+      GP_DOMAIN: ${GP_DOMAIN:?indiquez GP_DOMAIN dans .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+volumes:
+  gp-data:
+  caddy-data:
+  caddy-config:

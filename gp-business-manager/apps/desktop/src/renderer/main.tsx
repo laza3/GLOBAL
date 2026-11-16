@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter } from 'react-router-dom';
 import type { Locale } from '@gp/shared';
+import './lib/web-bridge';
 import './styles.css';
 import { ThemeProvider } from './lib/theme';
 import { I18nProvider } from './lib/i18n';
@@ -30,3 +31,8 @@ function Root() {
   );
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><Root /></StrictMode>);
+
+// Site web : service worker (démarrage rapide). Pas dans l'application Windows.
+if (window.gp?.platform === 'web' && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}

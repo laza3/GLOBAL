@@ -1,0 +1,47 @@
+name: GP Business Manager — serveur web
+
+# Vérifie le serveur web : typecheck, tests, build, parcours complet (gérant sur ordinateur + vendeuse sur téléphone) et image Docker.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['gp-business-manager/**', '.github/workflows/gp-web.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: gp-business-manager
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gp-business-manager/package-lock.json
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Build du serveur et du site
+        run: npm run build -w @gp/server
+      - name: Navigateur pour les tests de bout en bout
+        run: npx playwright install --with-deps chromium
+      - name: Parcours de bout en bout (ordinateur + téléphone)
+        run: npm run e2e -w @gp/server
+      - name: Image Docker
+        run: docker build -f apps/server/Dockerfile -t gp-server .
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-e2e-captures
+          path: gp-business-manager/apps/server/test-results
+          retention-days: 7

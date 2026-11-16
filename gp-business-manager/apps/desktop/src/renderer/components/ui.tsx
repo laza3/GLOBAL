@@ -144,9 +144,44 @@ export function ErrorBox({ error }: { error: unknown }) {
 
 /* ---------- Tableaux ---------- */
 export interface Column<T> { key: string; header: string; render: (row: T) => ReactNode; align?: 'right' | 'center'; className?: string; width?: string }
+/** `true` sur écran étroit (téléphone) : les tableaux deviennent des fiches empilées, lisibles sans défilement latéral. */
+export function useNarrow(query = '(max-width: 639px)') {
+  const [m, setM] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setM(mq.matches);
+    mq.addEventListener('change', on);
+    on();
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return m;
+}
+
 export function DataTable<T>({ columns, rows, rowKey, onRowClick, empty, dense, footer }: { columns: Column<T>[]; rows: T[]; rowKey: (r: T) => string; onRowClick?: (r: T) => void; empty?: ReactNode; dense?: boolean; footer?: ReactNode }) {
   const { t } = useT();
+  const narrow = useNarrow();
   if (!rows.length) return <>{empty ?? <EmptyState title="Aucune donnée" />}</>;
+  if (narrow) {
+    const hi = Math.max(0, columns.findIndex((c) => c.header));
+    const lead = columns.slice(0, hi), head = columns[hi]!, rest = columns.slice(hi + 1);
+    return (
+      <div>
+        <ul className="divide-y divide-ink-100 dark:divide-white/[0.07]">
+          {rows.map((r) => (
+            <li key={rowKey(r)} onClick={onRowClick ? () => onRowClick(r) : undefined} className={cx('px-4 py-3 text-sm', onRowClick && 'cursor-pointer active:bg-gold-50/60 dark:active:bg-white/[0.04]')}>
+              <div className="flex items-center gap-3">{lead.map((c) => <div key={c.key} className="shrink-0">{c.render(r)}</div>)}<div className="min-w-0 flex-1 font-medium text-ink-800 dark:text-ink-50">{head.render(r)}</div></div>
+              <dl className="mt-1.5 space-y-1">
+                {rest.map((c) => c.header ? (
+                  <div key={c.key} className="flex items-baseline justify-between gap-3"><dt className="shrink-0 text-xs text-ink-400">{t(c.header)}</dt><dd className="min-w-0 break-words text-right text-ink-700 dark:text-ink-100">{c.render(r)}</dd></div>
+                ) : <div key={c.key} className="flex justify-end">{c.render(r)}</div>)}
+              </dl>
+            </li>
+          ))}
+        </ul>
+        {footer && <table className="w-full text-sm">{footer}</table>}
+      </div>
+    );
+  }
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">

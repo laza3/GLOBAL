@@ -1,3 +1,4 @@
+import { isWeb } from '../lib/platform';
 import { useState, type FormEvent } from 'react';
 import { Logo } from '../components/Brand';
 import { Button, ErrorBox, Field, Input, Select } from '../components/ui';
@@ -58,9 +59,10 @@ export function LoginPage() {
         <summary className="cursor-pointer select-none font-medium hover:text-gold-600">{t('Mot de passe oublié ?')}</summary>
         <div className="mt-2 space-y-2 rounded-xl bg-ink-100/70 p-3 dark:bg-white/5">
           <p>{t('Demandez à un autre administrateur de le réinitialiser (Administration → Utilisateurs).')}</p>
+          {isWeb ? <p>{t('Sinon : contactez l’hébergeur du service (il peut réinitialiser votre mot de passe sans toucher à vos données).')}</p> : <>
           <p>{t('Sinon : fermez l’application, ouvrez une invite de commandes dans le dossier d’installation et lancez :')}</p>
           <code className="block select-all break-all rounded-lg bg-white p-2 text-xs dark:bg-ink-900">{'"GP Business Manager.exe" --reset-password=NouveauMotDePasse'}</code>
-          <p className="text-xs">{t('Vos données sont conservées. Ajoutez --user=identifiant pour un autre compte.')}</p>
+          <p className="text-xs">{t('Vos données sont conservées. Ajoutez --user=identifiant pour un autre compte.')}</p></>}
         </div>
       </details>
     </Shell>
@@ -70,7 +72,7 @@ export function LoginPage() {
 export function SetupPage() {
   const { setup } = useAuth();
   const { t } = useT();
-  const [f, setF] = useState({ companyName: '', currency: 'MGA', locale: 'fr', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Indian/Antananarivo', pricesIncludeTax: true, username: 'admin', displayName: '', password: '', password2: '' });
+  const [f, setF] = useState({ companyName: '', currency: 'MGA', locale: 'fr', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Indian/Antananarivo', pricesIncludeTax: true, username: 'admin', displayName: '', password: '', password2: '', setupCode: '' });
   const [err, setErr] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: string, v: unknown) => setF((x) => ({ ...x, [k]: v }));
@@ -79,26 +81,27 @@ export function SetupPage() {
     e.preventDefault();
     if (f.password !== f.password2) return setErr(new Error('Les mots de passe ne correspondent pas'));
     setBusy(true); setErr(null);
-    try { await setup({ companyName: f.companyName, currency: f.currency, locale: f.locale, timezone: f.timezone, pricesIncludeTax: f.pricesIncludeTax, admin: { username: f.username, displayName: f.displayName || f.username, password: f.password } }); }
+    try { await setup({ ...(isWeb ? { setupCode: f.setupCode.trim() } : {}), companyName: f.companyName, currency: f.currency, locale: f.locale, timezone: f.timezone, pricesIncludeTax: f.pricesIncludeTax, admin: { username: f.username, displayName: f.displayName || f.username, password: f.password } }); }
     catch (x) { setErr(x); } finally { setBusy(false); }
   };
   return (
     <Shell title="Bienvenue" subtitle="Configurons votre entreprise en une minute.">
       <form onSubmit={submit} className="space-y-4">
         <Field label="Nom de l’entreprise"><Input autoFocus required value={f.companyName} onChange={(e) => set('companyName', e.target.value)} /></Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Devise"><Select value={f.currency} onChange={(e) => set('currency', e.target.value)}>{Object.values(CURRENCIES).map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}</Select></Field>
           <Field label="Langue"><Select value={f.locale} onChange={(e) => set('locale', e.target.value)}>{LOCALES.filter((l) => l.code !== 'mg').map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}</Select></Field>
         </div>
         <Field label="Prix de vente" hint="Détermine si les prix saisis incluent la taxe. Non modifiable après la première vente."><Select value={f.pricesIncludeTax ? '1' : '0'} onChange={(e) => set('pricesIncludeTax', e.target.value === '1')}><option value="1">{t('Taxe incluse (TTC)')}</option><option value="0">{t('Hors taxe (HT)')}</option></Select></Field>
         <div className="border-t border-ink-200 pt-4 dark:border-white/10"><p className="mb-3 text-sm font-medium text-ink-700 dark:text-ink-100">{t('Compte administrateur')}</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Nom affiché"><Input required value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
             <Field label="Identifiant"><Input required minLength={3} value={f.username} onChange={(e) => set('username', e.target.value)} /></Field>
             <Field label="Mot de passe" hint="8 caractères minimum"><Input required type="password" minLength={8} autoComplete="new-password" value={f.password} onChange={(e) => set('password', e.target.value)} /></Field>
             <Field label="Confirmation" error={mismatch ? t('Ne correspond pas') : undefined}><Input required type="password" autoComplete="new-password" value={f.password2} onChange={(e) => set('password2', e.target.value)} /></Field>
           </div>
         </div>
+        {isWeb && <Field label="Code d’installation" hint="Affiché dans le journal du serveur au premier démarrage (donné par votre hébergeur)."><Input required autoComplete="off" value={f.setupCode} onChange={(e) => set('setupCode', e.target.value)} /></Field>}
         <ErrorBox error={err} />
         <Button type="submit" variant="gold" size="lg" className="w-full" loading={busy}>{t('Créer mon espace')}</Button>
       </form>

@@ -188,7 +188,7 @@ export class App {
   }
 
   /** Point d'entrée unique de l'IPC : authentifie, autorise (côté processus principal), valide, exécute. */
-  async call(method: string, params: unknown, token?: string): Promise<Envelope> {
+  async call(method: string, params: unknown, token?: string, device?: string): Promise<Envelope> {
     try {
       switch (method) {
         case 'app.status': return ok(this.status());
@@ -198,11 +198,11 @@ export class App {
             admin: z.object({ username: z.string().min(3).max(40), displayName: z.string().min(1).max(100), password: z.string().min(8).max(200) }),
           }).parse(params);
           setupCompany(this.db, p);
-          return ok(this.sessions.login(p.admin.username, p.admin.password));
+          return ok(this.sessions.login(p.admin.username, p.admin.password, device));
         }
         case 'auth.login': {
           const p = z.object({ username: z.string().min(1).max(100), password: z.string().min(1).max(200) }).parse(params);
-          return ok(this.sessions.login(p.username, p.password));
+          return ok(this.sessions.login(p.username, p.password, device));
         }
         case 'auth.logout': if (token) this.sessions.logout(token); return ok(true);
         case 'auth.me': return ok(this.sessions.me(token ?? ''));

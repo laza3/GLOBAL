@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Harness } from './helpers';
-import { ensureSystemRoles } from '../src/main/core/auth';
+import { ensureSystemRoles } from '@gp/core/auth';
 
 async function twoBranches(h: Harness) {
   const b1 = (await h.call('org.branches'))[0].id as string;

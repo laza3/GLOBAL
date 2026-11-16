@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(tmpdir(), 'gp-api-doc.cjs');
-await build({ entryPoints: [resolve(root, 'src/main/core/api.ts')], outfile: out, bundle: true, platform: 'node', format: 'cjs', external: ['node:sqlite'], logLevel: 'error' });
+await build({ entryPoints: [resolve(root, '../../packages/core/src/api.ts')], outfile: out, bundle: true, platform: 'node', format: 'cjs', external: ['node:sqlite'], logLevel: 'error' });
 const { apiDefinitions } = createRequire(import.meta.url)(out);
 
 const fields = (schema) => {
@@ -23,7 +23,7 @@ const groups = {};
 for (const [name, d] of Object.entries(apiDefinitions)) (groups[name.split('.')[0]] ??= []).push([name, d]);
 let md = `# API interne — référence des endpoints
 
-> Généré par \`npm run docs:api -w @gp/desktop\` depuis \`apps/desktop/src/main/core/api.ts\` (registre unique).
+> Généré par \`npm run docs:api -w @gp/desktop\` depuis \`apps/desktop/../../packages/core/src/api.ts\` (registre unique).
 > ${Object.keys(apiDefinitions).length} endpoints. Tous exigent une session authentifiée sauf \`app.status\`, \`app.setup\`, \`auth.login\`.
 
 ## Conventions

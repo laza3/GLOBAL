@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Harness } from './helpers';
-import { assertCanFactoryReset, deleteBackupFiles, resetBusinessData, RESET_PHRASE } from '../src/main/core/reset';
+import { assertCanFactoryReset, deleteBackupFiles, resetBusinessData, RESET_PHRASE } from '@gp/core/reset';
 
 const ctxOf = (h: Harness, token = h.token) => h.app.sessions.resolve(token);
 

@@ -18,25 +18,21 @@ gp-business-manager/
 ├─ package.json              # workspaces npm
 ├─ tsconfig.base.json
 ├─ packages/
-│  └─ shared/                # @gp/shared — règles métier, permissions, i18n (Vitest)
-│     └─ src/{money,pricing,permissions,numbering,i18n/}
+│  ├─ shared/                # @gp/shared — règles métier, permissions, i18n (Vitest)
+│  │  └─ src/{money,pricing,permissions,numbering,i18n/}
+│  └─ core/                  # @gp/core — cœur métier SANS Electron (SQLite, services, registre d'API unique)
+│     └─ src/{schema,db,api,auth,setup,masterdata,catalog,stock,parties,sales,cash,finance,purchases,dashboard,reports,reset,util}.ts
 ├─ apps/
 │  └─ desktop/               # @gp/desktop — Windows (Electron + React + SQLite)
 │     ├─ src/main/           # processus principal
 │     │  ├─ index.ts         #   fenêtre, IPC, impression, export, sauvegarde/restauration
-│     │  └─ core/            #   cœur métier SANS dépendance Electron (testable sous Node)
-│     │     ├─ schema.ts     #     migrations SQL + triggers d'immuabilité
-│     │     ├─ db.ts         #     node:sqlite, transactions imbriquées, backup
-│     │     ├─ api.ts        #     registre unique des endpoints (permission + schéma Zod)
-│     │     ├─ auth.ts setup.ts masterdata.ts catalog.ts stock.ts
-│     │     ├─ parties.ts sales.ts cash.ts finance.ts purchases.ts
-│     │     └─ dashboard.ts reports.ts
 │     ├─ src/preload/        #   contextBridge : `window.gp.call/system`
 │     ├─ src/renderer/       #   React 19 + Tailwind 4 + TanStack Query + React Router
 │     ├─ tests/              #   Vitest (intégration sur vraie base SQLite en mémoire)
 │     └─ e2e/                #   Playwright (_electron)
+│  └─ server/                # @gp/server — serveur web (Node http, même cœur) + PWA ; interface = celle de desktop (vite.web.config.mts)
 ├─ docs/                     # ARCHITECTURE, DATABASE, API, SECURITY, TESTING, …
-└─ (à venir) apps/api  apps/web  apps/mobile  packages/sync
+└─ (à venir) synchronisation hors ligne (packages/sync), apps/mobile éventuelle
 ```
 
 Le dossier racine du dépôt contient aussi le projet vidéo Remotion préexistant (`/src`, `/public`, `/out`) : **il n'a pas été touché**.
@@ -100,6 +96,17 @@ Règle : **un flux d'argent = exactement une écriture de trésorerie** (créée
 - **Garanti** : aucune vente perdue ni dupliquée ; ordre d'application par appareil préservé ; données financières jamais modifiées silencieusement.
 - **Non garanti hors ligne** : un appareil hors ligne ne connaît **pas** les modifications faites ailleurs (stock, prix, plafond de crédit, solde client). Il peut vendre au-delà d'un plafond de crédit ou d'un stock réellement épuisé ; l'écart est détecté à la synchronisation et signalé, pas empêché.
 - Cohérence **éventuelle** entre appareils ; cohérence **forte** sur un appareil donné.
+
+## 5bis. Serveur web (livré en 0.4.0 — étape 1, en ligne)
+```
+Navigateur (PC / téléphone) ── HTTPS ──▶ Caddy ──▶ @gp/server (node:http) ──▶ @gp/core ──▶ SQLite (1 base / entreprise)
+   window.gp = pont fetch                 cookie HttpOnly                       (même code que Windows)
+```
+- Le renderer React est **le même** : `lib/web-bridge.ts` fournit `window.gp.call/system` au-dessus de `fetch` quand l'application ne tourne pas dans Electron.
+- Session : jeton aléatoire côté serveur, **cookie HttpOnly + SameSite=Strict**, en-tête `X-GP-Request: 1` obligatoire (anti-CSRF), CSP stricte, limite de connexions par adresse, code d'installation pour la 1ʳᵉ entreprise.
+- Les opérations « poste de travail » deviennent : impression/PDF par le navigateur, export Excel/CSV et sauvegarde en téléchargement, choix d'image par `<input type=file>` ; restauration/dossier de données/mises à jour non exposés.
+- **Choix assumé** : SQLite côté serveur (une base par entreprise) plutôt que PostgreSQL pour livrer vite avec exactement la même logique métier. Limites : un seul processus, écriture sérialisée (largement suffisant pour des boutiques), pas de multi-entreprise dans une même base. Migration PostgreSQL envisageable plus tard derrière la même API.
+- **Étape 2 (non faite)** : fonctionnement hors ligne partagé (téléphone/PC) = synchronisation, voir §5.
 
 ## 6. Architecture cible (phases suivantes)
 

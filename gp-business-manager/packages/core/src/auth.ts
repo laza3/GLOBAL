@@ -78,7 +78,7 @@ export class SessionStore {
   private sessions = new Map<string, { userId: string; sessionId: string; lastSeen: number }>();
   constructor(private db: Db, private idleMs = 8 * 3600_000) {}
 
-  login(username: string, password: string): { token: string; user: AuthUser } {
+  login(username: string, password: string, device = 'desktop'): { token: string; user: AuthUser } {
     const u = this.db.get<any>('SELECT * FROM users WHERE username = ?', username.trim());
     const bad = () => fail('INVALID_CREDENTIALS', 'Identifiant ou mot de passe incorrect');
     if (!u || !u.active) {
@@ -98,7 +98,7 @@ export class SessionStore {
     }
     this.db.run('UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = ? WHERE id = ?', nowIso(), u.id);
     const sessionId = uuid();
-    this.db.run('INSERT INTO user_sessions (id, user_id, started_at, device) VALUES (?,?,?,?)', sessionId, u.id, nowIso(), 'desktop');
+    this.db.run('INSERT INTO user_sessions (id, user_id, started_at, device) VALUES (?,?,?,?)', sessionId, u.id, nowIso(), device);
     this.db.run('INSERT INTO audit_log (id, at, user_id, username, action) VALUES (?,?,?,?,?)', uuid(), nowIso(), u.id, u.username, 'auth.login');
     const token = randomBytes(32).toString('base64url');
     this.sessions.set(token, { userId: u.id, sessionId, lastSeen: Date.now() });

@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.4.0 — (en préparation) Version web / téléphone — étape 1 (en ligne)
+- **Serveur web** `apps/server` (`@gp/server`) : même cœur métier que l'application Windows, accessible par navigateur (ordinateur et téléphone). API `POST /api/call` et `/api/system`, site statique, sauvegarde quotidienne, arrêt propre.
+- **Cœur métier extrait** dans `packages/core` (`@gp/core`) : utilisé à l'identique par Windows et par le serveur (aucun changement de comportement ; 44 tests desktop inchangés).
+- **Interface adaptée au téléphone** : les tableaux deviennent des fiches empilées, pastille « En ligne / Hors ligne », champ « Code d'installation » à la première configuration, site **installable** (PWA : manifeste, icônes, service worker qui ne met jamais les données en cache).
+- **Sécurité web** : session dans un cookie `HttpOnly` + `SameSite=Strict` (jamais lisible par la page), en-tête anti-CSRF obligatoire, CSP stricte, limite de tentatives de connexion par adresse (en plus du verrouillage par compte), corps de requête limité, code d'installation pour créer la première entreprise, pas de restauration ni de dossier de données exposés.
+- **Déploiement** : `Dockerfile`, `deploy/docker-compose.yml` + Caddy (HTTPS automatique), workflow `gp-web.yml`.
+- **Corrigé (Windows et web)** : après le changement du mot de passe temporaire, les écrans déjà ouverts (ex. caisse) restaient en erreur jusqu'à un rechargement → toutes les données sont rechargées.
+- **Limite assumée de cette étape** : le site web **exige Internet** ; l'application Windows reste autonome avec **ses propres données** (non partagées avec le serveur). Le partage hors ligne entre appareils est l'étape 2 (synchronisation).
+
 ## 0.3.1 — 2026-11-16
 Identique à 0.3.0 (la release 0.3.0 a été publiée incomplète par erreur d'outil de publication ; la publication est désormais en un seul envoi).
 

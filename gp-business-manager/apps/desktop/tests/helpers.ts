@@ -1,5 +1,5 @@
-import { Db } from '../src/main/core/db';
-import { App, type Envelope } from '../src/main/core/api';
+import { Db } from '@gp/core/db';
+import { App, type Envelope } from '@gp/core/api';
 
 export class Harness {
   app: App;

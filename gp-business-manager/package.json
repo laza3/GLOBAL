@@ -11,11 +11,14 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "test": "npm run test -w @gp/shared && npm run test -w @gp/desktop",
-    "typecheck": "npm run typecheck -w @gp/shared && npm run typecheck -w @gp/desktop",
+    "test": "npm run test -w @gp/shared && npm run test -w @gp/desktop && npm run test -w @gp/server",
+    "typecheck": "npm run typecheck -w @gp/shared && npm run typecheck -w @gp/core && npm run typecheck -w @gp/desktop && npm run typecheck -w @gp/server",
     "desktop:dev": "npm run dev -w @gp/desktop",
     "desktop:dist": "npm run dist:win -w @gp/desktop",
     "e2e": "npm run e2e -w @gp/desktop",
-    "docs:api": "npm run docs:api -w @gp/desktop"
+    "docs:api": "npm run docs:api -w @gp/desktop",
+    "server:build": "npm run build -w @gp/server",
+    "server:start": "npm run start -w @gp/server",
+    "server:e2e": "npm run e2e -w @gp/server"
   }
 }

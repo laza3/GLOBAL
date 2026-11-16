@@ -6,9 +6,9 @@ _Dernière mise à jour : 2026-11-15 · Version 0.3.0 · **Périmètre livré : 
 | Cible | État |
 |---|---|
 | **Application Windows installable** | ✅ Construite et empaquetée (`GP-Business-Manager-Setup-0.1.0.exe`, NSIS x64, ≈ 123 Mo). **Fonctionnelle sous Electron (Linux/Xvfb) avec la configuration de production ; installateur NON installé/testé sur un Windows réel.** |
-| Backend NestJS + PostgreSQL + multi-tenant | ⬜ Non commencé (architecture documentée, ARCHITECTURE.md) |
+| Backend NestJS + PostgreSQL + multi-tenant | ⬜ Non fait. Le serveur web actuel réutilise le cœur SQLite (une base par entreprise) — voir ARCHITECTURE §5bis |
 | Synchronisation bidirectionnelle | 🟡 Préparée (outbox, UUID, tombstones, idempotence des ventes) — **aucun moteur de synchronisation** |
-| Application Web | ⬜ Non commencée (à la demande de l'utilisateur : « Windows d'abord ») |
+| **Application Web / téléphone (PWA)** | 🟡 **Étape 1 livrée (0.4.0, en préparation)** : serveur + site responsive installable, **en ligne uniquement**, une instance par entreprise. Testé : 10 tests serveur + parcours e2e (gérant sur PC + vendeuse sur téléphone émulé) + audit de débordement 12 pages. **Non testé sur un vrai téléphone ni sur un vrai serveur HTTPS/Docker** (image construite par la CI). |
 | Application mobile Android/iOS | ⬜ Non commencée |
 
 ## Fonctionnalités terminées (Windows)

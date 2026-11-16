@@ -194,7 +194,7 @@ describe('finances & tableau de bord', () => {
     await h.call('sales.create', { registerId: h.ids.register, items: [{ variantId: p.variantId, qtyMilli: 1000 }], payments: [{ methodId: h.ids.pm_CASH, amount: 100 }] });
     const rep = await h.call('reports.run', { type: 'sales_by_product', from: today(), to: today() });
     expect(rep.rows).toHaveLength(1);
-    const { reportToCsv, reportToXlsx } = await import('../src/main/core/reports');
+    const { reportToCsv, reportToXlsx } = await import('@gp/core/reports');
     const ctx = h.app.sessions.resolve(h.token);
     const csv = reportToCsv(ctx, rep);
     expect(csv).toContain("'=CMD()");

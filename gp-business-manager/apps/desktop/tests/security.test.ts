@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Harness } from './helpers';
-import { resetPasswordOffline } from '../src/main/core/auth';
+import { resetPasswordOffline } from '@gp/core/auth';
 
 describe('authentification & permissions', () => {
   it('refuse les appels non authentifiés', async () => {

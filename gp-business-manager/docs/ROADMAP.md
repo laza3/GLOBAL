@@ -14,7 +14,8 @@ Légende : ✅ fait · 🟡 partiel · ⬜ à faire. Priorité actuelle : **appl
 | **Prochaines améliorations Windows** | voir ci-dessous | ⬜ |
 | 7 — Synchronisation | Outbox → API, pull incrémental, conflits, tests multi-appareils | 🟡 préparé (outbox, UUID, tombstones) |
 | API / PostgreSQL / multi-tenant | NestJS, Prisma, JWT+refresh, RLS, Swagger, Docker | ⬜ |
-| 8 — Web | React (réutilise `@gp/shared` et les écrans) | ⬜ |
+| 8 — Web, étape 1 | Serveur Node + site responsive/PWA, **en ligne** (même cœur, même interface) | 🟡 0.4.0 en préparation |
+| 8 — Web, étape 2 | Mode hors ligne du téléphone/PC + synchronisation (les ventes saisies sans Internet apparaissent chez le gérant dès le retour du réseau) | ⬜ prochaine étape |
 | 8 — Mobile | Expo/React Native + SQLite | ⬜ |
 
 ## Backlog Windows (ordre de priorité suggéré)

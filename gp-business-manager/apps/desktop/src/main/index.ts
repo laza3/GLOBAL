@@ -1,12 +1,12 @@
 import { app, BrowserWindow, dialog, ipcMain, session, shell, type WebContents } from 'electron';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
-import { Db } from './core/db';
-import { resetPasswordOffline } from './core/auth';
-import { assertCanFactoryReset, deleteBackupFiles, resetBusinessData } from './core/reset';
-import { App } from './core/api';
-import { reportToCsv, reportToHtml, reportToXlsx, runReport } from './core/reports';
-import { audit, nowIso } from './core/util';
+import { Db } from '@gp/core/db';
+import { resetPasswordOffline } from '@gp/core/auth';
+import { assertCanFactoryReset, deleteBackupFiles, resetBusinessData } from '@gp/core/reset';
+import { App } from '@gp/core/api';
+import { reportToCsv, reportToHtml, reportToXlsx, runReport } from '@gp/core/reports';
+import { audit, nowIso } from '@gp/core/util';
 import { DatabaseSync } from 'node:sqlite';
 import { autoUpdater } from 'electron-updater';
 

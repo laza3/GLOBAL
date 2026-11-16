@@ -1,0 +1,22 @@
+{
+  "name": "@gp/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cœur métier GP (SQLite, services, registre d'API unique) partagé par l'application Windows et le serveur web",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gp/shared": "^0.1.0",
+    "exceljs": "^4.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

@@ -700,4 +700,11 @@ export const en: Record<string, string> = {
   "Supprimer ce compte": "Delete this account",
   "Compte supprimé.": "Account deleted.",
   "Compte archivé : il ne peut plus se connecter ; son historique de ventes est conservé.": "Account archived: it can no longer sign in; its sales history is kept.",
+  "Code d’installation": "Setup code",
+  "Affiché dans le journal du serveur au premier démarrage (donné par votre hébergeur).": "Shown in the server log at first start (given by your host).",
+  "En ligne": "Online",
+  "Hors ligne": "Offline",
+  "Connecté au serveur": "Connected to the server",
+  "Pas de connexion Internet : les ventes ne peuvent pas être enregistrées pour le moment.": "No Internet connection: sales cannot be saved right now.",
+  "Sinon : contactez l’hébergeur du service (il peut réinitialiser votre mot de passe sans toucher à vos données).": "Otherwise: contact your service host (they can reset your password without touching your data).",
 };

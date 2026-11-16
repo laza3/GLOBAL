@@ -2,7 +2,7 @@
 
 ERP commercial universel (vente, stock, finances) pour boutiques, supermarchés, grossistes, importateurs… — conçu pour Madagascar et l'international, **fonctionnement hors ligne**.
 
-> **État** : l'**application Windows installable** est la première livraison (Electron + React + SQLite local). API/PostgreSQL, web et mobile viendront ensuite et réutiliseront les mêmes règles métier. Voir [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) pour l'état exact, ce qui est testé, et ce qui ne l'est pas.
+> **État** : l'**application Windows installable** (Electron + React + SQLite local) et, depuis 0.4.0, un **serveur web** (ordinateur + téléphone, installable en PWA, **en ligne**) réutilisant le même cœur métier. La synchronisation hors ligne entre appareils n'est pas encore faite. Voir [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) pour l'état exact, ce qui est testé, et ce qui ne l'est pas.
 
 ## Démarrage rapide
 ```bash
@@ -11,6 +11,8 @@ npm run desktop:dev          # développement (Vite + Electron)
 npm test                     # tests unitaires + intégration
 npm run typecheck
 npm run desktop:dist         # installateur Windows → apps/desktop/release/
+npm run server:build && npm run server:start   # serveur web → http://localhost:3000
+npm run server:e2e           # parcours gérant (PC) + vendeuse (téléphone)
 ```
 Prérequis : Node ≥ 22.13. Pour l'installateur depuis Linux : Wine (voir [DEPLOYMENT](docs/DEPLOYMENT.md)).
 

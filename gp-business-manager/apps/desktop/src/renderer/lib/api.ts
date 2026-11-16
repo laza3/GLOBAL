@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import type { ApiMethod, ApiParams, ApiResult, Envelope } from '../../main/core/api';
+import type { ApiMethod, ApiParams, ApiResult, Envelope } from '@gp/core/api';
 
 export class ApiError extends Error {
   constructor(public code: string, message: string, public details?: unknown) { super(message); }
@@ -8,6 +8,7 @@ export class ApiError extends Error {
 declare global {
   interface Window {
     gp: {
+      platform?: 'web';
       call: (method: string, params?: unknown) => Promise<Envelope>;
       system: (op: string, params?: unknown) => Promise<Envelope>;
       onUpdate: (cb: (state: any) => void) => () => void;

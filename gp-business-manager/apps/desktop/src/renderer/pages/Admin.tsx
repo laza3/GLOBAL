@@ -1,3 +1,4 @@
+import { isWeb } from '../lib/platform';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { DatabaseBackup, FolderOpen, Plus, RotateCcw, ShieldCheck, Trash2, TriangleAlert } from 'lucide-react';
@@ -182,12 +183,12 @@ function Backup() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <Card className="p-5"><h3 className="font-semibold">{t('Sauvegarde manuelle')}</h3><p className="mb-4 mt-1 text-sm text-ink-500">{t('Exportez une copie complète et cohérente de vos données (ventes, stock, clients, finances) vers un support externe.')}</p>
-        <div className="flex flex-wrap gap-2"><Button variant="gold" icon={<DatabaseBackup className="size-4" />} onClick={doBackup}>{t('Créer une sauvegarde')}</Button><Button icon={<RotateCcw className="size-4" />} onClick={() => setConfirm(true)}>{t('Restaurer…')}</Button><Button variant="ghost" icon={<FolderOpen className="size-4" />} onClick={() => system('openDataFolder')}>{t('Dossier des données')}</Button></div>
-        {data && <p className="mt-4 break-all text-xs text-ink-400">{t('Base de données')} : {data.dbPath}<br />v{data.version}</p>}</Card>
+        <div className="flex flex-wrap gap-2"><Button variant="gold" icon={<DatabaseBackup className="size-4" />} onClick={doBackup}>{t('Créer une sauvegarde')}</Button>{!isWeb && <><Button icon={<RotateCcw className="size-4" />} onClick={() => setConfirm(true)}>{t('Restaurer…')}</Button><Button variant="ghost" icon={<FolderOpen className="size-4" />} onClick={() => system('openDataFolder')}>{t('Dossier des données')}</Button></>}</div>
+        {data && <p className="mt-4 break-all text-xs text-ink-400">{!isWeb && <>{t('Base de données')} : {data.dbPath}<br /></>}v{data.version}</p>}</Card>
       <Card className="p-5"><h3 className="mb-1 flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-emerald-500" />{t('Sauvegardes automatiques')}</h3><p className="mb-3 text-sm text-ink-500">{t('Une copie est créée chaque jour au démarrage (14 jours conservés).')}</p>
         <ul className="max-h-48 divide-y divide-ink-50 overflow-y-auto text-sm dark:divide-white/5">{backups.map((b) => <li key={b.name} className="flex justify-between py-1.5"><span>{b.name}</span><span className="text-ink-400">{(b.size / 1024).toFixed(0)} Ko</span></li>)}{!backups.length && <li className="py-3 text-ink-400">{t('Aucune sauvegarde pour le moment')}</li>}</ul>
-        <p className="mt-3 text-xs text-ink-400">{t('Synchronisation : {n} opération(s) en attente de synchronisation cloud (non activée).', { n: info.data?.pending ?? 0 })}</p></Card>
-      <UpdateCard version={data?.version} />
+        {!isWeb && <p className="mt-3 text-xs text-ink-400">{t('Synchronisation : {n} opération(s) en attente de synchronisation cloud (non activée).', { n: info.data?.pending ?? 0 })}</p>}</Card>
+      {!isWeb && <UpdateCard version={data?.version} />}
       <ConfirmDialog open={confirm} danger title="Restaurer une sauvegarde" message="Les données actuelles seront remplacées par la sauvegarde choisie (une copie de sécurité est créée avant). L'application redémarrera." confirmLabel="Choisir un fichier…" onClose={() => setConfirm(false)} onConfirm={doRestore} />
     </div>
   );

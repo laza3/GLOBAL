@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Boxes, ChevronsLeft, ChevronsRight, CircleDollarSign, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Moon, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Wallet, WifiOff, Receipt, Lock } from 'lucide-react';
+import { BarChart3, Boxes, ChevronsLeft, ChevronsRight, CircleDollarSign, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Moon, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Wallet, Wifi, WifiOff, Receipt, Lock } from 'lucide-react';
 import { Logo } from './Brand';
 import { UpdatePill } from './Update';
 import { Button, Field, Input, Modal, useToast, cx } from './ui';
@@ -8,6 +8,8 @@ import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
 import { useT } from '../lib/i18n';
 import { call, useQ } from '../lib/api';
+import { isWeb } from '../lib/platform';
+import { useQueryClient } from '@tanstack/react-query';
 import { LOCALES, type Locale } from '@gp/shared';
 
 const NAV: { to: string; label: string; icon: any; perm: string | string[]; group: string }[] = [
@@ -29,9 +31,10 @@ function ChangePassword({ open, onClose, forced }: { open: boolean; onClose: () 
   const { t } = useT();
   const { push } = useToast();
   const { refreshMe } = useAuth();
+  const qc = useQueryClient();
   const [o, setO] = useState(''); const [n, setN] = useState(''); const [n2, setN2] = useState(''); const [err, setErr] = useState('');
   const save = async () => {
-    try { await call('auth.changePassword', { oldPassword: o, newPassword: n }); push('success', t('Mot de passe modifié')); setO(''); setN(''); setN2(''); setErr(''); await refreshMe(); onClose(); } catch (e) { setErr((e as Error).message); }
+    try { await call('auth.changePassword', { oldPassword: o, newPassword: n }); push('success', t('Mot de passe modifié')); setO(''); setN(''); setN2(''); setErr(''); await refreshMe(); await qc.invalidateQueries(); onClose(); } catch (e) { setErr((e as Error).message); }
   };
   const mismatch = n2.length > 0 && n !== n2;
   return (
@@ -55,6 +58,8 @@ export function Layout() {
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 1180);
   const [mobile, setMobile] = useState(false);
   const [pw, setPw] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => { const on = () => setOnline(true), off = () => setOnline(false); window.addEventListener('online', on); window.addEventListener('offline', off); return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); }; }, []);
   const sync = useQ('sync.status', undefined, { refetchInterval: 15000 });
   const session = useQ('cash.current', undefined, { enabled: can(['cash.session', 'sale.create']), refetchInterval: 20000 });
   useEffect(() => setMobile(false), [loc.pathname]);
@@ -108,9 +113,15 @@ export function Layout() {
           ) : can('cash.session') && (
             <button onClick={() => nav('/cash')} className="hidden items-center gap-2 rounded-full bg-ink-100 px-3 py-1.5 text-xs font-medium text-ink-500 sm:flex dark:bg-white/5"><Lock className="size-3.5" />{t('Caisse fermée')}</button>
           )}
+          {isWeb ? (
+            <div title={online ? t('Connecté au serveur') : t('Pas de connexion Internet : les ventes ne peuvent pas être enregistrées pour le moment.')} className={cx('flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium', online ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-400/10 dark:text-red-300')}>
+              {online ? <Wifi className="size-3.5" /> : <WifiOff className="size-3.5" />}<span className="hidden md:inline">{online ? t('En ligne') : t('Hors ligne')}</span>
+            </div>
+          ) : (
           <div title={t('Les données sont stockées localement. La synchronisation cloud n’est pas encore activée.')} className="flex items-center gap-2 rounded-full bg-gold-50 px-3 py-1.5 text-xs font-medium text-gold-700 dark:bg-gold-400/10 dark:text-gold-200">
             <WifiOff className="size-3.5" /><span className="hidden md:inline">{t('Mode local')}</span>{pending > 0 && <span className="rounded-full bg-gold-400 px-1.5 text-[10px] font-semibold text-ink-950">{pending}</span>}
           </div>
+          )}
           <select value={locale} onChange={(e) => setLocale(e.target.value as Locale)} className="h-9 rounded-lg border border-ink-200 bg-transparent px-2 text-xs dark:border-white/10 dark:[&>option]:bg-ink-900" aria-label="Langue">
             {LOCALES.map((l) => <option key={l.code} value={l.code}>{l.code.toUpperCase()}</option>)}
           </select>
