@@ -9,6 +9,7 @@
     "dev": "node scripts/build.mjs server && node dist/server.cjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "pack:local": "node scripts/pack-local.mjs",
     "e2e": "node scripts/build.mjs && playwright test"
   },
   "dependencies": {},

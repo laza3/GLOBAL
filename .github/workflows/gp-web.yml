@@ -45,3 +45,48 @@ jobs:
           name: web-e2e-captures
           path: gp-business-manager/apps/server/test-results
           retention-days: 7
+
+  # Paquet « serveur local » : à décompresser sur un PC Windows pour tester le site depuis un téléphone sur le même Wi-Fi (sans Internet).
+  windows-local:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: gp-business-manager
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gp-business-manager/package-lock.json
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm run build -w @gp/server
+      - run: npm run pack:local -w @gp/server
+      - name: Test de démarrage du paquet (node.exe embarqué)
+        shell: pwsh
+        working-directory: gp-business-manager/apps/server/dist/GP-Serveur-Local
+        run: |
+          $env:GP_DATA_DIR = "$PWD\donnees-test"; $env:PORT = '3456'; $env:HOST = '127.0.0.1'
+          $p = Start-Process -FilePath .\node.exe -ArgumentList '--disable-warning=ExperimentalWarning','server.cjs' -PassThru -RedirectStandardOutput out.log
+          try {
+            $ok = $false
+            for ($i = 0; $i -lt 30 -and -not $ok; $i++) { Start-Sleep -Milliseconds 500; try { $ok = (Invoke-RestMethod http://127.0.0.1:3456/api/health).ok } catch {} }
+            if (-not $ok) { Get-Content out.log; throw 'Le serveur ne répond pas' }
+            $page = (Invoke-WebRequest http://127.0.0.1:3456/ -UseBasicParsing).Content
+            if ($page -notmatch 'GP Business Manager') { throw 'Site introuvable' }
+            Write-Host 'Serveur local OK'
+          } finally { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+          Remove-Item -Recurse -Force donnees-test -ErrorAction SilentlyContinue
+          Remove-Item out.log -ErrorAction SilentlyContinue
+      - name: Archive
+        shell: pwsh
+        run: Compress-Archive -Path apps/server/dist/GP-Serveur-Local -DestinationPath GP-Serveur-Local-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GP-Serveur-Local-Windows
+          path: gp-business-manager/GP-Serveur-Local-Windows.zip
+          retention-days: 30
+          if-no-files-found: error
