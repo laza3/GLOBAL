@@ -1,6 +1,6 @@
 # PROJECT STATUS — GP Business Manager
 
-_Dernière mise à jour : 2026-11-15 · Version 0.2.0 · **Périmètre livré : application Windows (hors ligne)**._
+_Dernière mise à jour : 2026-11-15 · Version 0.3.0 · **Périmètre livré : application Windows (hors ligne)**._
 
 ## Résumé
 | Cible | État |
@@ -29,7 +29,7 @@ Toutes ces fonctionnalités sont **reliées à une vraie base SQLite** et à de 
 - **UI** : design sombre/clair (bleu nuit + or), FR/EN complets (587 libellés), responsive (≥ 1024 px optimisé ; menu rétractable).
 
 ## En cours
-- Rien. **Version non publiée** : profils/comptes, limitation à une boutique, mot de passe temporaire, suppression de comptes et réinitialisation des données sont codés et testés (21 + 44 tests, 9/9 e2e) mais **pas encore dans une release** (la prochaine version publiée sera la 0.3.0).
+- Rien. **Version 0.3.0 préparée** : profils/comptes, limitation à une boutique, mot de passe temporaire, suppression de comptes et réinitialisation des données sont codés et testés (21 + 44 tests, 9/9 e2e) mais **release en brouillon à publier sur GitHub).
 
 ## Restant (Windows)
 Voir ROADMAP.md (backlog). Principaux manques assumés :

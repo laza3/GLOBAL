@@ -1,7 +1,7 @@
 {
   "name": "@gp/desktop",
   "productName": "GP Business Manager",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "GP Business Manager — application Windows de gestion commerciale (hors ligne, SQLite local)",
   "author": "GP Business Manager",
