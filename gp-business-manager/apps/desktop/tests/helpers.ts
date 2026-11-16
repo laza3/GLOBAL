@@ -48,10 +48,10 @@ export class Harness {
   stock(variantId: string, wh = this.ids.warehouse): number {
     return this.db.value<number>('SELECT COALESCE(qty_milli,0) FROM stock WHERE variant_id = ? AND warehouse_id = ?', variantId, wh) ?? 0;
   }
-  async user(username: string, roleCode: string) {
+  async user(username: string, roleCode: string, branchId?: string) {
     const roles = await this.call('roles.list');
     const roleId = roles.find((r: any) => r.code === roleCode).id;
-    await this.call('users.create', { username, displayName: username, password: 'Passw0rd!x', roleId });
+    await this.call('users.create', { username, displayName: username, password: 'Passw0rd!x', roleId, branchId, mustChangePassword: false });
     const l = await this.app.call('auth.login', { username, password: 'Passw0rd!x' });
     if (!l.ok) throw new Error('login failed');
     return (l.data as any).token as string;

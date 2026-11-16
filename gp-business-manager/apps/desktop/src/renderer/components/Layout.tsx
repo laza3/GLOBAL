@@ -25,16 +25,22 @@ const NAV: { to: string; label: string; icon: any; perm: string | string[]; grou
   { to: '/settings', label: 'Paramètres', icon: Settings, perm: 'settings.manage', group: 'Système' },
 ];
 
-function ChangePassword({ open, onClose }: { open: boolean; onClose: () => void }) {
+function ChangePassword({ open, onClose, forced }: { open: boolean; onClose: () => void; forced?: boolean }) {
   const { t } = useT();
   const { push } = useToast();
-  const [o, setO] = useState(''); const [n, setN] = useState(''); const [err, setErr] = useState('');
-  const save = async () => { try { await call('auth.changePassword', { oldPassword: o, newPassword: n }); push('success', t('Mot de passe modifié')); setO(''); setN(''); setErr(''); onClose(); } catch (e) { setErr((e as Error).message); } };
+  const { refreshMe } = useAuth();
+  const [o, setO] = useState(''); const [n, setN] = useState(''); const [n2, setN2] = useState(''); const [err, setErr] = useState('');
+  const save = async () => {
+    try { await call('auth.changePassword', { oldPassword: o, newPassword: n }); push('success', t('Mot de passe modifié')); setO(''); setN(''); setN2(''); setErr(''); await refreshMe(); onClose(); } catch (e) { setErr((e as Error).message); }
+  };
+  const mismatch = n2.length > 0 && n !== n2;
   return (
-    <Modal open={open} onClose={onClose} title="Changer mon mot de passe" size="sm" footer={<><Button onClick={onClose}>{t('Annuler')}</Button><Button variant="primary" onClick={save} disabled={!o || n.length < 8}>{t('Enregistrer')}</Button></>}>
+    <Modal open={open} onClose={forced ? () => {} : onClose} title={forced ? 'Choisissez votre mot de passe' : 'Changer mon mot de passe'} size="sm" footer={<>{!forced && <Button onClick={onClose}>{t('Annuler')}</Button>}<Button variant="primary" onClick={save} disabled={!o || n.length < 8 || n !== n2}>{t('Enregistrer')}</Button></>}>
       <div className="space-y-3">
-        <Field label="Mot de passe actuel"><Input type="password" value={o} onChange={(e) => setO(e.target.value)} /></Field>
-        <Field label="Nouveau mot de passe" hint="8 caractères minimum" error={err}><Input type="password" value={n} onChange={(e) => setN(e.target.value)} /></Field>
+        {forced && <p className="rounded-xl bg-gold-50 p-3 text-sm text-gold-700 dark:bg-gold-400/10 dark:text-gold-200">{t('Votre compte a été créé avec un mot de passe temporaire. Choisissez maintenant votre propre mot de passe, que vous seul connaîtrez.')}</p>}
+        <Field label={forced ? 'Mot de passe temporaire (reçu de l’administrateur)' : 'Mot de passe actuel'}><Input type="password" autoComplete="current-password" autoFocus value={o} onChange={(e) => setO(e.target.value)} /></Field>
+        <Field label="Nouveau mot de passe" hint="8 caractères minimum" error={err}><Input type="password" autoComplete="new-password" value={n} onChange={(e) => setN(e.target.value)} /></Field>
+        <Field label="Confirmer le nouveau mot de passe" error={mismatch ? t('Ne correspond pas') : undefined}><Input type="password" autoComplete="new-password" value={n2} onChange={(e) => setN2(e.target.value)} /></Field>
       </div>
     </Modal>
   );
@@ -124,7 +130,7 @@ export function Layout() {
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto"><div className="mx-auto w-full max-w-[1600px] animate-fade-in p-5 lg:p-7"><Outlet /></div></main>
       </div>
-      <ChangePassword open={pw} onClose={() => setPw(false)} />
+      <ChangePassword open={pw || !!me?.mustChangePassword} forced={!!me?.mustChangePassword} onClose={() => setPw(false)} />
     </div>
   );
 }

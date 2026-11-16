@@ -3,7 +3,7 @@ import { effectivePrice } from './catalog';
 import { recordFT, recordPayment } from './finance';
 import { customerBalance, ledgerCustomer } from './parties';
 import { applyMovement } from './stock';
-import { audit, businessDate, fail, nextNumber, nowIso, numberingOf, outbox, requirePerm, uuid, can, type Ctx } from './util';
+import { audit, branchScope, businessDate, fail, nextNumber, nowIso, numberingOf, outbox, requirePerm, uuid, can, type Ctx } from './util';
 
 export interface SaleItemInput {
   variantId: string;
@@ -40,6 +40,7 @@ export function createSale(ctx: Ctx, input: SaleInput) {
     }
     const reg = ctx.db.get<any>('SELECT * FROM cash_registers WHERE id = ? AND active = 1', input.registerId);
     if (!reg) fail('NOT_FOUND', 'Caisse introuvable');
+    if (branchScope(ctx) && reg.branch_id !== branchScope(ctx)) fail('BRANCH_FORBIDDEN', "Cette caisse appartient à une autre boutique que la vôtre.");
     const session = ctx.db.get<any>("SELECT id FROM cash_sessions WHERE register_id = ? AND status = 'OPEN'", input.registerId);
     if (!session) fail('NO_SESSION', "La caisse n'est pas ouverte : ouvrez une session de caisse avant de vendre");
 
@@ -251,8 +252,8 @@ export function listSales(ctx: Ctx, q: SaleQuery) {
   const own = can(ctx, 'cash.view_all') ? (q.userId ?? null) : ctx.user.id;
   const s = q.q?.trim() ? `%${q.q.trim()}%` : null;
   const where = `(? IS NULL OR s.business_date >= ?) AND (? IS NULL OR s.business_date <= ?) AND (? IS NULL OR s.customer_id = ?) AND (? IS NULL OR s.user_id = ?)
-    AND (? IS NULL OR s.payment_status = ?) AND (? IS NULL OR s.register_id = ?) AND (? IS NULL OR s.number LIKE ? OR c.name LIKE ?)`;
-  const args = [q.from ?? null, q.from ?? null, q.to ?? null, q.to ?? null, q.customerId ?? null, q.customerId ?? null, own, own, q.status ?? null, q.status ?? null, q.registerId ?? null, q.registerId ?? null, s, s, s];
+    AND (? IS NULL OR s.payment_status = ?) AND (? IS NULL OR s.register_id = ?) AND (? IS NULL OR s.number LIKE ? OR c.name LIKE ?) AND (? IS NULL OR s.branch_id = ?)`;
+  const args = [q.from ?? null, q.from ?? null, q.to ?? null, q.to ?? null, q.customerId ?? null, q.customerId ?? null, own, own, q.status ?? null, q.status ?? null, q.registerId ?? null, q.registerId ?? null, s, s, s, branchScope(ctx), branchScope(ctx)];
   return {
     rows: ctx.db.all(
       `SELECT s.id, s.number, s.created_at AS createdAt, s.total, s.paid_total AS paidTotal, s.returned_total AS returnedTotal, s.payment_status AS paymentStatus, s.change_given AS changeGiven,
@@ -268,7 +269,7 @@ export function getSale(ctx: Ctx, id: string) {
   const s = ctx.db.get<any>(
     `SELECT s.*, c.name AS customer_name, c.phone AS customer_phone, c.address AS customer_address, c.tax_id AS customer_tax_id, u.display_name AS user_name, r.name AS register_name
      FROM sales s LEFT JOIN customers c ON c.id = s.customer_id JOIN users u ON u.id = s.user_id LEFT JOIN cash_registers r ON r.id = s.register_id WHERE s.id = ? OR s.number = ?`, id, id);
-  if (!s) fail('NOT_FOUND', 'Vente introuvable');
+  if (!s || (branchScope(ctx) && s.branch_id !== branchScope(ctx))) fail('NOT_FOUND', 'Vente introuvable');
   return {
     id: s.id, number: s.number, createdAt: s.created_at, customerId: s.customer_id, customerName: s.customer_name, customerPhone: s.customer_phone, customerAddress: s.customer_address, customerTaxId: s.customer_tax_id,
     userName: s.user_name, registerName: s.register_name, subtotal: s.subtotal, lineDiscountTotal: s.line_discount_total, cartDiscountTotal: s.cart_discount_total, netTotal: s.net_total, taxTotal: s.tax_total,

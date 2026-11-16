@@ -180,7 +180,7 @@ describe('finances & tableau de bord', () => {
     const h = await new Harness().boot();
     const roles = await h.call('roles.list');
     const role = (await h.call('roles.save', { name: 'Voir ventes', permissions: ['dashboard.view', 'sale.view'] })).id;
-    await h.call('users.create', { username: 'viewer', displayName: 'Viewer', password: 'Passw0rd!x', roleId: role });
+    await h.call('users.create', { username: 'viewer', displayName: 'Viewer', password: 'Passw0rd!x', roleId: role, mustChangePassword: false });
     const t = (await h.app.call('auth.login', { username: 'viewer', password: 'Passw0rd!x' }) as any).data.token;
     const d = await h.call('dashboard.get', {}, t);
     expect(d.finance).toBeNull();

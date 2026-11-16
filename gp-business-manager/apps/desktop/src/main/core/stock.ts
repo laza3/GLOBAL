@@ -1,5 +1,11 @@
 import { formatQty } from '@gp/shared';
-import { audit, fail, nextNumber, nowIso, numberingOf, outbox, uuid, type Ctx } from './util';
+import { audit, branchScope, fail, nextNumber, nowIso, numberingOf, outbox, uuid, type Ctx } from './util';
+
+/** Un utilisateur limité à une boutique ne peut toucher qu'aux entrepôts de cette boutique. */
+function assertWarehouseInScope(ctx: Ctx, warehouseId: string) {
+  const b = branchScope(ctx);
+  if (b && ctx.db.value<string>('SELECT branch_id FROM warehouses WHERE id = ?', warehouseId) !== b) fail('BRANCH_FORBIDDEN', "Cet entrepôt appartient à une autre boutique que la vôtre.");
+}
 
 export type MovementType = 'IN' | 'OUT' | 'SALE' | 'RETURN_IN' | 'PURCHASE' | 'PURCHASE_RETURN' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'ADJUSTMENT' | 'INVENTORY' | 'LOSS' | 'DAMAGED' | 'OPENING';
 
@@ -120,6 +126,7 @@ export interface AdjustInput {
   expiryDate?: string;
 }
 export function adjustStock(ctx: Ctx, i: AdjustInput) {
+  assertWarehouseInScope(ctx, i.warehouseId);
   if (['LOSS', 'DAMAGED', 'OUT'].includes(i.type) && !i.reason) fail('REASON_REQUIRED', 'Un motif est obligatoire');
   const qty = i.type === 'IN' ? Math.abs(i.qtyMilli) : ['OUT', 'LOSS', 'DAMAGED'].includes(i.type) ? -Math.abs(i.qtyMilli) : i.qtyMilli;
   return ctx.db.tx(() => {
@@ -130,6 +137,8 @@ export function adjustStock(ctx: Ctx, i: AdjustInput) {
 }
 
 export function createTransfer(ctx: Ctx, i: { fromWarehouseId: string; toWarehouseId: string; items: { variantId: string; qtyMilli: number }[]; note?: string }) {
+  assertWarehouseInScope(ctx, i.fromWarehouseId);
+  assertWarehouseInScope(ctx, i.toWarehouseId);
   if (i.fromWarehouseId === i.toWarehouseId) fail('INVALID', "L'entrepôt source et destination doivent être différents");
   if (!i.items.length) fail('INVALID', 'Aucun article à transférer');
   return ctx.db.tx(() => {
@@ -225,11 +234,11 @@ export function stockLevels(ctx: Ctx, q: { warehouseId?: string; q?: string; low
      LEFT JOIN stock s ON s.variant_id = v.id AND s.warehouse_id = w.id
      LEFT JOIN categories c ON c.id = p.category_id LEFT JOIN units u ON u.id = p.unit_id
      WHERE v.deleted_at IS NULL AND p.deleted_at IS NULL AND p.track_stock = 1 AND w.deleted_at IS NULL
-       AND (? IS NULL OR w.id = ?) AND (? IS NULL OR p.name LIKE ? OR v.sku LIKE ? OR EXISTS (SELECT 1 FROM barcodes b WHERE b.variant_id = v.id AND b.code LIKE ?))
+       AND (? IS NULL OR w.branch_id = ?) AND (? IS NULL OR w.id = ?) AND (? IS NULL OR p.name LIKE ? OR v.sku LIKE ? OR EXISTS (SELECT 1 FROM barcodes b WHERE b.variant_id = v.id AND b.code LIKE ?))
        AND (? IS NULL OR p.category_id = ?)
        AND (? = 0 OR COALESCE(s.qty_milli,0) <= v.alert_qty_milli)
      ORDER BY p.name, v.name, w.name LIMIT ? OFFSET ?`,
-    q.warehouseId ?? null, q.warehouseId ?? null, like, like, like, like, q.categoryId ?? null, q.categoryId ?? null, q.lowOnly ? 1 : 0, q.limit ?? 500, q.offset ?? 0,
+    branchScope(ctx), branchScope(ctx), q.warehouseId ?? null, q.warehouseId ?? null, like, like, like, like, q.categoryId ?? null, q.categoryId ?? null, q.lowOnly ? 1 : 0, q.limit ?? 500, q.offset ?? 0,
   );
 }
 
@@ -239,10 +248,10 @@ export function stockMovements(ctx: Ctx, q: { variantId?: string; warehouseId?: 
             p.name || COALESCE(' — ' || v.name, '') AS name, v.sku, w.name AS warehouseName, l.lot_no AS lotNo, u.display_name AS userName
      FROM stock_movements m JOIN product_variants v ON v.id = m.variant_id JOIN products p ON p.id = v.product_id
      JOIN warehouses w ON w.id = m.warehouse_id LEFT JOIN stock_lots l ON l.id = m.lot_id LEFT JOIN users u ON u.id = m.user_id
-     WHERE (? IS NULL OR m.variant_id = ?) AND (? IS NULL OR m.warehouse_id = ?) AND (? IS NULL OR m.type = ?)
+     WHERE (? IS NULL OR w.branch_id = ?) AND (? IS NULL OR m.variant_id = ?) AND (? IS NULL OR m.warehouse_id = ?) AND (? IS NULL OR m.type = ?)
        AND (? IS NULL OR substr(m.at,1,10) >= ?) AND (? IS NULL OR substr(m.at,1,10) <= ?)
      ORDER BY m.at DESC, m.rowid DESC LIMIT ?`,
-    q.variantId ?? null, q.variantId ?? null, q.warehouseId ?? null, q.warehouseId ?? null, q.type ?? null, q.type ?? null,
+    branchScope(ctx), branchScope(ctx), q.variantId ?? null, q.variantId ?? null, q.warehouseId ?? null, q.warehouseId ?? null, q.type ?? null, q.type ?? null,
     q.from ?? null, q.from ?? null, q.to ?? null, q.to ?? null, Math.min(q.limit ?? 300, 2000),
   );
 }

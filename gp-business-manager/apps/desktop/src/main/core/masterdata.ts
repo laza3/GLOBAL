@@ -1,5 +1,5 @@
 import type { Ctx } from './util';
-import { audit, fail, nowIso, outbox, uuid } from './util';
+import { audit, branchScope, fail, nowIso, outbox, uuid } from './util';
 
 // ---------- entreprise / paramètres ----------
 export function getCompany(ctx: Ctx) {
@@ -38,7 +38,7 @@ export function updateCompany(ctx: Ctx, i: CompanyInput) {
 }
 
 // ---------- organisation : établissements, entrepôts, caisses ----------
-export const listBranches = (ctx: Ctx) => ctx.db.all('SELECT id, name, code, address, phone, active FROM branches WHERE deleted_at IS NULL ORDER BY name');
+export const listBranches = (ctx: Ctx) => ctx.db.all('SELECT id, name, code, address, phone, active FROM branches WHERE deleted_at IS NULL AND (? IS NULL OR id = ?) ORDER BY name', branchScope(ctx), branchScope(ctx));
 export function saveBranch(ctx: Ctx, i: { id?: string; name: string; code?: string; address?: string; phone?: string; active?: boolean }) {
   const t = nowIso();
   const id = i.id ?? uuid();
@@ -49,7 +49,7 @@ export function saveBranch(ctx: Ctx, i: { id?: string; name: string; code?: stri
   return { id };
 }
 export const listWarehouses = (ctx: Ctx) =>
-  ctx.db.all('SELECT w.id, w.name, w.branch_id AS branchId, b.name AS branchName, w.is_default AS isDefault, w.active FROM warehouses w JOIN branches b ON b.id = w.branch_id WHERE w.deleted_at IS NULL ORDER BY w.name');
+  ctx.db.all('SELECT w.id, w.name, w.branch_id AS branchId, b.name AS branchName, w.is_default AS isDefault, w.active FROM warehouses w JOIN branches b ON b.id = w.branch_id WHERE w.deleted_at IS NULL AND (? IS NULL OR w.branch_id = ?) ORDER BY w.name', branchScope(ctx), branchScope(ctx));
 export function saveWarehouse(ctx: Ctx, i: { id?: string; branchId: string; name: string; active?: boolean }) {
   const t = nowIso();
   const id = i.id ?? uuid();
@@ -63,7 +63,8 @@ export const listRegisters = (ctx: Ctx) =>
   ctx.db.all(
     `SELECT r.id, r.name, r.branch_id AS branchId, b.name AS branchName, r.warehouse_id AS warehouseId, w.name AS warehouseName, r.account_id AS accountId, r.active,
             (SELECT id FROM cash_sessions s WHERE s.register_id = r.id AND s.status = 'OPEN') AS openSessionId
-     FROM cash_registers r JOIN branches b ON b.id = r.branch_id JOIN warehouses w ON w.id = r.warehouse_id ORDER BY r.name`,
+     FROM cash_registers r JOIN branches b ON b.id = r.branch_id JOIN warehouses w ON w.id = r.warehouse_id WHERE (? IS NULL OR r.branch_id = ?) ORDER BY r.name`,
+    branchScope(ctx), branchScope(ctx),
   );
 export function saveRegister(ctx: Ctx, i: { id?: string; branchId: string; warehouseId: string; name: string; active?: boolean }) {
   const t = nowIso();

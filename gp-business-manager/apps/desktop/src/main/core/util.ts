@@ -44,7 +44,7 @@ export interface Company {
 /** Contexte d'exécution d'une opération : base, utilisateur authentifié, paramètres de l'entreprise. */
 export interface Ctx {
   db: Db;
-  user: { id: string; username: string; displayName: string; roleCode: string; branchId: string | null; permissions: Set<string> };
+  user: { id: string; username: string; displayName: string; roleCode: string; branchId: string | null; mustChangePassword: boolean; permissions: Set<string> };
   company(): Company;
 }
 
@@ -57,6 +57,13 @@ export const numberingOf = (c: Company): Record<string, string> => JSON.parse(c.
 
 export function can(ctx: Ctx, perm: string) {
   return ctx.user.permissions.has(perm);
+}
+/**
+ * Périmètre « boutique » : un utilisateur rattaché à une boutique et SANS la permission `branch.all`
+ * ne voit et n'agit que sur cette boutique. Retourne l'id de la boutique, ou null (= toutes).
+ */
+export function branchScope(ctx: Ctx): string | null {
+  return ctx.user.branchId && !ctx.user.permissions.has('branch.all') ? ctx.user.branchId : null;
 }
 export function requirePerm(ctx: Ctx, perm: string) {
   if (!can(ctx, perm)) fail('FORBIDDEN', `Permission requise : ${perm}`);

@@ -29,7 +29,7 @@ Toutes ces fonctionnalités sont **reliées à une vraie base SQLite** et à de 
 - **UI** : design sombre/clair (bleu nuit + or), FR/EN complets (587 libellés), responsive (≥ 1024 px optimisé ; menu rétractable).
 
 ## En cours
-Rien en cours.
+- **Profils et comptes** (Administrateur, Gérant, Responsable des ventes, Vendeur/Vendeuse) : code et tests d'intégration (36/36) faits ; **le test e2e `accounts.spec.ts` n'a pas encore été validé** (son sélecteur vient d'être corrigé, mais il n'a pas été relancé) et la version n'est **pas encore publiée**. Voir CHANGELOG « Non publié ».
 
 ## Restant (Windows)
 Voir ROADMAP.md (backlog). Principaux manques assumés :

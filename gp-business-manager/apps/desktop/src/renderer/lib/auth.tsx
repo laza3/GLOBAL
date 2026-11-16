@@ -4,11 +4,12 @@ import type { Locale } from '@gp/shared';
 import { call, callRaw, onAuthLost } from './api';
 import { configureFormat } from './format';
 
-export interface Me { id: string; username: string; displayName: string; roleCode: string; roleName: string; branchId: string | null; permissions: string[] }
+export interface Me { id: string; username: string; displayName: string; roleCode: string; roleName: string; branchId: string | null; mustChangePassword: boolean; permissions: string[] }
 interface CompanyLite { name: string; currency: string; locale: Locale; timezone?: string; pricesIncludeTax?: boolean }
 interface AuthState {
   loading: boolean; configured: boolean; me: Me | null; company: CompanyLite | null;
   can: (p: string | string[]) => boolean;
+  refreshMe: () => Promise<void>;
   login: (u: string, p: string) => Promise<void>; setup: (input: any) => Promise<void>; logout: () => Promise<void>; refreshCompany: () => Promise<void>;
   locale: Locale; setLocale: (l: Locale) => void;
 }
@@ -54,6 +55,7 @@ export function AuthProvider({ children, onLocale }: { children: ReactNode; onLo
     setup: async (input) => { await callRaw('app.setup', input); setConfigured(true); await afterLogin(); },
     logout: async () => { await callRaw('auth.logout'); setMe(null); qc.clear(); },
     refreshCompany: loadCompany,
+    refreshMe: async () => { setMe(await callRaw('auth.me')); },
     locale,
     setLocale: (l) => { try { localStorage.setItem('gp.locale', l); } catch { /* ignore */ } applyLocale(l); },
   }), [loading, configured, me, company, locale, afterLogin, loadCompany, applyLocale, qc]);

@@ -1,10 +1,11 @@
-import { audit, fail, nowIso, outbox, uuid, type Ctx } from './util';
+import { audit, branchScope, fail, nowIso, outbox, uuid, type Ctx } from './util';
 import { ownerMovement, recordFT } from './finance';
 
 export function openSession(ctx: Ctx, i: { registerId: string; openingFloat: number }) {
   if (!Number.isInteger(i.openingFloat) || i.openingFloat < 0) fail('INVALID_AMOUNT', 'Fond de caisse invalide');
   const reg = ctx.db.get<any>('SELECT * FROM cash_registers WHERE id = ? AND active = 1', i.registerId);
   if (!reg) fail('NOT_FOUND', 'Caisse introuvable');
+  if (branchScope(ctx) && reg.branch_id !== branchScope(ctx)) fail('BRANCH_FORBIDDEN', 'Cette caisse appartient à une autre boutique que la vôtre.');
   if (ctx.db.get("SELECT 1 FROM cash_sessions WHERE register_id = ? AND status = 'OPEN'", i.registerId)) fail('SESSION_OPEN', 'Cette caisse est déjà ouverte');
   return ctx.db.tx(() => {
     const id = uuid();

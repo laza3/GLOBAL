@@ -12,7 +12,7 @@ export function AdminPage() {
   const { t } = useT();
   const { can } = useAuth();
   const tabs = [
-    ...(can('user.manage') ? [{ id: 'users', label: 'Utilisateurs' }] : []),
+    ...(can('user.manage') ? [{ id: 'users', label: 'Comptes utilisateurs' }] : []),
     ...(can(['role.manage', 'user.manage']) ? [{ id: 'roles', label: 'Rôles & permissions' }] : []),
     ...(can('organization.manage') ? [{ id: 'org', label: 'Organisation' }] : []),
     ...(can('audit.view') ? [{ id: 'audit', label: 'Journal d’activité' }] : []),
@@ -35,37 +35,56 @@ function Users() {
   const [edit, setEdit] = useState<any | null>(null);
   return (
     <Card>
-      <div className="flex justify-end p-4"><Button variant="gold" icon={<Plus className="size-4" />} onClick={() => setEdit({ roleId: roles.find((r) => r.code === 'CASHIER')?.id ?? roles[0]?.id })}>{t('Nouvel utilisateur')}</Button></div>
-      <DataTable rowKey={(r: any) => r.id} onRowClick={(r: any) => setEdit({ ...r, password: '' })} rows={(data ?? []) as any[]} columns={[
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="max-w-xl text-sm text-ink-500">{t('Créez un compte pour chaque personne de l’entreprise et choisissez son profil. Elle devra changer son mot de passe temporaire à sa première connexion.')}</p>
+        <Button variant="gold" icon={<Plus className="size-4" />} onClick={() => setEdit({ roleId: roles.find((r) => r.code === 'CASHIER')?.id ?? roles[0]?.id, branchId: '' })}>{t('Créer un compte')}</Button>
+      </div>
+      <DataTable rowKey={(r: any) => r.id} onRowClick={(r: any) => setEdit({ ...r, password: '', branchId: r.branchId ?? '' })} rows={(data ?? []) as any[]} columns={[
         { key: 'n', header: 'Utilisateur', render: (r: any) => <><span className="font-medium">{r.displayName}</span><span className="block text-xs text-ink-400">@{r.username}</span></> },
-        { key: 'r', header: 'Rôle', render: (r: any) => <Badge tone={r.roleCode === 'ADMIN' ? 'gold' : 'neutral'}>{t(r.roleName)}</Badge> },
-        { key: 'l', header: 'Dernière connexion', render: (r: any) => dateTime(r.lastLoginAt) },
-        { key: 's', header: 'Statut', render: (r: any) => (r.lockedUntil && new Date(r.lockedUntil) > new Date() ? <Badge tone="red">{t('Verrouillé')}</Badge> : r.active ? <Badge tone="green">{t('Actif')}</Badge> : <Badge>{t('Désactivé')}</Badge>) }]} />
+        { key: 'r', header: 'Profil', render: (r: any) => <Badge tone={r.roleCode === 'ADMIN' ? 'gold' : r.roleCode === 'MANAGER' ? 'blue' : 'neutral'}>{t(r.roleName)}</Badge> },
+        { key: 'b', header: 'Boutique', render: (r: any) => (r.branchName ? r.branchName : <span className="text-ink-400">{t('Toutes les boutiques')}</span>) },
+        { key: 'l', header: 'Dernière connexion', render: (r: any) => (r.lastLoginAt ? dateTime(r.lastLoginAt) : <span className="text-ink-400">{t('Jamais')}</span>) },
+        { key: 's', header: 'Statut', render: (r: any) => (r.lockedUntil && new Date(r.lockedUntil) > new Date() ? <Badge tone="red">{t('Verrouillé')}</Badge> : !r.active ? <Badge>{t('Désactivé')}</Badge> : r.mustChangePassword ? <Badge tone="gold">{t('Mot de passe temporaire')}</Badge> : <Badge tone="green">{t('Actif')}</Badge>) }]} />
       {edit && <UserForm initial={edit} roles={roles} onClose={() => setEdit(null)} />}
     </Card>
   );
 }
 function UserForm({ initial, roles, onClose }: { initial: any; roles: any[]; onClose: () => void }) {
   const { t } = useT();
-  const [f, setF] = useState<any>({ username: '', displayName: '', password: '', active: true, ...initial });
+  const branches = (useQ('org.branches').data ?? []) as any[];
+  const [f, setF] = useState<any>({ username: '', displayName: '', password: '', active: true, branchId: '', ...initial });
   const [err, setErr] = useState<unknown>(null);
   const create = useM('users.create', { onSuccess: onClose });
   const update = useM('users.update', { onSuccess: onClose });
-  const save = () => (f.id ? update.mutate({ id: f.id, displayName: f.displayName, roleId: f.roleId, active: f.active, password: f.password || undefined }, { onError: setErr }) : create.mutate({ username: f.username, displayName: f.displayName, password: f.password, roleId: f.roleId }, { onError: setErr }));
+  const role = roles.find((r) => r.id === f.roleId);
+  const save = () => (f.id
+    ? update.mutate({ id: f.id, displayName: f.displayName, roleId: f.roleId, branchId: f.branchId || null, active: f.active, password: f.password || undefined }, { onError: setErr })
+    : create.mutate({ username: f.username, displayName: f.displayName, password: f.password, roleId: f.roleId, branchId: f.branchId || undefined }, { onError: setErr }));
   return (
-    <Modal open onClose={onClose} size="sm" title={f.id ? 'Modifier l’utilisateur' : 'Nouvel utilisateur'} footer={<><Button onClick={onClose}>{t('Annuler')}</Button><Button variant="primary" loading={create.isPending || update.isPending} disabled={!f.displayName || (!f.id && (!f.username || f.password.length < 8))} onClick={save}>{t('Enregistrer')}</Button></>}>
+    <Modal open onClose={onClose} size="md" title={f.id ? 'Modifier le compte' : 'Créer un compte'} footer={<><Button onClick={onClose}>{t('Annuler')}</Button><Button variant="primary" loading={create.isPending || update.isPending} disabled={!f.displayName || (!f.id && (!f.username || f.password.length < 8))} onClick={save}>{t('Enregistrer')}</Button></>}>
       <div className="space-y-3">
-        <Field label="Nom affiché"><Input autoFocus value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} /></Field>
-        <Field label="Identifiant"><Input disabled={!!f.id} value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} /></Field>
-        <Field label="Rôle"><Select value={f.roleId} onChange={(e) => setF({ ...f, roleId: e.target.value })}>{roles.map((r) => <option key={r.id} value={r.id}>{t(r.name)}</option>)}</Select></Field>
-        <Field label={f.id ? 'Nouveau mot de passe (laisser vide pour conserver)' : 'Mot de passe'} hint="8 caractères minimum ; déverrouille aussi le compte"><Input type="password" autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></Field>
-        {f.id && <Checkbox checked={f.active} onChange={(v) => setF({ ...f, active: v })} label="Compte actif" />}<ErrorBox error={err} />
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Nom de la personne"><Input autoFocus value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} /></Field>
+          <Field label="Identifiant de connexion" hint="Lettres, chiffres, point ou tiret"><Input disabled={!!f.id} value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} /></Field>
+        </div>
+        <Field label="Profil">
+          <Select value={f.roleId} onChange={(e) => setF({ ...f, roleId: e.target.value })}>{roles.map((r) => <option key={r.id} value={r.id}>{t(r.name)}</option>)}</Select>
+        </Field>
+        {role?.description && <p className="rounded-xl bg-ink-100/70 p-3 text-sm text-ink-600 dark:bg-white/5 dark:text-ink-200">{t(role.description)}</p>}
+        <Field label="Boutique" hint="Une personne rattachée à une boutique ne voit et ne vend que dans celle-ci (sauf profils autorisés à tout voir : administrateur, gérant, responsable des ventes, comptable).">
+          <Select value={f.branchId ?? ''} onChange={(e) => setF({ ...f, branchId: e.target.value })}><option value="">{t('Toutes les boutiques')}</option>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</Select>
+        </Field>
+        <Field label={f.id ? 'Nouveau mot de passe temporaire (laisser vide pour conserver)' : 'Mot de passe temporaire'} hint="8 caractères minimum. La personne devra le remplacer à sa première connexion ; vous ne connaîtrez jamais son mot de passe définitif.">
+          <Input type="text" autoComplete="off" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+        </Field>
+        {f.id && <Checkbox checked={f.active} onChange={(v) => setF({ ...f, active: v })} label="Compte actif (décochez pour retirer l’accès à un employé qui part)" />}
+        <ErrorBox error={err} />
       </div>
     </Modal>
   );
 }
 
-const GROUPS: Record<string, string> = { dashboard: 'Tableau de bord', product: 'Produits', stock: 'Stocks', inventory: 'Inventaires', customer: 'Clients', supplier: 'Fournisseurs', purchase: 'Achats', sale: 'Ventes', cash: 'Caisse', finance: 'Finances', expense: 'Dépenses', report: 'Rapports', user: 'Administration', role: 'Administration', settings: 'Administration', backup: 'Administration', audit: 'Administration', organization: 'Administration' };
+const GROUPS: Record<string, string> = { dashboard: 'Tableau de bord', product: 'Produits', stock: 'Stocks', inventory: 'Inventaires', customer: 'Clients', supplier: 'Fournisseurs', purchase: 'Achats', sale: 'Ventes', cash: 'Caisse', finance: 'Finances', expense: 'Dépenses', report: 'Rapports', user: 'Administration', role: 'Administration', settings: 'Administration', backup: 'Administration', audit: 'Administration', organization: 'Administration', branch: 'Administration' };
 function Roles() {
   const { t } = useT();
   const roles = (useQ('roles.list').data ?? []) as any[];
@@ -76,7 +95,7 @@ function Roles() {
   return (
     <Card>
       <div className="flex justify-end p-4"><Button variant="gold" icon={<Plus className="size-4" />} onClick={() => setEdit({ name: '', permissions: [] })}>{t('Nouveau rôle')}</Button></div>
-      <DataTable rowKey={(r: any) => r.id} onRowClick={(r: any) => setEdit(r)} rows={roles} columns={[{ key: 'n', header: 'Rôle', render: (r: any) => <><span className="font-medium">{t(r.name)}</span> {r.isSystem && <Badge>{t('Système')}</Badge>}</> }, { key: 'p', header: 'Permissions', align: 'right', render: (r: any) => `${r.permissions.length} / ${PERMISSIONS.length}` },
+      <DataTable rowKey={(r: any) => r.id} onRowClick={(r: any) => setEdit(r)} rows={roles} columns={[{ key: 'n', header: 'Profil', render: (r: any) => <><span className="font-medium">{t(r.name)}</span> {r.isSystem && <Badge>{t('Système')}</Badge>}{r.description && <span className="mt-0.5 block max-w-xl text-xs text-ink-400">{t(r.description)}</span>}</> }, { key: 'u', header: 'Comptes', align: 'right', render: (r: any) => r.userCount }, { key: 'p', header: 'Permissions', align: 'right', render: (r: any) => `${r.permissions.length} / ${PERMISSIONS.length}` },
         { key: 'a', header: '', align: 'right', render: (r: any) => !r.isSystem && <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setDel(r); }}><Trash2 className="size-4" /></Button> }]} />
       {edit && <RoleForm initial={edit} onClose={() => setEdit(null)} />}
       <ConfirmDialog open={!!del} danger title="Supprimer le rôle" message="Le rôle sera supprimé s'il n'est attribué à aucun utilisateur." onClose={() => setDel(null)} onConfirm={() => rm.mutate({ id: del.id }, { onError: (e) => push('error', e.message) })} />

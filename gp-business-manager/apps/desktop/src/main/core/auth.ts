@@ -36,8 +36,31 @@ export function seedRoles(db: Db) {
   }
 }
 
+/**
+ * Rôles système d'une base EXISTANTE (mise à jour du logiciel) : ajoute les nouveaux rôles, garde tous les droits de
+ * l'administrateur, renomme « Caissier » et donne `branch.all` aux profils concernés lors de son introduction.
+ * Les droits modifiés par l'utilisateur sur les autres rôles ne sont jamais écrasés.
+ */
+export function ensureSystemRoles(db: Db) {
+  db.tx(() => {
+    const firstBranchAll = !db.get("SELECT 1 FROM role_permissions WHERE permission = 'branch.all'");
+    for (const r of SYSTEM_ROLES) {
+      let id = db.value<string>('SELECT id FROM roles WHERE code = ?', r.code);
+      if (!id) {
+        id = uuid();
+        db.run('INSERT INTO roles (id, code, name, is_system) VALUES (?,?,?,1)', id, r.code, r.name);
+        for (const p of r.permissions) db.run('INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES (?,?)', id, p);
+        continue;
+      }
+      if (r.code === 'ADMIN') for (const p of r.permissions) db.run('INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES (?,?)', id, p);
+      if (r.code === 'CASHIER') db.run("UPDATE roles SET name = ? WHERE id = ? AND name = 'Caissier'", r.name, id);
+      if (firstBranchAll && r.permissions.includes('branch.all')) db.run("INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES (?, 'branch.all')", id);
+    }
+  });
+}
+
 export interface AuthUser {
-  id: string; username: string; displayName: string; roleCode: string; roleName: string; branchId: string | null; permissions: Permission[];
+  id: string; username: string; displayName: string; roleCode: string; roleName: string; branchId: string | null; mustChangePassword: boolean; permissions: Permission[];
 }
 
 function loadUser(db: Db, id: string): AuthUser | undefined {
@@ -47,7 +70,7 @@ function loadUser(db: Db, id: string): AuthUser | undefined {
   );
   if (!u) return undefined;
   const perms = db.all<{ permission: Permission }>('SELECT permission FROM role_permissions WHERE role_id = ?', u.role_id).map((r) => r.permission);
-  return { id: u.id, username: u.username, displayName: u.display_name, roleCode: u.role_code, roleName: u.role_name, branchId: u.branch_id, permissions: perms };
+  return { id: u.id, username: u.username, displayName: u.display_name, roleCode: u.role_code, roleName: u.role_name, branchId: u.branch_id, mustChangePassword: !!u.must_change_password, permissions: perms };
 }
 
 /** Sessions applicatives en mémoire (jetons opaques aléatoires). */
@@ -125,12 +148,12 @@ export class SessionStore {
 export function listUsers(ctx: Ctx) {
   return ctx.db.all(
     `SELECT u.id, u.username, u.display_name AS displayName, u.email, u.phone, u.active, u.last_login_at AS lastLoginAt, u.locked_until AS lockedUntil,
-            u.role_id AS roleId, r.name AS roleName, r.code AS roleCode, u.branch_id AS branchId
-     FROM users u JOIN roles r ON r.id = u.role_id ORDER BY u.display_name`,
+            u.role_id AS roleId, r.name AS roleName, r.code AS roleCode, u.branch_id AS branchId, b.name AS branchName, u.must_change_password AS mustChangePassword
+     FROM users u JOIN roles r ON r.id = u.role_id LEFT JOIN branches b ON b.id = u.branch_id ORDER BY u.display_name`,
   );
 }
 
-export function createUser(ctx: Ctx, i: { username: string; displayName: string; password: string; roleId: string; branchId?: string | null; email?: string; phone?: string }) {
+export function createUser(ctx: Ctx, i: { username: string; displayName: string; password: string; roleId: string; branchId?: string | null; email?: string; phone?: string; mustChangePassword?: boolean }) {
   assertStrongPassword(i.password);
   const username = i.username.trim();
   if (!/^[a-zA-Z0-9._-]{3,40}$/.test(username)) fail('INVALID', "Identifiant invalide (3 à 40 caractères : lettres, chiffres, . _ -)");
@@ -138,10 +161,11 @@ export function createUser(ctx: Ctx, i: { username: string; displayName: string;
   const id = uuid(), t = nowIso();
   ctx.db.tx(() => {
     ctx.db.run(
-      'INSERT INTO users (id, username, display_name, password_hash, role_id, branch_id, email, phone, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      id, username, i.displayName, hashPassword(i.password), i.roleId, i.branchId ?? null, i.email ?? null, i.phone ?? null, t, t,
+      'INSERT INTO users (id, username, display_name, password_hash, role_id, branch_id, email, phone, must_change_password, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      id, username, i.displayName, hashPassword(i.password), i.roleId, i.branchId ?? null, i.email ?? null, i.phone ?? null, i.mustChangePassword === false ? 0 : 1, t, t,
     );
-    audit(ctx, 'user.create', 'user', id, { username, roleId: i.roleId });
+    if (!ctx.db.get('SELECT 1 FROM roles WHERE id = ?', i.roleId)) fail('NOT_FOUND', 'Rôle introuvable');
+    audit(ctx, 'user.create', 'user', id, { username, roleId: i.roleId, branchId: i.branchId ?? null });
   });
   return { id };
 }
@@ -158,10 +182,10 @@ export function updateUser(ctx: Ctx, id: string, i: { displayName?: string; role
   }
   ctx.db.tx(() => {
     ctx.db.run(
-      `UPDATE users SET display_name = ?, role_id = ?, branch_id = ?, email = ?, phone = ?, active = ?, password_hash = ?, failed_logins = 0, locked_until = NULL, updated_at = ? WHERE id = ?`,
+      `UPDATE users SET display_name = ?, role_id = ?, branch_id = ?, email = ?, phone = ?, active = ?, password_hash = ?, must_change_password = ?, failed_logins = 0, locked_until = NULL, updated_at = ? WHERE id = ?`,
       i.displayName ?? u.display_name, i.roleId ?? u.role_id, i.branchId === undefined ? u.branch_id : i.branchId,
       i.email ?? u.email, i.phone ?? u.phone, i.active === undefined ? u.active : i.active ? 1 : 0,
-      i.password ? hashPassword(i.password) : u.password_hash, nowIso(), id,
+      i.password ? hashPassword(i.password) : u.password_hash, i.password && id !== ctx.user.id ? 1 : u.must_change_password, nowIso(), id,
     );
     audit(ctx, 'user.update', 'user', id, { ...i, password: i.password ? '***' : undefined });
   });
@@ -171,7 +195,8 @@ export function changeOwnPassword(ctx: Ctx, oldPw: string, newPw: string) {
   const u = ctx.db.get<any>('SELECT password_hash FROM users WHERE id = ?', ctx.user.id)!;
   if (!verifyPassword(oldPw, u.password_hash)) fail('INVALID_CREDENTIALS', 'Ancien mot de passe incorrect');
   assertStrongPassword(newPw);
-  ctx.db.run('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?', hashPassword(newPw), nowIso(), ctx.user.id);
+  if (oldPw === newPw) fail('SAME_PASSWORD', "Le nouveau mot de passe doit être différent de l'ancien");
+  ctx.db.run('UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?', hashPassword(newPw), nowIso(), ctx.user.id);
   audit(ctx, 'user.change_password', 'user', ctx.user.id);
 }
 
@@ -180,6 +205,8 @@ export function listRoles(ctx: Ctx) {
   return roles.map((r) => ({
     ...r,
     isSystem: !!r.isSystem,
+    description: SYSTEM_ROLES.find((x) => x.code === r.code)?.description ?? '',
+    userCount: ctx.db.value<number>('SELECT COUNT(*) FROM users WHERE role_id = ?', r.id) ?? 0,
     permissions: ctx.db.all<{ permission: string }>('SELECT permission FROM role_permissions WHERE role_id = ?', r.id).map((p) => p.permission),
   }));
 }

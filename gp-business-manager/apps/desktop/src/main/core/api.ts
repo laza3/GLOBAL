@@ -14,6 +14,7 @@ import { dashboard } from './dashboard';
 import { runReport, REPORT_TYPES } from './reports';
 import { isConfigured, setupCompany } from './setup';
 import { AppError, audit, companyOf, type Ctx } from './util';
+import { ensureSystemRoles } from './auth';
 
 const id = z.string().min(1);
 const money = z.number().int();
@@ -51,7 +52,7 @@ const saleSchema = z.object({
 
 const defs = {
   // --- auth & session ---
-  'auth.me': d(null, undefined, (): { id: string; username: string; displayName: string; roleCode: string; roleName: string; branchId: string | null; permissions: string[] } => { throw new Error('handled'); }),
+  'auth.me': d(null, undefined, (): { id: string; username: string; displayName: string; roleCode: string; roleName: string; branchId: string | null; mustChangePassword: boolean; permissions: string[] } => { throw new Error('handled'); }),
   'auth.changePassword': d(null, z.object({ oldPassword: z.string(), newPassword: z.string() }), (c, p) => auth.changeOwnPassword(c, p.oldPassword, p.newPassword)),
   // --- entreprise ---
   'company.get': d(null, undefined, (c) => mdata.getCompany(c)),
@@ -77,7 +78,7 @@ const defs = {
   'ref.permissions': d('role.manage', undefined, () => [...PERMISSIONS]),
   // --- administration ---
   'users.list': d(['user.manage', 'cash.view_all'], undefined, (c) => auth.listUsers(c)),
-  'users.create': d('user.manage', z.object({ username: z.string().min(3).max(40), displayName: z.string().min(1).max(100), password: z.string().min(8).max(200), roleId: id, branchId: opt(id), email: opt(text), phone: opt(text) }), (c, p) => auth.createUser(c, p)),
+  'users.create': d('user.manage', z.object({ username: z.string().min(3).max(40), displayName: z.string().min(1).max(100), password: z.string().min(8).max(200), roleId: id, branchId: opt(id), email: opt(text), phone: opt(text), mustChangePassword: z.boolean().optional() }), (c, p) => auth.createUser(c, p)),
   'users.update': d('user.manage', z.object({ id, displayName: z.string().min(1).max(100).optional(), roleId: id.optional(), branchId: opt(id), email: opt(text), phone: opt(text), active: z.boolean().optional(), password: z.string().min(8).max(200).optional() }), (c, p) => auth.updateUser(c, p.id, p)),
   'roles.list': d(['role.manage', 'user.manage'], undefined, (c) => auth.listRoles(c)),
   'roles.save': d('role.manage', z.object({ id: opt(id), name: z.string().min(1).max(80), permissions: z.array(z.string()).max(100) }), (c, p) => auth.saveRole(c, p)),
@@ -177,6 +178,7 @@ export class App {
   readonly sessions: auth.SessionStore;
   constructor(readonly db: Db, private log: (m: string, e?: unknown) => void = () => {}) {
     this.sessions = new auth.SessionStore(db);
+    if (isConfigured(db)) ensureSystemRoles(db); // mise à jour du logiciel : nouveaux rôles / droits sur une base existante
   }
 
   status() {
@@ -207,6 +209,8 @@ export class App {
       const def = (defs as Record<string, Def>)[method];
       if (!def) throw new AppError('UNKNOWN_METHOD', `Méthode inconnue : ${method}`);
       const ctx = this.sessions.resolve(token);
+      // compte avec mot de passe temporaire : rien d'autre n'est autorisé tant qu'il n'a pas été changé
+      if (ctx.user.mustChangePassword && method !== 'auth.changePassword') throw new AppError('PASSWORD_CHANGE_REQUIRED', 'Vous devez d’abord choisir votre propre mot de passe.');
       if (def.perm) {
         const needed = Array.isArray(def.perm) ? def.perm : [def.perm];
         if (!needed.some((p) => ctx.user.permissions.has(p))) {

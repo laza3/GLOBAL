@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Non publié
+- Nouveau profil **Responsable des ventes** ; « Caissier » devient **Vendeur / Vendeuse** (bases existantes mises à jour automatiquement, droits personnalisés conservés).
+- **Limitation à une boutique** : un compte rattaché à une boutique (sans la permission `branch.all`) ne voit et n'agit que sur sa boutique (caisses, entrepôts, stock, ventes).
+- **Mot de passe temporaire** : un compte créé par l'administrateur doit changer son mot de passe à la première connexion (blocage côté serveur tant que ce n'est pas fait).
+- Écran « Créer un compte » : description du profil, choix de la boutique ; nouvelle migration `002`.
+
 ## 0.2.0 — 2026-11-16
 ### Ajouté
 - **Mises à jour automatiques** (GitHub Releases) : pastille « Version X disponible », carte dans *Administration → Sauvegardes*, sauvegarde automatique avant installation, réservé aux utilisateurs `settings.manage`.
