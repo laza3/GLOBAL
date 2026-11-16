@@ -11,7 +11,10 @@ import { AuthProvider } from './lib/auth';
 import { ToastProvider } from './components/ui';
 import { App } from './App';
 
-const qc = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, staleTime: 5000 } } });
+// Site web : plusieurs personnes modifient les mêmes données depuis des appareils différents → on rafraîchit à l'ouverture d'un écran,
+// au retour sur l'onglet et toutes les 20 s (onglet visible uniquement). Application Windows : données locales, pas besoin.
+const web = window.gp?.platform === 'web';
+const qc = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: web, staleTime: web ? 0 : 5000, ...(web ? { refetchOnMount: 'always' as const, refetchInterval: 20_000 } : {}) } } });
 
 function Root() {
   const [locale, setLocale] = useState<Locale>('fr');

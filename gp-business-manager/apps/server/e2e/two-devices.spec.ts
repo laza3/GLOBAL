@@ -62,10 +62,10 @@ test('le gérant (ordinateur) et la vendeuse (téléphone) travaillent sur les m
     await expect(ph.getByRole('heading', { name: 'Administration' })).toBeHidden();
 
     // ---------- le gérant voit la vente depuis son ordinateur ----------
+    // l'écran du gérant (resté sur le tableau de bord, sans rien toucher) se met à jour tout seul
+    await expect(pc.getByText(/45\s?000\s?Ar/).first()).toBeVisible({ timeout: 35_000 });
     await pc.goto(`${srv.url}/#/sales`);
-    await expect(pc.getByText(/45\s?000\s?Ar/).first()).toBeVisible();
-    await pc.goto(`${srv.url}/#/`);
-    await expect(pc.getByText(/45\s?000\s?Ar/).first()).toBeVisible();
+    await expect(pc.getByText('TK-2026-000001').or(pc.getByText(/TK-\d{4}-\d{6}/)).first()).toBeVisible();
     await shot(pc, 'x7-pc-sees-sale');
     // et le stock est descendu à 9
     const stock = await gp(pc, 'stock.levels', {});
