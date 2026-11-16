@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, Boxes, ChevronsLeft, ChevronsRight, CircleDollarSign, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Moon, Settings, ShieldCheck, ShoppingCart, Sun, Truck, Users, Wallet, WifiOff, Receipt, Lock } from 'lucide-react';
 import { Logo } from './Brand';
+import { UpdatePill } from './Update';
 import { Button, Field, Input, Modal, useToast, cx } from './ui';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
@@ -95,6 +96,7 @@ export function Layout() {
         <header className="no-print flex h-16 shrink-0 items-center gap-3 border-b border-ink-100 bg-white/80 px-4 backdrop-blur dark:border-white/[0.07] dark:bg-ink-950/60">
           <button className="rounded-lg p-2 text-ink-500 hover:bg-ink-100 lg:hidden dark:hover:bg-white/10" onClick={() => setMobile(true)} aria-label="Menu"><Menu className="size-5" /></button>
           <div className="flex-1" />
+          <UpdatePill />
           {session.data ? (
             <button onClick={() => nav('/cash')} className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 sm:flex dark:bg-emerald-400/10 dark:text-emerald-300"><span className="size-2 animate-pulse rounded-full bg-emerald-500" />{session.data.registerName} · {t('ouverte')}</button>
           ) : can('cash.session') && (

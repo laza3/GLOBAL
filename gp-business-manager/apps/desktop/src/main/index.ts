@@ -5,8 +5,9 @@ import { Db } from './core/db';
 import { resetPasswordOffline } from './core/auth';
 import { App } from './core/api';
 import { reportToCsv, reportToHtml, reportToXlsx, runReport } from './core/reports';
-import { nowIso } from './core/util';
+import { audit, nowIso } from './core/util';
 import { DatabaseSync } from 'node:sqlite';
+import { autoUpdater } from 'electron-updater';
 
 // GP_FORCE_PROD=1 : exécute le build non empaqueté avec la configuration de production (CSP stricte) — utilisé par les tests e2e
 const isDev = !app.isPackaged && process.env.GP_FORCE_PROD !== '1';
@@ -92,6 +93,24 @@ ipcMain.handle('gp:system', (e, op: string, p: any) => {
     const parent = BrowserWindow.fromWebContents(e.sender) ?? undefined;
     switch (op) {
       case 'info': return { version: app.getVersion(), dataDir, backupDir, dbPath, platform: process.platform };
+      case 'update': {
+        const ctx = ctxOf(e);
+        if (p?.op === 'state') return { enabled: updaterOn, ...updateState };
+        need(ctx, 'settings.manage');
+        if (!updaterOn) throw new Error('Mises à jour automatiques non disponibles dans cette version (installation de développement).');
+        if (p?.op === 'check') { pushUpdate({ status: 'checking' }); await autoUpdater.checkForUpdates().catch((err) => pushUpdate({ status: 'error', message: err?.message ?? String(err) })); return { ...updateState }; }
+        if (p?.op === 'download') { if (updateState.status !== 'available') throw new Error('Aucune mise à jour à télécharger'); void autoUpdater.downloadUpdate().catch((err) => pushUpdate({ status: 'error', message: err?.message ?? String(err) })); return true; }
+        if (p?.op === 'install') {
+          if (updateState.status !== 'ready') throw new Error('La mise à jour n’est pas encore téléchargée');
+          // sauvegarde de sécurité, puis fermeture propre de la base avant l'installateur
+          db.backupTo(join(backupDir, `avant-mise-a-jour-${updateState.version}-${Date.now()}.db`));
+          audit(ctx, 'app.update_install', 'app', undefined, { to: updateState.version });
+          db.close();
+          setImmediate(() => autoUpdater.quitAndInstall(true, true));
+          return true;
+        }
+        throw new Error('Opération inconnue');
+      }
       case 'print': {
         ctxOf(e);
         const w = await printWindow(String(p.html));
@@ -172,6 +191,31 @@ ipcMain.handle('gp:system', (e, op: string, p: any) => {
   });
 });
 
+// ---------- mises à jour automatiques (GitHub Releases) ----------
+type UpdateState = { status: 'idle' | 'checking' | 'available' | 'none' | 'downloading' | 'ready' | 'error'; version?: string; percent?: number; message?: string };
+let updateState: UpdateState = { status: 'idle' };
+let updaterOn = false;
+const pushUpdate = (s: UpdateState) => { updateState = s; win?.webContents.send('gp:update', s); };
+/** GP_UPDATE_URL (tests) : source générique à la place de GitHub, utilisable hors application empaquetée. */
+function setupUpdater() {
+  const url = process.env.GP_UPDATE_URL;
+  if (process.env.GP_NO_UPDATE === '1' || (!app.isPackaged && !url)) return;
+  updaterOn = true;
+  autoUpdater.autoDownload = false; // l'utilisateur décide (une vente ne doit jamais être interrompue)
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.logger = { info: (m: unknown) => log(`[maj] ${m}`), warn: (m: unknown) => log(`[maj] ${m}`), error: (m: unknown) => log(`[maj] ${m}`) };
+  if (url) { autoUpdater.forceDevUpdateConfig = true; autoUpdater.setFeedURL({ provider: 'generic', url }); }
+  autoUpdater.on('checking-for-update', () => pushUpdate({ status: 'checking' }));
+  autoUpdater.on('update-available', (i) => pushUpdate({ status: 'available', version: i.version }));
+  autoUpdater.on('update-not-available', () => pushUpdate({ status: 'none' }));
+  autoUpdater.on('download-progress', (p) => pushUpdate({ status: 'downloading', version: updateState.version, percent: Math.round(p.percent) }));
+  autoUpdater.on('update-downloaded', (i) => pushUpdate({ status: 'ready', version: i.version }));
+  autoUpdater.on('error', (e) => pushUpdate({ status: 'error', message: e?.message ?? String(e) }));
+  const check = (manual = false) => autoUpdater.checkForUpdates().catch((e) => { if (manual) pushUpdate({ status: 'error', message: e?.message ?? String(e) }); else { log('[maj] vérification impossible (hors ligne ?)', e); pushUpdate({ status: 'idle' }); } });
+  setTimeout(() => check(), 20_000);
+  setInterval(() => { if (!['downloading', 'ready'].includes(updateState.status)) void check(); }, 6 * 3600_000);
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1024, minHeight: 640, show: false, backgroundColor: '#0f1424', title: 'GP Business Manager',
@@ -194,6 +238,7 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_wc: WebContents, _perm, cb) => cb(false));
   autoBackup();
   createWindow();
+  setupUpdater();
   log(`Démarrage v${app.getVersion()} — base : ${dbPath}`);
   void nowIso;
 });

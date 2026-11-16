@@ -42,3 +42,8 @@ Lecteur de codes-barres : tout lecteur « clavier » (HID) terminant par Entrée
 
 ## Déploiements serveur (futur)
 Docker Compose (PostgreSQL + API NestJS + web) sera documenté lors de la phase API. Voir ARCHITECTURE.md §6.
+
+## Mises à jour automatiques (depuis 0.2.0)
+- **Côté application** : `electron-updater` vérifie GitHub Releases 20 s après le démarrage puis toutes les 6 h ; une pastille « Version X disponible » apparaît ; **seul un utilisateur ayant `settings.manage`** peut télécharger/installer ; une **sauvegarde** (`avant-mise-a-jour-*.db`) est créée juste avant l'installation ; jamais de téléchargement ni de redémarrage sans clic. Carte « Mises à jour » dans *Administration → Sauvegardes* (vérification manuelle).
+- **Publier une version** : 1) augmenter `version` dans `apps/desktop/package.json` ; 2) pousser un tag `vX.Y.Z` sur le commit (ou lancer le workflow *publier une version*) → GitHub construit et crée une **release en BROUILLON** ; 3) vérifier puis cliquer **Publish release** : les postes installés la proposent.
+- **Limites** : la 1ʳᵉ installation avec cette fonction est manuelle ; sans signature de code, l'intégrité repose sur HTTPS + empreintes SHA-512 de `latest.yml` (Windows peut afficher SmartScreen) ; dépôt public requis (sinon jeton à embarquer — à éviter) ; le téléchargement/installation réels ne sont pas testables hors Windows : validés manuellement sur un poste.

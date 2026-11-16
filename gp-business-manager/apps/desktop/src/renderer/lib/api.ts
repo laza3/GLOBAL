@@ -10,6 +10,7 @@ declare global {
     gp: {
       call: (method: string, params?: unknown) => Promise<Envelope>;
       system: (op: string, params?: unknown) => Promise<Envelope>;
+      onUpdate: (cb: (state: any) => void) => () => void;
     };
   }
 }

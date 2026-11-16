@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.2.0 — 2026-11-16
+### Ajouté
+- **Mises à jour automatiques** (GitHub Releases) : pastille « Version X disponible », carte dans *Administration → Sauvegardes*, sauvegarde automatique avant installation, réservé aux utilisateurs `settings.manage`.
+- **Mot de passe oublié** : `--reset-password=… [--user=…]` + aide sur l'écran de connexion.
+- Workflows GitHub Actions : build Windows + tests sous Windows ; publication d'une version en brouillon.
+### Corrigé
+- Fenêtres modales rognées/décentrées (affichage par portal) ; scans de codes-barres rapprochés ; formulaire de dépense ; écart de caisse répercuté sur le compte ; sélecteur de langue.
+
 ## 0.1.0 — 2026-11-15 (première version Windows)
 ### Ajouté
 - Application Windows Electron + React + SQLite local, 100 % hors ligne.

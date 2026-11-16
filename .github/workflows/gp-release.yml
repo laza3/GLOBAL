@@ -1,0 +1,35 @@
+name: GP Business Manager — publier une version (BROUILLON)
+
+# Construit l'installateur Windows et le dépose dans une « Release » GitHub en BROUILLON (invisible du public).
+# Les applications installées ne voient la mise à jour qu'une fois la release PUBLIÉE (bouton « Publish release »).
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: gp-business-manager
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gp-business-manager/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build -w @gp/desktop
+      - name: Installateur + publication en brouillon
+        run: npx electron-builder --win --x64 --publish always
+        working-directory: gp-business-manager/apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,6 @@
 # PROJECT STATUS — GP Business Manager
 
-_Dernière mise à jour : 2026-11-15 · Version 0.1.0 · **Périmètre livré : application Windows (hors ligne)**._
+_Dernière mise à jour : 2026-11-15 · Version 0.2.0 · **Périmètre livré : application Windows (hors ligne)**._
 
 ## Résumé
 | Cible | État |
@@ -36,7 +36,8 @@ Voir ROADMAP.md (backlog). Principaux manques assumés :
 - **Fidélisation clients** (points/paliers) : listée dans la spécification, **non implémentée** (le champ `loyalty_points` existe mais n'est ni alimenté ni utilisé).
 - **Listes de prix multiples** (`PriceList`) : seuls détail/gros/promo existent.
 - **Retours fournisseur** : pas d'écran (endpoint `purchases.returnToSupplier` testé en service seulement).
-- Tiroir-caisse ESC/POS, étiquettes code-barres, import CSV produits/clients, relances clients, notifications (entité `Notification`), multi-devises simultanées, chiffrement de la base, mise à jour automatique, signature de code.
+- Mise à jour automatique : **faite (0.2.0)** ; reste à valider sur un poste Windows avec une vraie release.
+- Tiroir-caisse ESC/POS, étiquettes code-barres, import CSV produits/clients, relances clients, notifications (entité `Notification`), multi-devises simultanées, chiffrement de la base, signature de code.
 - Messages d'erreur métier renvoyés par le cœur : **en français uniquement** (même quand l'interface est en anglais).
 - Malgache : infrastructure prête (`mg.ts`, sélecteur), **dictionnaire quasi vide**.
 - Rôle de **gestionnaire de plusieurs entreprises** dans une même installation : non prévu (une installation = une entreprise ; plusieurs entreprises = plusieurs profils/bases à terme).
@@ -55,6 +56,7 @@ Voir ROADMAP.md (backlog). Principaux manques assumés :
 |---|---|
 | `@gp/shared` (Vitest) — argent, panier, règlement, retours, numérotation, permissions, i18n | ✅ **21 / 21** |
 | Récupération de mot de passe (ligne de commande) — test e2e réel | ✅ |
+| Mises à jour automatiques — détection/annonce testées avec un faux serveur de versions (2 e2e) | ✅ ; **téléchargement + installation réels : non testés** (nécessitent Windows + une release publiée) |
 | `@gp/desktop` intégration (Vitest, SQLite réelle) — sécurité, ventes, retours, immuabilité, catalogue, stock/FEFO/inventaire, achats, caisse, finances/dashboard, exports | ✅ **30 / 30** |
 | Typecheck TypeScript (strict) | ✅ 0 erreur |
 | Audit de mise en page (écrans + fenêtres, 2 tailles d'écran) | ✅ 0 anomalie |
