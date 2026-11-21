@@ -47,6 +47,9 @@ export async function createTestDb(): Promise<TestDb> {
   const url = withDatabase(adminUrl, name);
   const admin = new pg.Pool({ connectionString: url, max: 5 });
   const app = new pg.Pool({ connectionString: url, max: 20 });
+  // Au démontage, DROP DATABASE ... WITH (FORCE) peut couper une connexion encore en cours de fermeture : ce n'est pas une erreur de test
+  admin.on('error', () => undefined);
+  app.on('error', () => undefined);
   return {
     name,
     url,

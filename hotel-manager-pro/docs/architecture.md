@@ -140,12 +140,29 @@ Le cahier des charges cite le fuseau `Africa/Antananarivo`. **Cet identifiant n'
 (PostgreSQL et les navigateurs le rejettent). Le bon identifiant de Madagascar est **`Indian/Antananarivo`** (UTC+3,
 sans heure d'été), utilisé partout.
 
+## 8bis. Couche API (Phase 4)
+
+```
+Navigateur ──cookie HttpOnly + X-CSRF-Token──▶ Fastify (apps/api)
+                                                ├─ plugins/auth      origine → session → CSRF → état d'accès → permission
+                                                ├─ modules/*         routes minces : validation zod, appel de service, réponse
+                                                ├─ services/*        règles commerciales (facturation SaaS, cycle de vie, sessions)
+                                                └─ db.ts             deux pools : hmp_app (RLS) et hmp_platform (console)
+```
+
+* **Le SQL reste la source de vérité** : l'API ne ré-implémente aucune règle d'intégrité (chevauchement, immutabilité,
+  limites, paiements) ; elle traduit les erreurs `HM001` de la base en codes stables et en messages français.
+* **Une transaction par requête**, avec le contexte d'établissement posé en début de transaction (cf. security-model.md).
+* **Un seul calcul d'état d'accès**, dans `@hmp/shared`, utilisé par l'API et (à venir) par l'interface : l'écran ne peut
+  pas afficher un droit que le serveur refuserait.
+* L'horloge de l'application (`deps.now`) fait foi pour les états d'accès et le cycle de vie ; les tests la pilotent
+  pour traverser fin d'essai, tolérance et expiration sans toucher aux données.
+* Détail des routes, règles et limites : [api.md](api.md).
+
 ## 9. Limites actuelles (ce qui n'est PAS fait)
 
-* **Pas encore d'API, d'interface ni d'authentification** : Phases 3 à 5. Aujourd'hui : base, règles, tests.
-* **Tâche de cycle de vie des abonnements** (essai → expiré, actif → impayé → expiré, génération des factures de
-  renouvellement) : l'état est dans la base, le traitement planifié sera écrit en Phase 4. Tant qu'il n'existe pas,
-  les droits sont déjà corrects (calculés par dates), mais `platform_mrr` se fie au statut.
+* **API prête, interface non** : l'API (authentification, abonnements, console plateforme) est écrite et testée ; les écrans de la console et de l'espace client, puis tous les modules métier hôteliers, viennent aux Phases 5 et suivantes.
+* **Tâche de cycle de vie des abonnements** : écrite et testée (`pnpm api:lifecycle`, à planifier toutes les heures). Les droits d'usage sont calculés par dates, donc corrects même si la tâche ne tourne pas ; `platform_mrr` se fie au statut enregistré et exige donc qu'elle tourne.
 * **Aucune passerelle de paiement n'est connectée** (MVola, Orange Money, Airtel Money, carte) : validation manuelle
   uniquement. Les brancher exige des contrats marchands et des clés que ce projet n'a pas.
 * Envoi d'e-mails / SMS non implémenté (nécessitera un fournisseur).

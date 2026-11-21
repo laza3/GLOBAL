@@ -56,8 +56,38 @@ qu'aux tests, où la connexion est superuser.
 | Falsification comptable (modifier un paiement/une facture) | Grand livre en ajout seul ; factures immuables | `billing` |
 | Dépassement de limites par contournement de l'API | Triggers + verrous consultatifs | `licensing-limits-support` |
 | Note interne exposée à l'hôtel | RLS `NOT is_internal` | `licensing-limits-support` |
+| Vol d'une session depuis une sauvegarde de la base | Seule l'empreinte SHA-256 du jeton est stockée | `auth` (jeton absent de la base) |
+| Rejeu d'une session après déconnexion | Révocation côté serveur ; cookie effacé | `auth`, `platform` |
+| Requête forgée depuis un autre site (CSRF) | `SameSite` + en-tête `X-CSRF-Token` (HMAC du jeton) + liste d'origines | `auth`, `platform` |
+| Sondage du schéma par un anonyme | Contrôles d'accès **avant** la validation du corps | `auth` (ordre des contrôles) |
+| Énumération de comptes à la connexion | Même réponse et même durée (vérification factice) | `auth`, `platform` |
+| Force brute sur un mot de passe | Verrouillage après 5 échecs + limitation de débit par IP | `auth`, `platform` |
+| Un hôtel confirme son propre paiement | Route réservée à la plateforme + contrainte SQL | `hotel-billing`, `saas-commercial` |
+| Faux paiement « automatique » | Connecteur automatisé non activable sans intégration réelle (501 + CHECK SQL) | `platform`, `saas-commercial` |
+| Clé de licence retrouvable | Montrée une seule fois ; empreinte seule stockée | `platform` |
+| Console plateforme qui réécrit son journal | `UPDATE`/`DELETE` non accordés | `platform` |
+| Accès conservé après fin d'essai / d'abonnement | État calculé par dates à chaque requête (ne dépend pas du cron) | `lifecycle` |
+| Double facturation d'un renouvellement | Une seule facture ouverte par période | `lifecycle` |
+
+## Couche API
+
+* **Cookies** : `HttpOnly`, `Secure` + préfixe `__Host-` en production (la configuration refuse de démarrer en production sans `COOKIE_SECURE`), `SameSite=Lax` (hôtels) / `Strict` (plateforme). Cookies d'hôtel et de plateforme **distincts** : une session ne vaut jamais pour l'autre domaine.
+* **En-têtes** (helmet) : CSP `default-src 'none'` pour l'API (une CSP dédiée, plus large, ne vaut que pour `/api/docs`), HSTS en production, `frame-ancestors 'none'`, `nosniff`, pas de `Referrer`.
+* **Journaux** (pino) : cookies, `Authorization` et `X-CSRF-Token` masqués ; aucun mot de passe ni jeton n'est écrit dans l'audit (testé).
+* **Erreurs** : format unique, messages français, jamais de pile d'appels ni de SQL ; l'erreur interne ne renvoie que `requestId`.
+* **Mots de passe** : Argon2id ; politique minimale (10 caractères, lettre + chiffre, ni l'e-mail ni un mot de passe courant).
+* **Pools** : un pool par rôle PostgreSQL ; une erreur sur une connexion inactive est journalisée au lieu d'arrêter le processus.
+
+**Non fait, à traiter avant la mise en production** : double authentification (TOTP) des super-administrateurs, limitation
+de débit partagée entre instances (Redis ou proxy), réinitialisation de mot de passe par e-mail (pas de fournisseur),
+audit externe. Voir [api.md §9](api.md).
 
 ## Vérification des tests eux-mêmes (tests de mutation)
 
 Les garde-fous ont été éprouvés en injectant volontairement des failles (table sans RLS, droit indu, politique trop
 large, triggers retirés, contrainte de paiement supprimée) : les tests concernés **échouent bien** à chaque fois.
+
+Phase 4 : six garde-fous de l'API ont été cassés un à un et les tests ont échoué à chaque fois — contrôle CSRF retiré
+(3 échecs), déduplication des factures de renouvellement retirée (3), règlement tardif sans nouveau cycle (1), état d'accès
+lu sur l'horloge SQL au lieu de celle de l'application (2), paiement déclaré créé « confirmé » (6), `hotel_id` omis du
+journal d'audit d'une validation (1).

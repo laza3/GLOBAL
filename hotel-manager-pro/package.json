@@ -14,7 +14,11 @@
     "test": "pnpm -r test",
     "web:dev": "pnpm --filter @hmp/web dev",
     "web:build": "pnpm --filter @hmp/web build",
-    "check:ui": "pnpm --filter @hmp/web check:ui"
+    "check:ui": "pnpm --filter @hmp/web check:ui",
+    "api:dev": "pnpm --filter @hmp/api dev",
+    "api:start": "pnpm --filter @hmp/api start",
+    "api:create-admin": "pnpm --filter @hmp/api create-admin",
+    "api:lifecycle": "pnpm --filter @hmp/api lifecycle"
   },
   "devDependencies": {
     "typescript": "5.9.3"
