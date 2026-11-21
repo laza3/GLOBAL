@@ -1,6 +1,6 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { Checkbox as RCheckbox, Select as RSelect, Switch as RSwitch, ToggleGroup } from 'radix-ui';
-import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { useId, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { cn } from '../lib/cn';
 
 /* ---------------------------------------------------------------------------------------------
@@ -86,6 +86,25 @@ export function Input({
   );
 }
 
+/** Mot de passe avec bouton afficher/masquer (nom accessible explicite, état annoncé). */
+export function PasswordInput({ className, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <input className={cn(control, 'pr-12', className)} type={shown ? 'text' : 'password'} {...props} />
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        aria-pressed={shown}
+        aria-label={shown ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+        className="absolute inset-y-0 right-1 grid w-10 cursor-pointer place-items-center rounded-control text-ink-3 hover:text-ink"
+      >
+        {shown ? <EyeOff aria-hidden className="size-[18px]" /> : <Eye aria-hidden className="size-[18px]" />}
+      </button>
+    </div>
+  );
+}
+
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={cn(control, 'min-h-24 py-2.5 leading-relaxed', className)} {...props} />;
 }
@@ -98,15 +117,17 @@ export function Select({
   onValueChange,
   options,
   placeholder,
+  disabled,
   ...aria
 }: {
   value?: string;
   onValueChange?: (v: string) => void;
   options: Array<{ value: string; label: string }>;
   placeholder?: string;
+  disabled?: boolean;
 } & Partial<FieldControlProps>) {
   return (
-    <RSelect.Root value={value} onValueChange={onValueChange}>
+    <RSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
       <RSelect.Trigger
         className={cn(control, 'inline-flex items-center justify-between gap-2 text-left data-[placeholder]:text-ink-3')}
         {...aria}

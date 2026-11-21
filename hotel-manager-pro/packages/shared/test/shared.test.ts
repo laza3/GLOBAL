@@ -109,3 +109,47 @@ describe('messages d\'erreur', () => {
     }
   });
 });
+
+import { CURRENCIES, currencyDigits, formatMoney, fromMinorUnits, toMinorUnits } from '../src/money';
+
+describe('montants', () => {
+  it('l\'ariary n\'a pas de sous-unité ; l\'euro et le dollar ont des centimes', () => {
+    expect(currencyDigits('MGA')).toBe(0);
+    expect(currencyDigits('EUR')).toBe(2);
+    expect(currencyDigits('USD')).toBe(2);
+    expect(currencyDigits('XXX')).toBe(0);
+    expect(Object.keys(CURRENCIES)).toEqual(['MGA', 'EUR', 'USD']);
+  });
+
+  it('formate avec les espaces insécables français et le bon symbole', () => {
+    expect(formatMoney(80000, 'MGA')).toBe('80 000 Ar');
+    expect(formatMoney(1250, 'EUR')).toBe('12,50 €');
+    expect(formatMoney(0, 'USD')).toBe('0,00 $');
+    expect(formatMoney(-5000, 'MGA')).toBe('-5 000 Ar');
+    expect(formatMoney(5, 'XXX')).toBe('5 XXX');
+  });
+
+  it('convertit la saisie en unités entières sans erreur d\'arrondi', () => {
+    expect(toMinorUnits(12.5, 'EUR')).toBe(1250);
+    expect(toMinorUnits(0.1 + 0.2, 'EUR')).toBe(30);
+    expect(toMinorUnits(19.99, 'EUR')).toBe(1999);
+    expect(toMinorUnits(80000, 'MGA')).toBe(80000);
+    expect(fromMinorUnits(1999, 'EUR')).toBe(19.99);
+  });
+});
+
+import { isStrongPassword, passwordProblem } from '../src/password';
+
+describe('politique de mot de passe', () => {
+  it('accepte un mot de passe solide et refuse les cas faibles avec le bon message', () => {
+    expect(isStrongPassword('Mot-de-passe-solide-42')).toBe(true);
+    expect(passwordProblem('Mot-de-passe-solide-42')).toBeNull();
+    expect(passwordProblem('court1')).toMatch(/10 caractères/);
+    expect(passwordProblem('uniquementdeslettres')).toMatch(/lettre et un chiffre/);
+    expect(passwordProblem('1234567890123')).toMatch(/lettre et un chiffre/);
+    expect(passwordProblem('motdepasse1')).toMatch(/trop courant/); // 11 caractères, mais dans la liste des mots de passe courants
+    expect(passwordProblem('hotelmanager1')).toMatch(/trop courant/);
+    expect(passwordProblem('Aina.Rakoto2026', 'aina.rakoto2026')).toMatch(/identique à votre e-mail/);
+    expect(passwordProblem('x'.repeat(129) + '1')).toMatch(/trop long/);
+  });
+});

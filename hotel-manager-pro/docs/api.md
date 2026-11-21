@@ -94,6 +94,11 @@ Chaque moyen (`mvola`, `orange_money`, `airtel_money`, `bank_transfer`, `card`, 
 
 Ajouter un prestataire = implémenter un connecteur (création du paiement, vérification de la signature du webhook) ; le reste (factures, validation, effets, journal) est inchangé.
 
+### Utilisation des quotas
+
+`GET /hotel/usage` → `{ rooms: { count, max }, users: { count, max } }` : consommation réelle de CET établissement face aux limites de sa
+formule (`max = null` : illimité). Alimente la jauge du tableau de bord.
+
 ## 7. Console plateforme (`/platform/*`)
 
 Chaque action est inscrite dans `platform_audit_logs` (ajout seul : même le rôle plateforme n'a pas `UPDATE`/`DELETE`), avec l'administrateur, l'adresse IP, l'établissement concerné et le détail.
@@ -112,7 +117,7 @@ Chaque action est inscrite dans `platform_audit_logs` (ajout seul : même le rô
 | Licences définitives | `GET /platform/licenses`, `POST /platform/hotels/:id/licenses` (clé **montrée une seule fois**, seule l'empreinte est stockée), `POST /platform/licenses/:id/{revoke,suspend,reinstate,extend-maintenance}` |
 | Réglages | `GET /platform/settings`, `PATCH /platform/settings/:key` — seules les clés connues, validées : `trial.enabled`, `trial.default_days`, `trial.default_plan_code`, `billing.grace_days`, `billing.invoice_due_days`, `billing.tax_rate_bps`, `billing.default_currency`, `billing.renewal_invoice_days`, `billing.auto_approve_plan_changes`, `auth.max_failed_attempts`, `auth.lock_minutes`, `company.profile` |
 | Support | `GET /platform/tickets`, `GET/PATCH /platform/tickets/:id`, `POST …/:id/messages` (réponse publique ou **note interne** invisible de l'hôtel) |
-| Exploitation | `GET /platform/audit-logs`, `POST /platform/jobs/lifecycle` |
+| Exploitation | `GET /platform/audit-logs` (filtre `action`, pagination, `total`), `POST /platform/jobs/lifecycle` |
 
 ### Licence définitive
 
@@ -138,7 +143,7 @@ Idempotente et sans effet de bord hors base. Les **droits d'usage** ne dépenden
 
 ## 9. Limites connues (ce qui n'est PAS fait)
 
-* **Aucune interface** pour la console plateforme ni pour l'espace client (abonnement, factures, paiement, support) : l'API est prête et testée, l'écran viendra avec le shell applicatif (Phase 5).
+* **Interface** : la console plateforme et l'espace client (abonnement, factures, paiement, support) existent depuis la Phase 5 — voir [web.md](web.md).
 * **Aucune passerelle de paiement connectée** (MVola, Orange Money, Airtel Money, carte) : validation manuelle uniquement ; les brancher exige des contrats marchands et des clés.
 * **Pas d'envoi d'e-mails ni de SMS** : pas de réinitialisation de mot de passe par e-mail, pas de rappels de renouvellement, pas de notification de ticket. Nécessite un fournisseur.
 * **Pas de double authentification (TOTP)** pour les super-administrateurs (la colonne existe, le parcours n'est pas écrit) : à faire avant une mise en production.

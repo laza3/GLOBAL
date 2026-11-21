@@ -9,3 +9,4 @@ playwright-report/
 uploads/
 backups/
 .shots/
+.stack/

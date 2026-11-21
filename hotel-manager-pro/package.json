@@ -18,7 +18,8 @@
     "api:dev": "pnpm --filter @hmp/api dev",
     "api:start": "pnpm --filter @hmp/api start",
     "api:create-admin": "pnpm --filter @hmp/api create-admin",
-    "api:lifecycle": "pnpm --filter @hmp/api lifecycle"
+    "api:lifecycle": "pnpm --filter @hmp/api lifecycle",
+    "check:e2e": "pnpm --filter @hmp/web check:e2e"
   },
   "devDependencies": {
     "typescript": "5.9.3"

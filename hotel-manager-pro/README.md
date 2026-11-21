@@ -3,13 +3,14 @@
 SaaS multi-établissements de gestion hôtelière. Une seule application et une seule base servent des centaines d'hôtels
 indépendants, avec isolation stricte des données.
 
-**État : Phase 4 / 11 terminée** — base de données multi-tenant avec couche SaaS commerciale (Phase 2), design system
-vitré clair/sombre (Phase 3), et **API** : authentification, inscription d'un hôtel, abonnements, facturation SaaS,
-paiements à validation manuelle, licences, console super-administrateur, support (Phase 4).
-**Pas encore d'écrans pour la console ni pour l'espace client, ni de modules métier hôteliers** (chambres, réservations…) :
-Phases 5 et suivantes. Aucun prestataire de paiement en ligne n'est connecté.
-Voir [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/security-model.md](docs/security-model.md) et
-[docs/design-system.md](docs/design-system.md).
+**État : Phase 5 / 11 terminée** — base de données multi-tenant avec couche SaaS commerciale (Phase 2), design system vitré
+clair/sombre (Phase 3), API d'authentification, d'abonnements et de facturation SaaS (Phase 4), et **interface** : inscription et
+connexion, espace de l'établissement (configuration, abonnement, factures et paiements, assistance, compte) et **console du
+super-administrateur** (Phase 5).
+**Les modules métier hôteliers (chambres, réservations, clients, réception…) ne sont pas encore développés** : l'interface les
+signale « Bientôt » et n'affiche aucune donnée d'exemple (Phases 6 et suivantes). Aucun prestataire de paiement en ligne n'est connecté.
+Voir [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/web.md](docs/web.md),
+[docs/security-model.md](docs/security-model.md) et [docs/design-system.md](docs/design-system.md).
 
 ## Prérequis
 
@@ -20,10 +21,11 @@ Node ≥ 22, pnpm 10, PostgreSQL 16.
 ```bash
 pnpm install
 ./scripts/setup-dev-db.sh        # crée le compte et la base de développement, applique les migrations
-pnpm test                        # 315 tests sur un vrai PostgreSQL (une base clonée par fichier de test)
+pnpm test                        # 344 tests (shared 20 · db 207 · api 93 · web 24), PostgreSQL réel pour db et api
 pnpm typecheck
-pnpm web:dev                      # design system : http://127.0.0.1:5173
-pnpm check:ui                    # contrastes + rendu + accessibilité + comportements (2 thèmes × 4 tailles)
+pnpm web:dev                      # interface : http://127.0.0.1:5173 (relaie /api vers l'API sur le port 3000)
+pnpm check:ui                    # design system (/design) : contrastes + rendu + accessibilité + comportements
+pnpm check:e2e                   # parcours réels dans Chromium + API + base jetables, puis 174 écrans/états audités (axe WCAG A/AA)
 ```
 
 ### Lancer l'API
@@ -57,9 +59,12 @@ apps/api/
 apps/web/
   src/styles/   jetons de design (clair/sombre), surfaces vitrées
   src/ui/       composants du design system
-  src/pages/    page de démonstration du design system
-  scripts/      mesure des contrastes, vérification visuelle et comportementale
-docs/           architecture, API (règles et limites), modèle de sécurité, design system
+  src/api/      client HTTP (CSRF, erreurs), types et requêtes (hôtel, console)
+  src/auth/     session, gardes d'accès, écrans de chargement et d'erreur
+  src/layouts/  coques de l'application (hôtel, console), bandeaux d'état d'abonnement
+  src/pages/    écrans : accès, vue d'ensemble, paramètres, console plateforme, design system (/design)
+  scripts/      contrastes, vérification du design system, pile de test réelle, parcours de bout en bout
+docs/           architecture, API, interface web, modèle de sécurité, design system
 ```
 
 Une migration appliquée n'est jamais modifiée (checksum vérifié) : on en ajoute une nouvelle.

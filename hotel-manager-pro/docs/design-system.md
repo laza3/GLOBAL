@@ -1,8 +1,8 @@
 # Hotel Manager Pro — Design system
 
-> État : **Phase 3 terminée**. La page de démonstration (`apps/web`) sert de banc d'essai : chaque composant y
-> fonctionne réellement (formulaire validé, tableau triable, fenêtres, palette de commandes, thème).
-> Lancement : `pnpm web:dev` · vérification complète : `pnpm check:ui`.
+> État : **Phase 3 terminée, utilisé en production par l'application (Phase 5)**. La page de démonstration sert de banc d'essai :
+> chaque composant y fonctionne réellement (formulaire validé, tableau triable, fenêtres, palette de commandes, thème).
+> Elle est servie sur la route interne **`/design`**. Lancement : `pnpm web:dev` · vérification : `pnpm check:ui`.
 
 ## 1. Direction artistique
 
@@ -43,6 +43,11 @@ Chiffres **proportionnels** pour les grands nombres, **tabulaires** uniquement d
 `CommandPalette` (⌘K / Ctrl+K / « / ») · `Sidebar` repliable, `TabBar` mobile, `Topbar`, `ConnectionIndicator` ·
 `Tabs` · graphiques : `TrendChart`, `BarList`, `Ring`, `Sparkline`, `StatTile`, `SegmentedBar`, `ChartFigure`.
 
+Ajoutés en Phase 5 : `StateBadge` (état facture / paiement / abonnement / ticket : icône + libellé + ton), `Meter` (jauge de quota),
+`PasswordInput` (afficher/masquer), `PageHeader`, `Panel`, `DefinitionList`, `Callout` (information, avertissement, erreur).
+Les éléments chiffrés légers (`Ring`, `Meter`, `StatTile`, `SegmentedBar`, `BarList`, `Legend`) sont dans `ui/stats.tsx`, sans dépendance à
+Recharts : seuls `TrendChart` et `ChartFigure` (`ui/charts.tsx`) l'embarquent.
+
 ## 4. Règles d'accessibilité appliquées (et vérifiées)
 
 * **Contrastes mesurés** (`pnpm check:contrast`) : chaque paire texte/fond, **dans le pire cas sous chaque halo**, avec
@@ -76,5 +81,6 @@ c'est `check:contrast` qui couvre ce cas. Le lecteur d'écran réel (VoiceOver, 
 * **Barre supérieure adaptative par conteneur** (et non par fenêtre) : elle s'ajuste à la place réellement disponible.
 * **Pas de bibliothèque d'animation** (Motion) à ce stade : les transitions CSS suffisent ; à reconsidérer en Phase 5
   pour les transitions de pages (View Transitions).
-* **Poids** : ≈ 276 Ko gzippé (Recharts, Radix). Le découpage par route est prévu en Phase 5.
-* La page de démonstration deviendra une route interne `/design` quand le routeur sera en place (Phase 5).
+* **Poids** : chaque écran est un fragment chargé à la demande ; le chargement initial pèse ≈ 180 Ko compressés et n'embarque pas Recharts (voir [web.md §5](web.md)).
+* **Couche CSS** : `.surface { position: relative }` est dans `@layer base` pour que `fixed`/`absolute`/`sticky` posés sur une surface l'emportent
+  (hors couche, il écrasait `fixed` : la barre d'onglets mobile n'était pas fixée — trouvé par la vérification de bout en bout).

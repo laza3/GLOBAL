@@ -64,6 +64,15 @@ export default async function hotelRoutes(app: FastifyInstance) {
     return rows[0];
   });
 
+  r.get('/hotel/usage', { preValidation: open('settings:read'), schema: { tags: ['Établissement'], summary: 'Utilisation des quotas (chambres, utilisateurs) face aux limites de la formule' } }, async (req) => {
+    const me = req.hotel!;
+    const { rooms, users } = await me.tenant(async (tx) => ({
+      rooms: (await tx.query<{ n: number }>('SELECT count(*)::int AS n FROM rooms WHERE NOT is_archived')).rows[0]!.n,
+      users: (await tx.query<{ n: number }>("SELECT count(*)::int AS n FROM memberships WHERE status IN ('active', 'invited')")).rows[0]!.n,
+    }));
+    return { rooms: { count: rooms, max: me.entitlements.max_rooms }, users: { count: users, max: me.entitlements.max_users } };
+  });
+
   r.patch('/hotel', {
     preValidation: open('settings:manage'),
     schema: { tags: ['Établissement'], summary: 'Modifier le profil de l\'établissement', body: profileSchema },

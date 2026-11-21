@@ -161,7 +161,7 @@ Navigateur ──cookie HttpOnly + X-CSRF-Token──▶ Fastify (apps/api)
 
 ## 9. Limites actuelles (ce qui n'est PAS fait)
 
-* **API prête, interface non** : l'API (authentification, abonnements, console plateforme) est écrite et testée ; les écrans de la console et de l'espace client, puis tous les modules métier hôteliers, viennent aux Phases 5 et suivantes.
+* **Interface** : accès, espace client et console plateforme existent (Phase 5, voir [web.md](web.md)). Les **modules métier hôteliers** (chambres, réservations, clients, réception, housekeeping, restaurant, facturation des clients, finances, personnel, rapports) viennent aux Phases 6 et suivantes : l'interface les signale « Bientôt ».
 * **Tâche de cycle de vie des abonnements** : écrite et testée (`pnpm api:lifecycle`, à planifier toutes les heures). Les droits d'usage sont calculés par dates, donc corrects même si la tâche ne tourne pas ; `platform_mrr` se fie au statut enregistré et exige donc qu'elle tourne.
 * **Aucune passerelle de paiement n'est connectée** (MVola, Orange Money, Airtel Money, carte) : validation manuelle
   uniquement. Les brancher exige des contrats marchands et des clés que ce projet n'a pas.

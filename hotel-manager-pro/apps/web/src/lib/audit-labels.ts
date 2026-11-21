@@ -1,0 +1,33 @@
+/** Libellés lisibles des actions du journal d'audit de la plateforme (une action inconnue s'affiche telle quelle). */
+export const AUDIT_LABELS: Record<string, string> = {
+  'platform.login': 'Connexion à la console',
+  'platform.login_failed': 'Échec de connexion à la console',
+  'hotel.suspended': 'Compte suspendu',
+  'hotel.reactivated': 'Compte réactivé',
+  'plan.created': 'Forfait créé',
+  'plan.updated': 'Forfait modifié',
+  'plan.price_changed': 'Tarif modifié',
+  'subscription.activated_manually': 'Abonnement activé manuellement',
+  'subscription.cancelled': 'Abonnement résilié',
+  'trial.granted': 'Essai offert',
+  'trial.extended': 'Essai prolongé',
+  'invoice.drafted': 'Facture créée (brouillon)',
+  'invoice.issued': 'Facture émise',
+  'invoice.renewal_issued': 'Facture de renouvellement émise',
+  'invoice.voided': 'Facture annulée',
+  'payment.validated': 'Paiement validé',
+  'payment.rejected': 'Paiement rejeté',
+  'payment.recorded': 'Paiement enregistré',
+  'plan_change.approved': 'Demande de formule approuvée',
+  'plan_change.rejected': 'Demande de formule refusée',
+  'payment_connector.updated': 'Moyen de paiement modifié',
+  'license.issued': 'Licence émise',
+  'license.revoked': 'Licence révoquée',
+  'license.suspended': 'Licence suspendue',
+  'license.reinstated': 'Licence rétablie',
+  'license.maintenance_extended': 'Maintenance prolongée',
+  'setting.updated': 'Réglage modifié',
+  'job.lifecycle_run': 'Cycle de vie exécuté',
+};
+
+export const auditLabel = (action: string) => AUDIT_LABELS[action] ?? action;

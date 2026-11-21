@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PASSWORD, addStaff, createPlatformAdmin, createTestApp, enableConnector, platformLogin, q, registerHotel, type Client, type TestApp } from './helpers';
+import { PASSWORD, addStaff, createPlatformAdmin, createTestApp, enableConnector, platformLogin, q, registerHotel, Client, type TestApp } from './helpers';
 
 let t: TestApp;
 let platform: Client;
@@ -389,5 +389,18 @@ describe('assistance', () => {
       (await reg.client.get('/api/v1/me')).body, (await reg.client.get('/api/v1/hotel')).body, (await reg.client.get('/api/v1/subscription')).body,
     ];
     expect(JSON.stringify(bodies)).not.toMatch(new RegExp(`${PASSWORD}|password|argon2`, 'i'));
+  });
+});
+
+describe('utilisation des quotas', () => {
+  it('compte les utilisateurs et les chambres de CET établissement seulement, face aux limites de la formule', async () => {
+    const a = await registerHotel(t);
+    const b = await registerHotel(t);
+    expect((await a.client.get('/api/v1/hotel/usage')).body).toEqual({ rooms: { count: 0, max: 30 }, users: { count: 1, max: 10 } });
+    await addStaff(t, a.hotelId, 'receptionist');
+    await addStaff(t, a.hotelId, 'accountant');
+    expect((await a.client.get('/api/v1/hotel/usage')).body.users.count).toBe(3);
+    expect((await b.client.get('/api/v1/hotel/usage')).body.users.count).toBe(1);
+    expect((await new Client(t).get('/api/v1/hotel/usage')).status).toBe(401);
   });
 });

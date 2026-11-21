@@ -1,3 +1,4 @@
+import { isStrongPassword } from '@hmp/shared';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { hash, verify } from '@node-rs/argon2';
 import { AppError } from '../errors';
@@ -43,16 +44,7 @@ export const dummyVerify = async (password: string): Promise<void> => {
   await verifyPassword(await dummyHash, password);
 };
 
-const COMMON = new Set(['password123', '1234567890', 'azerty1234', 'motdepasse1', 'qwerty12345', 'madagascar1', 'hotelmanager1']);
-
-/** 10 caractères minimum, une lettre et un chiffre, ni l'e-mail ni un mot de passe courant. */
+/** La règle est définie une seule fois (packages/shared) : l'interface prévient, le serveur fait foi. */
 export function assertStrongPassword(password: string, email?: string): void {
-  const ok =
-    password.length >= 10 &&
-    password.length <= 128 &&
-    /[A-Za-zÀ-ÿ]/.test(password) &&
-    /\d/.test(password) &&
-    !COMMON.has(password.toLowerCase()) &&
-    !(email && password.toLowerCase() === email.toLowerCase());
-  if (!ok) throw new AppError('weak_password');
+  if (!isStrongPassword(password, email)) throw new AppError('weak_password');
 }

@@ -68,7 +68,7 @@ export const ALL_NAV = NAV_GROUPS.flatMap((g) => g.items);
  */
 const TAB_IDS = ['overview', 'reservations', 'reception'];
 
-export function BrandMark({ compact, className }: { compact?: boolean; className?: string }) {
+export function BrandMark({ compact, label, className }: { compact?: boolean; label?: string; className?: string }) {
   return (
     <div className={cn('flex items-center gap-3', className)}>
       <span
@@ -86,8 +86,11 @@ export function BrandMark({ compact, className }: { compact?: boolean; className
         </svg>
       </span>
       {!compact && (
-        <span className="text-[15px] leading-none font-semibold tracking-[-0.01em] whitespace-nowrap text-ink max-[429px]:sr-only">
-          Hotel Manager <span className="text-champagne-ink">Pro</span>
+        <span className="flex flex-col gap-1 whitespace-nowrap max-[429px]:sr-only">
+          <span className="text-[15px] leading-none font-semibold tracking-[-0.01em] text-ink">
+            Hotel Manager <span className="text-champagne-ink">Pro</span>
+          </span>
+          {label && <span className="text-[12px] leading-none font-medium text-champagne-ink">{label}</span>}
         </span>
       )}
     </div>
@@ -102,12 +105,20 @@ export function Sidebar({
   onNavigate,
   collapsed,
   onToggle,
+  soon,
+  groups = NAV_GROUPS,
+  brandLabel,
   className,
 }: {
+  /** Menu à afficher (défaut : les 13 modules de l'hôtel ; la console plateforme fournit le sien). */
+  groups?: Array<{ label: string; items: NavItem[] }>;
+  brandLabel?: string;
   active: string;
   onNavigate: (id: string) => void;
   collapsed: boolean;
   onToggle: () => void;
+  /** Modules pas encore disponibles : signalés par une étiquette « Bientôt » (jamais un faux écran). */
+  soon?: ReadonlySet<string>;
   className?: string;
 }) {
   return (
@@ -120,10 +131,10 @@ export function Sidebar({
       )}
     >
       <div className={cn('flex h-12 items-center', collapsed ? 'justify-center' : 'px-2')}>
-        <BrandMark compact={collapsed} />
+        <BrandMark compact={collapsed} label={brandLabel} />
       </div>
 
-      {NAV_GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.label} className="mt-2 flex flex-col gap-0.5">
           {collapsed ? (
             <div aria-hidden className="mx-3 mb-1 h-px bg-hairline" />
@@ -138,7 +149,7 @@ export function Sidebar({
                 type="button"
                 onClick={() => onNavigate(item.id)}
                 aria-current={isActive ? 'page' : undefined}
-                aria-label={collapsed ? item.label : undefined}
+                aria-label={collapsed ? (soon?.has(item.id) ? `${item.label}, bientôt disponible` : item.label) : undefined}
                 className={cn(
                   'group flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-[12px] px-3 text-left text-[14px] font-medium transition-colors duration-[var(--d-quick)]',
                   collapsed && 'justify-center px-0',
@@ -147,6 +158,9 @@ export function Sidebar({
               >
                 <Icon aria-hidden className="size-[19px] shrink-0" strokeWidth={isActive ? 2.1 : 1.75} />
                 {!collapsed && <span className="truncate">{item.label}</span>}
+                {!collapsed && soon?.has(item.id) && (
+                  <span className="ml-auto rounded-full bg-silver-soft px-2 py-0.5 text-[11.5px] font-medium text-ink-2">Bientôt</span>
+                )}
               </button>
             );
             return collapsed ? (
@@ -182,10 +196,25 @@ export function Sidebar({
 /* ---------------------------------------------------------------------------------------------
  * Barre d'onglets mobile : 5 entrées maximum, « Plus » ouvre une feuille avec les autres modules.
  * ------------------------------------------------------------------------------------------- */
-export function TabBar({ active, onNavigate, className }: { active: string; onNavigate: (id: string) => void; className?: string }) {
+export function TabBar({
+  active,
+  onNavigate,
+  soon,
+  items = ALL_NAV,
+  tabIds = TAB_IDS,
+  className,
+}: {
+  active: string;
+  onNavigate: (id: string) => void;
+  soon?: ReadonlySet<string>;
+  /** Entrées disponibles (défaut : les 13 modules) et celles épinglées dans la barre (les autres vont sous « Plus »). */
+  items?: NavItem[];
+  tabIds?: string[];
+  className?: string;
+}) {
   const [more, setMore] = useState(false);
-  const tabs = TAB_IDS.map((id) => ALL_NAV.find((n) => n.id === id)!);
-  const rest = ALL_NAV.filter((n) => !TAB_IDS.includes(n.id));
+  const tabs = tabIds.map((id) => items.find((n) => n.id === id)!);
+  const rest = items.filter((n) => !tabIds.includes(n.id));
   const moreActive = rest.some((n) => n.id === active);
   const tabClass = (on: boolean) =>
     cn(
@@ -234,7 +263,10 @@ export function TabBar({ active, onNavigate, className }: { active: string; onNa
                   )}
                 >
                   <Icon aria-hidden className="size-5 shrink-0 text-ink-2" />
-                  {n.label}
+                  <span className="flex min-w-0 flex-col items-start leading-tight">
+                    {n.label}
+                    {soon?.has(n.id) && <span className="text-[11.5px] font-normal text-ink-2">Bientôt</span>}
+                  </span>
                 </button>
               </li>
             );
@@ -289,6 +321,7 @@ export function Topbar({
   onOpenPalette,
   notifications,
   account,
+  initials = 'AR',
   leading,
   className,
 }: {
@@ -297,6 +330,8 @@ export function Topbar({
   onOpenPalette: () => void;
   notifications: MenuItem[];
   account: MenuItem[];
+  /** Initiales de la personne connectée (avatar du menu du compte). */
+  initials?: string;
   leading?: ReactNode;
   className?: string;
 }) {
@@ -329,10 +364,10 @@ export function Topbar({
         trigger={
           <button
             type="button"
-            aria-label="Menu du compte, AR"
+            aria-label={`Menu du compte, ${initials}`}
             className="grid size-10 cursor-pointer place-items-center rounded-full bg-champagne-soft text-[13px] font-semibold text-champagne-ink ring-1 ring-[var(--edge-warm)]"
           >
-            AR
+            {initials}
           </button>
         }
         items={account}

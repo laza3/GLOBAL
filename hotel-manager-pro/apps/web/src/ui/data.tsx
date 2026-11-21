@@ -1,5 +1,8 @@
 import {
   ArrowDown,
+  CircleCheck,
+  Info,
+  TriangleAlert,
   ArrowUp,
   ArrowUpDown,
   BedDouble,
@@ -69,6 +72,25 @@ export function Badge({
       )}
     >
       {icon}
+      {children}
+    </span>
+  );
+}
+
+/** État générique (facture, paiement, abonnement, ticket) : toujours icône + libellé, couleur = ton sémantique. */
+const TONES = {
+  success: { icon: CircleCheck, token: 'inhouse' },
+  warning: { icon: TriangleAlert, token: 'pending' },
+  danger: { icon: CircleX, token: 'cancelled' },
+  info: { icon: Info, token: 'confirmed' },
+  neutral: { icon: Clock3, token: 'departed' },
+} as const;
+
+export function StateBadge({ tone, children, className }: { tone: keyof typeof TONES; children: ReactNode; className?: string }) {
+  const { icon: Icon, token } = TONES[tone];
+  return (
+    <span className={cn(badgeBase, className)} style={{ color: `var(--st-${token})`, background: `var(--st-${token}-soft)` }}>
+      <Icon aria-hidden className="size-3.5" />
       {children}
     </span>
   );
@@ -220,7 +242,8 @@ export function DataTable<T>({
         </ul>
       )}
 
-      <div className={cn('overflow-x-auto', mobileCard && 'hidden md:block')}>
+      {/* Zone défilante : atteignable au clavier (sinon un tableau large est inaccessible sans souris) */}
+      <div tabIndex={0} role="region" aria-label={caption} className={cn('overflow-x-auto', mobileCard && 'hidden md:block')}>
         <table className="w-full min-w-[40rem] border-collapse text-[14px]" aria-busy={loading || undefined}>
           <caption className="sr-only">{caption}</caption>
           <thead>

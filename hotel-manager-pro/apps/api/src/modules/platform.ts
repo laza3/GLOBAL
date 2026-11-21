@@ -920,12 +920,13 @@ export default async function platformRoutes(app: FastifyInstance) {
       if (hotelId) { args.push(hotelId); where.push(`l.hotel_id = $${args.length}`); }
       if (action) { args.push(action); where.push(`l.action = $${args.length}`); }
       const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
+      const { rows: total } = await tx.query<{ n: number }>(`SELECT count(*)::int AS n FROM platform_audit_logs l ${w}`, args);
       const { rows } = await tx.query(
         `SELECT l.id, l.action, l.target_type AS "targetType", l.target_id AS "targetId", l.hotel_id AS "hotelId", l.details, l.created_at AS "createdAt", a.email AS "adminEmail"
          FROM platform_audit_logs l LEFT JOIN platform_admins a ON a.id = l.admin_id ${w} ORDER BY l.created_at DESC, l.id DESC LIMIT $${args.length + 1} OFFSET $${args.length + 2}`,
         [...args, pageSize, (p - 1) * pageSize],
       );
-      return { items: rows, page: p, pageSize };
+      return { items: rows, total: total[0]!.n, page: p, pageSize };
     });
   });
 

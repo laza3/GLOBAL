@@ -82,6 +82,16 @@ qu'aux tests, où la connexion est superuser.
 de débit partagée entre instances (Redis ou proxy), réinitialisation de mot de passe par e-mail (pas de fournisseur),
 audit externe. Voir [api.md §9](api.md).
 
+## Interface web
+
+* Le jeton de session n'existe que dans un cookie `HttpOnly` : invisible du JavaScript (vérifié dans le navigateur : absent de `document.cookie`,
+  de `localStorage` et `sessionStorage`). L'application ne lit que le cookie CSRF, qu'elle renvoie en en-tête.
+* Une session expirée en cours d'usage vide tout le cache en mémoire avant la redirection : aucune donnée de l'ancienne session ne subsiste.
+* « Précédent » après déconnexion ne ré-affiche rien (le cookie est supprimé, la garde d'accès renvoie à la connexion) — vérifié.
+* Un compte d'établissement n'ouvre jamais la console (cookie, table et rôle distincts) ; l'annuaire de la console ne contient aucune donnée d'hôtel — vérifié.
+* Isolation : deux établissements créés dans le navigateur ne voient ni les factures, ni les demandes, ni la licence l'un de l'autre — vérifié.
+* Le texte d'une erreur affiché à l'écran vient du serveur (français, sans détail technique) ; l'écran d'erreur n'affiche que la référence de requête.
+
 ## Vérification des tests eux-mêmes (tests de mutation)
 
 Les garde-fous ont été éprouvés en injectant volontairement des failles (table sans RLS, droit indu, politique trop

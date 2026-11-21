@@ -16,4 +16,4 @@ for _ in $(seq 1 40); do
   sleep 0.3
 done
 
-BASE_URL="http://127.0.0.1:$PORT" node scripts/visual-check.cjs
+BASE_URL="http://127.0.0.1:$PORT/design" node scripts/visual-check.cjs

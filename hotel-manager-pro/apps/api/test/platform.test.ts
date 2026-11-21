@@ -453,7 +453,9 @@ describe('assistance côté plateforme', () => {
 
 describe('cohérence du journal d\'audit', () => {
   it('toutes les actions sensibles de la console sont tracées avec l\'administrateur et l\'adresse', async () => {
-    const actions = (await platform.get('/api/v1/platform/audit-logs?pageSize=100')).body.items;
+    const log = (await platform.get('/api/v1/platform/audit-logs?pageSize=100')).body;
+    expect(log.total).toBeGreaterThanOrEqual(log.items.length);
+    const actions = log.items;
     const names = new Set(actions.map((a: any) => a.action));
     for (const expected of ['hotel.suspended', 'plan.price_changed', 'subscription.activated_manually', 'payment.validated', 'license.issued', 'setting.updated', 'payment_connector.updated']) {
       expect(names.has(expected), expected).toBe(true);

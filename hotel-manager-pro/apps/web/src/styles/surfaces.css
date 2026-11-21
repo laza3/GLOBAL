@@ -20,8 +20,15 @@
     var(--canvas);
 }
 
+/* Dans une couche : une classe d'utilité (fixed, absolute, sticky) posée sur une surface doit l'emporter. Hors couche, ce
+   `position: relative` écrasait `fixed` (barre d'onglets mobile décalée de 12 px, hors de sa place). */
+@layer base {
+  .surface {
+    position: relative;
+  }
+}
+
 .surface {
-  position: relative;
   isolation: isolate;
   border-radius: var(--surface-radius, var(--r-card));
   background: linear-gradient(135deg, var(--sheen-a), var(--sheen-b) 62%), var(--surface-bg);
