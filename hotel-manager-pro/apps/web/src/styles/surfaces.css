@@ -1,0 +1,214 @@
+/*
+ * Surfaces vitrées et halos de fond.
+ *
+ * Le verre n'a de sens que devant un fond qui varie : .ambient pose la lumière (champagne en haut à gauche,
+ * jour bleuté en bas à droite). Chaque surface reçoit un liseré lumineux orienté vers cette source.
+ *
+ * 4 niveaux :  .glass-1 cartes · .glass-2 menus/infobulles · .glass-3 modales · .glass-data tableaux et graphiques
+ * RÈGLE : ne jamais imbriquer deux surfaces floutées (le flou d'un flou est illisible et coûteux).
+ */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(62% 52% at 6% 0%, var(--orb-champagne), transparent 72%),
+    radial-gradient(58% 58% at 100% 100%, var(--orb-blue), transparent 72%),
+    radial-gradient(46% 46% at 88% 10%, var(--orb-silver), transparent 72%),
+    var(--canvas);
+}
+
+.surface {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--surface-radius, var(--r-card));
+  background: linear-gradient(135deg, var(--sheen-a), var(--sheen-b) 62%), var(--surface-bg);
+  box-shadow: var(--surface-shadow);
+  -webkit-backdrop-filter: blur(var(--surface-blur, var(--glass-blur))) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--surface-blur, var(--glass-blur))) saturate(var(--glass-saturate));
+}
+
+/* Liseré lumineux : dégradé de 1 px (lumière champagne au coin haut-gauche) découpé en anneau par un masque */
+.surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--edge-lit) 0%, var(--edge-warm) 20%, var(--edge-dim) 58%, var(--edge-dim) 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glass-1 {
+  --surface-bg: var(--glass-1);
+  --surface-shadow: var(--shadow-1);
+}
+.glass-2 {
+  --surface-bg: var(--glass-2);
+  --surface-shadow: var(--shadow-2);
+  --surface-blur: 30px;
+}
+.glass-3 {
+  --surface-bg: var(--glass-3);
+  --surface-shadow: var(--shadow-3);
+  --surface-blur: 40px;
+}
+.glass-data {
+  --surface-bg: var(--glass-data);
+  --surface-shadow: var(--shadow-1);
+  --surface-blur: 12px;
+}
+
+/* Sans support du flou (anciens navigateurs, mode économie) : surfaces quasi opaques, mêmes contrastes garantis */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-1,
+  .glass-2,
+  .glass-3,
+  .glass-data {
+    --surface-bg: var(--glass-data);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-1,
+  .glass-2,
+  .glass-3,
+  .glass-data {
+    --surface-bg: var(--glass-data);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+/* Appareils modestes : flou réduit pour garder la fluidité */
+@media (max-width: 767px) {
+  :root {
+    --glass-blur: 16px;
+  }
+}
+
+/* ---------- Animations des superpositions (Radix : data-state) ---------- */
+@keyframes hmp-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hmp-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes hmp-pop-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes hmp-pop-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+}
+@keyframes hmp-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes hmp-sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes hmp-menu-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes hmp-menu-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.97); }
+}
+@keyframes hmp-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes hmp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.overlay-scrim[data-state='open'] { animation: hmp-fade-in var(--d-base) var(--ease-out); }
+.overlay-scrim[data-state='closed'] { animation: hmp-fade-out var(--d-quick) var(--ease-in) forwards; }
+
+.modal-content[data-state='open'] { animation: hmp-pop-in var(--d-slow) var(--ease-out); }
+.modal-content[data-state='closed'] { animation: hmp-pop-out var(--d-quick) var(--ease-in) forwards; }
+
+.sheet-content[data-state='open'] { animation: hmp-sheet-in var(--d-slow) var(--ease-out); }
+.sheet-content[data-state='closed'] { animation: hmp-sheet-out var(--d-base) var(--ease-in) forwards; }
+
+.menu-content {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin, var(--radix-popover-content-transform-origin, var(--radix-select-content-transform-origin, var(--radix-tooltip-content-transform-origin, center))));
+}
+.menu-content[data-state='open'],
+.menu-content[data-state='delayed-open'],
+.menu-content[data-state='instant-open'] { animation: hmp-menu-in var(--d-base) var(--ease-out); }
+.menu-content[data-state='closed'] { animation: hmp-menu-out var(--d-quick) var(--ease-in) forwards; }
+
+.skeleton {
+  background: linear-gradient(100deg, var(--silver-soft) 30%, color-mix(in srgb, var(--silver-soft) 40%, transparent) 50%, var(--silver-soft) 70%);
+  background-size: 200% 100%;
+  animation: hmp-shimmer 1.8s linear infinite;
+}
+
+/* ---------- Positionnement des modales : centrée sur bureau, feuille basculante sur mobile ---------- */
+.modal-content {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, var(--modal-width, 30rem));
+  max-height: min(88dvh, 44rem);
+  overflow: auto;
+}
+.drawer-content {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(100vw, 28rem);
+  overflow: auto;
+  --surface-radius: 0;
+  border-radius: var(--r-card) 0 0 var(--r-card);
+}
+@keyframes hmp-drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes hmp-drawer-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+.drawer-content[data-state='open'] { animation: hmp-drawer-in var(--d-slow) var(--ease-out); }
+.drawer-content[data-state='closed'] { animation: hmp-drawer-out var(--d-base) var(--ease-in) forwards; }
+
+@media (max-width: 639px) {
+  .modal-content,
+  .drawer-content {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-height: 90dvh;
+    transform: none;
+    border-radius: 28px 28px 0 0;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+  .modal-content[data-state='open'],
+  .drawer-content[data-state='open'] { animation: hmp-sheet-in var(--d-slow) var(--ease-out); }
+  .modal-content[data-state='closed'],
+  .drawer-content[data-state='closed'] { animation: hmp-sheet-out var(--d-base) var(--ease-in) forwards; }
+}
+
+/* ---------- Cibles tactiles : 44 px minimum sur écran tactile ---------- */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn-icon { min-width: 44px; }
+}

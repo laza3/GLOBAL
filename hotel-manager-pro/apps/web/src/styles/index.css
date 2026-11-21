@@ -1,0 +1,123 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './surfaces.css';
+
+/* Les jetons sémantiques deviennent des utilitaires : text-ink, bg-accent, border-hairline, rounded-card… */
+@theme inline {
+  --font-sans: var(--font-ui);
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-inverse: var(--ink-inverse);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-champagne: var(--champagne);
+  --color-champagne-ink: var(--champagne-ink);
+  --color-champagne-soft: var(--champagne-soft);
+  --color-silver: var(--silver);
+  --color-silver-soft: var(--silver-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-ink: var(--danger-ink);
+  --color-hairline: var(--hairline);
+  --color-field-border: var(--field-border);
+  --color-field-bg: var(--field-bg);
+  --color-glass-hover: var(--glass-hover);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --radius-control: var(--r-control);
+  --radius-card-sm: var(--r-card-sm);
+  --radius-card: var(--r-card);
+  --radius-hero: var(--r-hero);
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --ease-out: var(--ease-out);
+}
+
+@layer base {
+  /* Racine à 16 px : l'échelle Tailwind (1 rem = 16 px) reste exacte, donc h-11 = 44 px. Le texte courant (15 px) est posé sur body. */
+  html {
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    font-optical-sizing: auto;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+  }
+  body {
+    margin: 0;
+    font-size: 15px;
+    min-height: 100dvh;
+    background: var(--canvas);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+  /* Champs : 16 px sur mobile pour éviter le zoom automatique d'iOS */
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+  @media (max-width: 767px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+  /* Focus clavier toujours visible, jamais supprimé */
+  :where(a, button, input, textarea, select, [role='button'], [role='tab'], [role='menuitem'], [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  /* Défilement discret, cohérent avec le verre */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--silver-soft) transparent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Grands nombres : chiffres proportionnels (règle dataviz). Colonnes : chiffres tabulaires. */
+  .num-display {
+    font-variant-numeric: proportional-nums;
+    letter-spacing: -0.03em;
+    font-feature-settings: 'cv11';
+  }
+  .num-col {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,188 @@
+/*
+ * Jetons de design — Hotel Manager Pro
+ *
+ * Une source de lumière unique : lueur champagne en haut à gauche, lumière du jour bleutée en bas à droite.
+ * Chaque surface vitrée reçoit un liseré lumineux orienté vers cette source.
+ *
+ * RÈGLE : aucune couleur brute dans les composants, uniquement ces jetons sémantiques.
+ * `pnpm check:contrast` mesure chaque paire texte/fond (pire cas sur les halos) en clair ET en sombre.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Plan et encre */
+  --canvas: #e6eaf4;
+  --ink: #0a0f1e;
+  --ink-2: #434d62;
+  --ink-3: #4f5a72;
+  --ink-inverse: #ffffff;
+
+  /* Accent : bleu électrique profond */
+  --accent: #2457f5;
+  --accent-hover: #1c47d6;
+  --accent-ink: #1639b3; /* texte et liens sur surface claire */
+  --accent-soft: rgba(36, 87, 245, 0.1);
+  --focus-ring: #2457f5;
+
+  /* Champagne et argent : valeur, prestige, neutralité */
+  --champagne: #c8a35c;
+  --champagne-ink: #6b4f14; /* texte lisible */
+  --champagne-soft: rgba(200, 163, 92, 0.18);
+  --silver: #99a3b5;
+  --silver-soft: rgba(153, 163, 181, 0.2);
+
+  /* Statuts (toujours associés à une icône et un libellé, jamais la couleur seule) */
+  --st-confirmed: #1b46d1;
+  --st-confirmed-soft: rgba(36, 87, 245, 0.12);
+  --st-pending: #8a5a00;
+  --st-pending-soft: rgba(237, 161, 0, 0.18);
+  --st-inhouse: #0b6b3a;
+  --st-inhouse-soft: rgba(18, 163, 90, 0.15);
+  --st-departed: #4d586d;
+  --st-departed-soft: rgba(110, 122, 142, 0.16);
+  --st-cancelled: #b3261e;
+  --st-cancelled-soft: rgba(217, 56, 48, 0.12);
+  --st-noshow: #6a3fc4;
+  --st-noshow-soft: rgba(124, 77, 224, 0.13);
+  --danger: #c4261d;
+  --danger-hover: #a81f17;
+  --danger-ink: #a8231b;
+
+  /* Verre : 4 niveaux de surface */
+  --glass-1: rgba(255, 255, 255, 0.54); /* cartes, barre latérale */
+  --glass-2: rgba(255, 255, 255, 0.82); /* menus, popovers, infobulles */
+  --glass-3: rgba(255, 255, 255, 0.9); /* modales, palette de commandes */
+  --glass-data: rgba(255, 255, 255, 0.93); /* tableaux, graphiques : lisibilité avant tout */
+  --glass-hover: rgba(255, 255, 255, 0.5);
+  --glass-blur: 22px;
+  --glass-saturate: 1.7;
+  /* Reflet : la lumière du haut-gauche éclaircit la surface (jamais plus sombre : ne dégrade pas le contraste) */
+  --sheen-a: rgba(255, 255, 255, 0.42);
+  --sheen-b: rgba(255, 255, 255, 0);
+
+  /* Liseré lumineux (lumière du haut-gauche) */
+  --edge-lit: rgba(255, 255, 255, 0.95);
+  --edge-warm: rgba(222, 186, 118, 0.6);
+  --edge-dim: rgba(255, 255, 255, 0.28);
+  --hairline: rgba(10, 15, 30, 0.09);
+  --field-border: rgba(10, 15, 30, 0.52);
+  --field-bg: rgba(255, 255, 255, 0.9);
+  --scrim: rgba(12, 18, 34, 0.45);
+
+  /* Halos de fond (le verre a besoin d'un fond à réfracter) */
+  --orb-champagne: rgba(238, 200, 132, 0.62);
+  --orb-blue: rgba(70, 120, 255, 0.34);
+  --orb-silver: rgba(165, 180, 210, 0.46);
+
+  /* Ombres teintées par la lumière ambiante, une par niveau d'élévation */
+  --shadow-1: 0 1px 2px rgba(20, 35, 80, 0.06), 0 8px 24px -8px rgba(20, 35, 80, 0.12);
+  --shadow-2: 0 2px 4px rgba(20, 35, 80, 0.06), 0 16px 40px -12px rgba(20, 35, 80, 0.2);
+  --shadow-3: 0 4px 8px rgba(20, 35, 80, 0.08), 0 32px 80px -16px rgba(20, 35, 80, 0.32);
+
+  /* Graphiques (validés par le script de palette du skill dataviz) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --chart-grid: rgba(10, 15, 30, 0.08);
+  --chart-axis: rgba(10, 15, 30, 0.22);
+  --chart-track: rgba(36, 87, 245, 0.14);
+
+  /* Rayons : proportionnels à la taille de l'objet (pas un seul rayon partout) */
+  --r-control: 10px;
+  --r-card-sm: 16px;
+  --r-card: 22px;
+  --r-hero: 30px;
+  --r-pill: 999px;
+
+  /* Mouvement : 3 durées, 2 courbes (ressort doux) */
+  --d-quick: 140ms;
+  --d-base: 220ms;
+  --d-slow: 340ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 0.8, 0.3);
+
+  /* Typographie */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Inter Variable', Inter, 'Segoe UI', system-ui, sans-serif;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --canvas: #070b14;
+  --ink: #eef2fa;
+  --ink-2: #aab5c9;
+  --ink-3: #adb8cc;
+  --ink-inverse: #ffffff;
+
+  --accent: #3562f2;
+  --accent-hover: #2c55dc;
+  --accent-ink: #adc5ff;
+  --accent-soft: rgba(110, 150, 255, 0.17);
+  --focus-ring: #8fb0ff;
+
+  --champagne: #e0c48c;
+  --champagne-ink: #ecd3a0;
+  --champagne-soft: rgba(224, 196, 140, 0.16);
+  --silver: #8d98ad;
+  --silver-soft: rgba(141, 152, 173, 0.2);
+
+  --st-confirmed: #93b1ff;
+  --st-confirmed-soft: rgba(110, 150, 255, 0.18);
+  --st-pending: #f2c36b;
+  --st-pending-soft: rgba(242, 195, 107, 0.16);
+  --st-inhouse: #6fdba0;
+  --st-inhouse-soft: rgba(80, 210, 140, 0.15);
+  --st-departed: #aab4c7;
+  --st-departed-soft: rgba(150, 162, 184, 0.16);
+  --st-cancelled: #ff9c94;
+  --st-cancelled-soft: rgba(255, 110, 100, 0.16);
+  --st-noshow: #c5a8ff;
+  --st-noshow-soft: rgba(170, 130, 255, 0.17);
+  --danger: #d63a31;
+  --danger-hover: #c32f27;
+  --danger-ink: #ff9c94;
+
+  --glass-1: rgba(255, 255, 255, 0.07);
+  --glass-2: rgba(30, 40, 64, 0.82);
+  --glass-3: rgba(24, 33, 54, 0.9);
+  --glass-data: rgba(16, 23, 40, 0.92);
+  --glass-hover: rgba(255, 255, 255, 0.07);
+  --glass-blur: 26px;
+  --glass-saturate: 1.5;
+  --sheen-a: rgba(255, 255, 255, 0.045);
+  --sheen-b: rgba(255, 255, 255, 0);
+
+  --edge-lit: rgba(255, 255, 255, 0.22);
+  --edge-warm: rgba(224, 196, 140, 0.3);
+  --edge-dim: rgba(255, 255, 255, 0.06);
+  --hairline: rgba(255, 255, 255, 0.09);
+  --field-border: rgba(255, 255, 255, 0.5);
+  --field-bg: rgba(8, 12, 22, 0.55);
+  --scrim: rgba(2, 4, 10, 0.62);
+
+  --orb-champagne: rgba(214, 176, 106, 0.2);
+  --orb-blue: rgba(50, 90, 255, 0.36);
+  --orb-silver: rgba(90, 110, 160, 0.3);
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+  --shadow-3: 0 4px 8px rgba(0, 0, 0, 0.4), 0 32px 80px -16px rgba(0, 0, 0, 0.75);
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chart-axis: rgba(255, 255, 255, 0.22);
+  --chart-track: rgba(110, 150, 255, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-quick: 1ms;
+    --d-base: 1ms;
+    --d-slow: 1ms;
+  }
+}
