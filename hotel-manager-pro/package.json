@@ -1,0 +1,17 @@
+{
+  "name": "hotel-manager-pro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hotel Manager Pro — SaaS multi-établissements de gestion hôtelière",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "db:migrate": "pnpm --filter @hmp/db migrate",
+    "db:test": "pnpm --filter @hmp/db test",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@hmp/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "migrate": "tsx src/cli.ts migrate",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@types/pg": "8.15.5",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  }
+}
