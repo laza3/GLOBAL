@@ -24,6 +24,14 @@ if [ "$(psql "$TARGET" -qtA -c "SELECT count(*) FROM pg_roles WHERE rolname IN (
   echo "Rôles hmp_owner / hmp_app / hmp_platform absents du serveur cible : exécutez d'abord deploy/prepare-managed-db.sql." >&2
   exit 1
 fi
+# Comptes cités par la sauvegarde (propriétaires, droits) mais absents du serveur cible : ex. « neondb_owner », le compte
+# d'administration de l'hébergeur d'origine, propriétaire du suivi des migrations. Ils sont créés SANS droit de connexion.
+for role in $(pg_restore --schema-only --file=- "$DUMP" | sed -nE 's/^ALTER .* OWNER TO "?([A-Za-z0-9_]+)"?;$/\1/p; s/^(GRANT|REVOKE) .* (TO|FROM) "?([A-Za-z0-9_]+)"?( .*)?;$/\3/p' | sort -u); do
+  case "$role" in PUBLIC|pg_*) continue ;; esac
+  if [ "$(psql "$TARGET" -qtA -c "SELECT 1 FROM pg_roles WHERE rolname = '$role'")" != "1" ]; then
+    psql "$TARGET" -qtA -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$role\" NOLOGIN" >/dev/null
+  fi
+done
 # hmp_owner doit pouvoir créer dans le schéma public AVANT que les propriétaires ne lui soient rendus (sans cela, un compte non-superuser échoue)
 psql "$TARGET" -qtA -v ON_ERROR_STOP=1 -c "GRANT USAGE, CREATE ON SCHEMA public TO hmp_owner" >/dev/null
 if ! pg_restore --exit-on-error --dbname="$TARGET" "$DUMP"; then
