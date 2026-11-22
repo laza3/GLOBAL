@@ -627,6 +627,8 @@ async function modulesJourney(browser, hotel, admin) {
 
   hotel = await registerHotel(browser, { name: hotelName, email });
   {
+    // Le menu s'affiche avant les cartes (formule, quotas, indicateurs) : on attend que la vue d'ensemble soit chargée avant de la lire
+    await hotel.waitForFunction(() => /Aucune chambre pour le moment/.test(document.body.innerText) && /Essai gratuit/.test(document.body.innerText), null, { timeout: 10000 }).catch(() => undefined);
     const t = await bodyText(hotel);
     ok(/Terminez la configuration/.test(t), 'après inscription : on arrive sur la configuration initiale');
     ok(/Essai gratuit/.test(t) && /Business/.test(t), 'l\'essai gratuit de la formule Business est actif');
