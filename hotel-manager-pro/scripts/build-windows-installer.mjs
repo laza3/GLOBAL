@@ -31,13 +31,24 @@ const step = (m) => console.log(`\n▸ ${m}`);
 const size = (dir) => { let n = 0; for (const f of readdirSync(dir, { withFileTypes: true })) n += f.isDirectory() ? size(join(dir, f.name)) : f.isSymbolicLink() ? 0 : lstatSync(join(dir, f.name)).size; return n; };
 const mo = (n) => `${(n / 1048576).toFixed(0)} Mo`;
 
-async function download(url, file) {
+async function download(url, file, attempts = 6) {
   if (existsSync(file) && statSync(file).size > 1_000_000) { console.log(`  (déjà téléchargé : ${file})`); return; }
   mkdirSync(dirname(file), { recursive: true });
   console.log(`  téléchargement : ${url}`);
-  const res = await fetch(url, { redirect: 'follow' });
-  if (!res.ok) throw new Error(`Téléchargement impossible (${res.status}) : ${url}`);
-  writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+  // Les gros téléchargements sont parfois coupés par le réseau : on réessaie ; le fichier n'est écrit qu'une fois COMPLET.
+  for (let i = 1; ; i++) {
+    try {
+      const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(10 * 60_000) });
+      if (!res.ok) throw new Error(`code ${res.status}`);
+      writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+      return;
+    } catch (e) {
+      const why = e?.cause?.code ?? e?.message ?? String(e);
+      if (i >= attempts) throw new Error(`Téléchargement impossible après ${attempts} essais (${why}) : ${url}`);
+      console.log(`  ✘ interrompu (${why}) — nouvel essai ${i + 1}/${attempts} dans ${3 * i} s`);
+      await new Promise((r) => setTimeout(r, 3000 * i));
+    }
+  }
 }
 
 rmSync(OUT, { recursive: true, force: true });
