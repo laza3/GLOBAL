@@ -24,18 +24,44 @@ if [ "$(psql "$TARGET" -qtA -c "SELECT count(*) FROM pg_roles WHERE rolname IN (
   echo "Rôles hmp_owner / hmp_app / hmp_platform absents du serveur cible : exécutez d'abord deploy/prepare-managed-db.sql." >&2
   exit 1
 fi
-# Comptes cités par la sauvegarde (propriétaires, droits) mais absents du serveur cible : ex. « neondb_owner », le compte
-# d'administration de l'hébergeur d'origine, propriétaire du suivi des migrations. Ils sont créés SANS droit de connexion.
-for role in $(pg_restore --schema-only --file=- "$DUMP" | sed -nE 's/^ALTER .* OWNER TO "?([A-Za-z0-9_]+)"?;$/\1/p; s/^(GRANT|REVOKE) .* (TO|FROM) "?([A-Za-z0-9_]+)"?( .*)?;$/\3/p' | sort -u); do
-  case "$role" in PUBLIC|pg_*) continue ;; esac
-  if [ "$(psql "$TARGET" -qtA -c "SELECT 1 FROM pg_roles WHERE rolname = '$role'")" != "1" ]; then
-    psql "$TARGET" -qtA -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$role\" NOLOGIN" >/dev/null
-  fi
-done
+# Comptes cités par la sauvegarde (propriétaires, droits, droits par défaut) mais absents du serveur cible : ex. « neondb_owner » (compte
+# d'administration de l'hébergeur d'origine), « cloud_admin » et « neon_superuser » (réglages internes de Neon). Ils sont créés SANS
+# droit de connexion : on restaure les DONNÉES et les droits applicatifs, pas l'infrastructure de l'ancien hébergeur.
+roles_in_dump() {
+  pg_restore --schema-only --file=- "$DUMP" | awk '
+    /OWNER TO / { r = $0; sub(/.*OWNER TO /, "", r); sub(/;.*/, "", r); print r }
+    /FOR ROLE / { r = $0; sub(/.*FOR ROLE /, "", r); sub(/ .*/, "", r); print r }
+    /^(ALTER DEFAULT PRIVILEGES|GRANT|REVOKE) / && / (TO|FROM) / {
+      r = $0; sub(/.* (TO|FROM) /, "", r); sub(/ WITH .*/, "", r); sub(/;.*/, "", r)
+      n = split(r, parts, ","); for (i = 1; i <= n; i++) { gsub(/^ +| +$/, "", parts[i]); print parts[i] }
+    }' | tr -d '"' | sort -u
+}
+create_missing_roles() {
+  local role
+  for role in $(roles_in_dump); do
+    case "$role" in PUBLIC|GROUP|CURRENT_USER|SESSION_USER|CURRENT_ROLE|pg_*|"") continue ;; esac
+    if [ "$(psql "$TARGET" -qtA -c "SELECT 1 FROM pg_roles WHERE rolname = '$role'")" != "1" ]; then
+      psql "$TARGET" -qtA -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$role\" NOLOGIN" >/dev/null
+    fi
+  done
+}
+[ -n "${RESTORE_SKIP_PRESCAN:-}" ] || create_missing_roles   # (RESTORE_SKIP_PRESCAN : diagnostic du filet de sécurité ci-dessous)
 # hmp_owner doit pouvoir créer dans le schéma public AVANT que les propriétaires ne lui soient rendus (sans cela, un compte non-superuser échoue)
 psql "$TARGET" -qtA -v ON_ERROR_STOP=1 -c "GRANT USAGE, CREATE ON SCHEMA public TO hmp_owner" >/dev/null
-if ! pg_restore --exit-on-error --dbname="$TARGET" "$DUMP"; then
+# Filet de sécurité : si un compte inattendu manque encore (« role "x" does not exist »), on le crée, on repart d'une base vide et on recommence
+attempt=0
+while :; do
+  attempt=$((attempt + 1))
+  if err="$(pg_restore --exit-on-error --dbname="$TARGET" "$DUMP" 2>&1)"; then break; fi
+  missing="$(printf '%s\n' "$err" | sed -nE 's/.*role "([^"]+)" does not exist.*/\1/p' | head -n1)"
+  if [ "$CREATED" = "1" ] && [ -n "$missing" ] && [ "$attempt" -lt 8 ]; then
+    psql "$ADMIN" -qtA -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$missing\" NOLOGIN" >/dev/null
+    psql "$ADMIN" -qtA -v ON_ERROR_STOP=1 -c "DROP DATABASE \"$DB\" WITH (FORCE)" -c "CREATE DATABASE \"$DB\"" >/dev/null
+    psql "$TARGET" -qtA -v ON_ERROR_STOP=1 -c "GRANT USAGE, CREATE ON SCHEMA public TO hmp_owner" >/dev/null
+    continue
+  fi
+  printf '%s\n' "$err" >&2
   if [ "$CREATED" = "1" ]; then psql "$ADMIN" -qtA -c "DROP DATABASE IF EXISTS \"$DB\" WITH (FORCE)" >/dev/null; echo "Restauration échouée : la base partielle a été supprimée." >&2; fi
   exit 1
-fi
+done
 echo "Restauré dans $DB."
