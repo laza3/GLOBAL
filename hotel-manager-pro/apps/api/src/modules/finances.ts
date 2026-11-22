@@ -156,7 +156,7 @@ export default async function financesRoutes(app: FastifyInstance) {
            FROM days d ORDER BY d.day`,
           [from, to, clock.timezone],
         ),
-        q<{ total: number; folios: number }>("SELECT COALESCE(sum(balance_due), 0)::bigint AS total, count(*)::int AS folios FROM folio_balances b JOIN folios f ON f.id = b.folio_id WHERE f.status = 'open' AND b.balance_due > 0"),
+        q<{ total: number; folios: number }>("SELECT COALESCE(sum(balance_due), 0)::bigint AS total, count(*)::int AS folios FROM folio_balances b JOIN folios f ON f.id = b.folio_id WHERE f.status = 'open' AND b.balance_due > 0 AND NOT EXISTS (SELECT 1 FROM reservations r WHERE r.id = f.reservation_id AND r.status = 'tentative')"),
         q<{ total: number; n: number }>('SELECT COALESCE(sum(amount), 0)::bigint AS total, count(*)::int AS n FROM expenses WHERE paid_on IS NULL'),
       ]);
       const collected = methods.reduce((s, m) => s + m.collected, 0);

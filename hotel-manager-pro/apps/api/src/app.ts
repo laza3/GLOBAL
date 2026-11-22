@@ -30,6 +30,7 @@ import roomsRoutes from './modules/rooms';
 import platformRoutes from './modules/platform';
 import receptionRoutes from './modules/reception';
 import restaurantRoutes from './modules/restaurant';
+import reportsRoutes from './modules/reports';
 import reservationsRoutes from './modules/reservations';
 import platformAuthRoutes from './modules/platform-auth';
 import staffRoutes from './modules/staff';
@@ -167,6 +168,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(restaurantRoutes, { prefix: '/api/v1' });
   await app.register(staffRoutes, { prefix: '/api/v1' });
   await app.register(financesRoutes, { prefix: '/api/v1' });
+  await app.register(reportsRoutes, { prefix: '/api/v1' });
   await app.register(billingRoutes, { prefix: '/api/v1' });
   await app.register(supportRoutes, { prefix: '/api/v1' });
   await app.register(platformAuthRoutes, { prefix: '/api/v1' });

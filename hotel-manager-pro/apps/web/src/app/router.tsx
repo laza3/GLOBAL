@@ -105,6 +105,7 @@ export const routes: RouteObject[] = [
                   { path: 'expenses', lazy: page(() => import('../pages/finances/expenses'), (m) => m.default) },
                 ],
               },
+              { path: 'reports', lazy: page(() => import('../pages/reports/reports'), (m) => m.default) },
               { path: 'guests', lazy: page(() => import('../pages/guests/guests'), (m) => m.default) },
               { path: 'guests/:id', lazy: page(() => import('../pages/guests/detail'), (m) => m.default) },
               ...soonRoutes,

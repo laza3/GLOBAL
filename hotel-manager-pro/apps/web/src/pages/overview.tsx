@@ -1,10 +1,11 @@
 import { formatMoney } from '@hmp/shared';
-import { ArrowRight, BedDouble, CalendarCheck, Check, CircleDashed, CreditCard, LifeBuoy, Sparkles } from 'lucide-react';
+import { ArrowRight, BedDouble, CalendarCheck, Check, CircleDashed, CreditCard, LifeBuoy } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { isApiError } from '../api/client';
 import { useCompleteOnboarding, useHotel, useSubscription, useTickets, useUsage } from '../api/hotel';
+import { useDashboard } from '../api/reports';
 import type { HotelProfile, SubscriptionResponse } from '../api/types';
 import { useCan, useMe } from '../auth/session';
 import { daysLabel, daysUntil, formatDate } from '../lib/format';
@@ -119,7 +120,7 @@ function ReadyCard({ hotel, firstName }: { hotel: HotelProfile; firstName: strin
           Bonjour {firstName}
         </h2>
         <p className="max-w-xl text-[14px] leading-relaxed text-ink-2">
-          {hotel.name} est configuré. Les modules d&apos;exploitation (chambres, réservations, réception…) arrivent un par un : ils apparaîtront ici dès qu&apos;ils seront disponibles.
+          {hotel.name} est configuré. Voici votre journée, calculée à partir de vos chambres, de vos réservations et de vos notes.
         </p>
       </div>
       <div className="flex flex-wrap gap-3">
@@ -287,23 +288,55 @@ function SupportCard() {
   );
 }
 
-/** Indicateurs d'exploitation : honnêtes — aucune valeur inventée tant que les modules qui les produisent n'existent pas. */
+/** Indicateurs d'exploitation : tous calculés à partir des chambres, réservations et notes réelles ; un bloc absent = pas de droit de le voir. */
 function OperationsCard() {
+  const dash = useDashboard();
+  const d = dash.data;
+  const money = (n: number) => formatMoney(n, d?.currency ?? 'MGA');
   return (
     <section aria-labelledby="ops-h" className={cn(card, 'lg:col-span-8')}>
       <CardTitle icon={<CalendarCheck />}>
-        <span id="ops-h">Activité de l&apos;hôtel</span>
+        <span id="ops-h">Aujourd&apos;hui à l&apos;hôtel</span>
       </CardTitle>
-      <div className="flex flex-col gap-3 rounded-[16px] border border-dashed border-field-border p-6">
-        <p className="flex items-center gap-2 text-[15px] font-medium text-ink">
-          <Sparkles aria-hidden className="size-4 text-champagne-ink" />
-          Les indicateurs apparaîtront avec les premiers modules
-        </p>
-        <p className="max-w-2xl text-[14px] leading-relaxed text-ink-2">
-          Taux d&apos;occupation, arrivées et départs du jour, revenu par chambre : ces chiffres seront calculés à partir de vos chambres et de vos réservations. Ils ne sont pas affichés aujourd&apos;hui parce qu&apos;ils n&apos;ont pas encore de source — nous ne montrons jamais de valeurs d&apos;exemple.
-        </p>
-      </div>
+      {dash.isPending ? (
+        <div className="grid gap-3 sm:grid-cols-2" role="status"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /><span className="sr-only">Chargement</span></div>
+      ) : dash.isError || !d ? (
+        <p className="text-[14px] text-ink-2">Impossible de charger les indicateurs pour le moment.</p>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {d.rooms && d.rooms.total === 0 && <p className="rounded-[14px] border border-dashed border-field-border p-4 text-[14px] text-ink-2">Aucune chambre pour le moment. <Link to="/rooms" className="text-accent-ink underline">Créez vos chambres</Link> : l&apos;occupation et les arrivées s&apos;afficheront ici.</p>}
+          <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {d.rooms && d.rooms.total > 0 && <Stat label="Occupation" value={`${(d.rooms.occupancyRate * 100).toFixed(0)} %`} sub={`${d.rooms.occupied} chambre${d.rooms.occupied > 1 ? 's' : ''} occupée${d.rooms.occupied > 1 ? 's' : ''} sur ${d.rooms.total}`} to="/rooms" />}
+            {d.stays && <Stat label="Arrivées" value={`${d.stays.arrivalsDone}/${d.stays.arrivals}`} sub="enregistrées aujourd'hui" to="/reception" />}
+            {d.stays && <Stat label="Départs" value={`${d.stays.departuresDone}/${d.stays.departures}`} sub={d.stays.overdue ? `${d.stays.overdue} en retard` : "enregistrés aujourd'hui"} to="/reception?section=departures" tone={d.stays.overdue ? 'warning' : undefined} />}
+            {d.stays && <Stat label="En séjour" value={String(d.stays.inHouse)} sub={d.stays.pendingConfirmation ? `${d.stays.pendingConfirmation} réservation${d.stays.pendingConfirmation > 1 ? 's' : ''} à confirmer` : 'clients dans l\'hôtel'} to="/reception?section=inhouse" />}
+            {d.money && <Stat label="Encaissé aujourd'hui" value={money(d.money.collectedToday)} sub="remboursements déduits" to="/billing/payments" />}
+            {d.money && <Stat label="Reste à encaisser" value={money(d.money.receivables)} sub={`${d.money.receivablesFolios} note${d.money.receivablesFolios > 1 ? 's' : ''} ouverte${d.money.receivablesFolios > 1 ? 's' : ''}`} to="/billing?payment=due" />}
+            {d.housekeeping && <Stat label="Chambres à nettoyer" value={String(d.housekeeping.dirty)} sub={d.housekeeping.issues ? `${d.housekeeping.issues} panne${d.housekeeping.issues > 1 ? 's' : ''} ouverte${d.housekeeping.issues > 1 ? 's' : ''}` : 'aucune panne ouverte'} to="/housekeeping" tone={d.housekeeping.issues ? 'warning' : undefined} />}
+            {d.restaurant && <Stat label="Restaurant" value={money(d.restaurant.salesToday)} sub={`${d.restaurant.openOrders} commande${d.restaurant.openOrders > 1 ? 's' : ''} en cours`} to="/restaurant" />}
+          </dl>
+          {d.stays && d.stays.upcomingArrivals.some((u) => u.n > 0) && (
+            <div className="flex flex-col gap-2">
+              <h3 className="text-[13px] font-medium text-ink-2">Arrivées des 7 prochains jours</h3>
+              <ul className="grid grid-cols-7 gap-1.5" aria-label="Arrivées des 7 prochains jours">
+                {d.stays.upcomingArrivals.map((u) => <li key={u.date} className="flex flex-col items-center gap-0.5 rounded-[10px] bg-silver-soft px-1 py-2"><span className="text-[11px] text-ink-3">{formatDate(`${u.date}T12:00:00Z`, { timeZone: 'UTC' }).slice(0, 6)}</span><span className="num-col text-[16px] font-semibold text-ink">{u.n}</span></li>)}
+              </ul>
+            </div>
+          )}
+          {d.stays && d.stays.expiringOptions > 0 && <p className="rounded-[14px] bg-[var(--st-pending-soft)] px-4 py-3 text-[14px] text-[var(--st-pending)]">{d.stays.expiringOptions} option{d.stays.expiringOptions > 1 ? 's expirent' : ' expire'} dans les 48 heures : confirmez-les ou laissez-les se libérer. <Link to="/reservations?status=tentative" className="underline">Voir les options</Link></p>}
+        </div>
+      )}
     </section>
+  );
+}
+
+function Stat({ label, value, sub, to, tone }: { label: string; value: string; sub: string; to: string; tone?: 'warning' }) {
+  return (
+    <Link to={to} className="flex flex-col gap-0.5 rounded-[16px] border border-hairline bg-[var(--glass-data)] p-4 transition-colors hover:bg-accent-soft focus-visible:outline-2">
+      <dt className="text-[13px] text-ink-2">{label}</dt>
+      <dd className={cn('num-display text-[24px] leading-tight font-semibold', tone === 'warning' ? 'text-[var(--st-pending)]' : 'text-ink')}>{value}</dd>
+      <span className="text-[12.5px] text-ink-3">{sub}</span>
+    </Link>
   );
 }
 
