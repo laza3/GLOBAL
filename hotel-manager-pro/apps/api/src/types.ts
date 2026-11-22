@@ -50,6 +50,8 @@ export interface HotelAuthOptions {
   lapsedOk?: boolean;
   /** Autorisé même compte suspendu : consultation de son état, assistance, déconnexion. */
   blockedOk?: boolean;
+  /** Fonction de la formule exigée (ex. `housekeeping`) : refusée (403 `feature_not_in_plan`) si la formule ne l'inclut pas. */
+  feature?: string;
 }
 
 export interface AppDeps {

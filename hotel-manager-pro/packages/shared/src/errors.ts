@@ -114,6 +114,9 @@ export const ERRORS = {
   room_not_ready: { status: 409, message: "La chambre n'est pas prête (à nettoyer ou en nettoyage). Confirmez pour enregistrer l'arrivée quand même." },
   balance_outstanding: { status: 409, message: 'Il reste un solde à régler. Encaissez-le, ou confirmez le départ avec un solde impayé.' },
   room_change_same: { status: 422, message: 'Le client occupe déjà cette chambre.' },
+  feature_not_in_plan: { status: 403, message: "Cette fonction n'est pas incluse dans votre formule. Passez à une formule supérieure depuis l'espace abonnement." },
+  hk_task_invalid_state: { status: 409, message: "Cette tâche n'est pas dans l'état attendu pour cette action." },
+  maintenance_invalid_state: { status: 409, message: 'Cette demande de maintenance est déjà clôturée.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

@@ -66,6 +66,7 @@ export default fp(async (app) => {
         throw new AppError(ctx.access.reason as 'subscription_required' | 'trial_expired' | 'subscription_expired');
       }
       if (opts.permission && !hasPermission(ctx.permissions, opts.permission)) throw new AppError('forbidden');
+      if (opts.feature && !ctx.entitlements.features[opts.feature]) throw new AppError('feature_not_in_plan', { feature: opts.feature });
       req.hotel = ctx;
     },
   );

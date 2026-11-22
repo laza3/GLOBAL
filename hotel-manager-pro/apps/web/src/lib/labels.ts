@@ -88,9 +88,10 @@ export const FEATURE_LABEL: Record<string, string> = {
   finances: 'Finances',
   staff_permissions: 'Permissions du personnel',
   exports: 'Exports',
-  analytics_advanced: 'Analytique avancée',
+  reports_advanced: 'Analytique avancée',
   multi_currency: 'Multidevise',
-  api: 'API',
+  api_access: 'API',
+  custom_branding: 'Personnalisation de la marque',
   priority_support: 'Support prioritaire',
   multi_property: 'Multi-établissements',
 };

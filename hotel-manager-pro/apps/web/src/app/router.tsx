@@ -71,6 +71,15 @@ export const routes: RouteObject[] = [
               },
               { path: 'billing/folios/:id', lazy: page(() => import('../pages/billing/folio-detail'), (m) => m.default) },
               { path: 'reception', lazy: page(() => import('../pages/reception/reception'), (m) => m.default) },
+              {
+                path: 'housekeeping',
+                lazy: page(() => import('../pages/housekeeping/layout'), (m) => m.default),
+                children: [
+                  { index: true, lazy: page(() => import('../pages/housekeeping/board'), (m) => m.default) },
+                  { path: 'tasks', lazy: page(() => import('../pages/housekeeping/tasks'), (m) => m.default) },
+                  { path: 'maintenance', lazy: page(() => import('../pages/housekeeping/maintenance'), (m) => m.default) },
+                ],
+              },
               { path: 'guests', lazy: page(() => import('../pages/guests/guests'), (m) => m.default) },
               { path: 'guests/:id', lazy: page(() => import('../pages/guests/detail'), (m) => m.default) },
               ...soonRoutes,

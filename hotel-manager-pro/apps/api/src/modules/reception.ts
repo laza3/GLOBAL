@@ -7,6 +7,7 @@ import { AppError } from '../errors';
 import { auditHotel } from '../lib/audit';
 import { serialRows } from '../lib/query';
 import { folioBalance } from '../services/folio';
+import { ensureCleaningTask } from '../services/housekeeping';
 import { expireTentatives, hotelClock, lockReservation, recomputeTotals, syncReservationStatus } from '../services/reservations';
 
 const date = z.string().refine(isDateString, 'Date invalide (format AAAA-MM-JJ).');
@@ -34,6 +35,16 @@ async function resolveReservation(tx: Tx, b: { reservationId?: string; lineIds?:
   const { rows } = await tx.query<{ reservation_id: string }>('SELECT reservation_id FROM reservation_rooms WHERE id = $1', [b.lineIds![0]]);
   if (!rows[0]) throw new AppError('not_found');
   return rows[0].reservation_id;
+}
+
+/**
+ * Chambre quittée : « à nettoyer » et tâche de ménage créée si la formule inclut le housekeeping. Sans ce module, il n'y a personne
+ * pour la remettre « propre » : la chambre reste donc directement disponible.
+ */
+async function markRoomsDirty(tx: Tx, me: { hotelId: string; entitlements: { features: Record<string, boolean> } }, roomIds: string[], today: string) {
+  if (!me.entitlements.features.housekeeping) return;
+  await tx.query("UPDATE rooms SET housekeeping_status = 'dirty' WHERE id = ANY ($1::uuid[])", [roomIds]);
+  for (const id of roomIds) await ensureCleaningTask(tx, me.hotelId, id, today);
 }
 
 export default async function receptionRoutes(app: FastifyInstance) {
@@ -158,7 +169,7 @@ export default async function receptionRoutes(app: FastifyInstance) {
       }
 
       await tx.query("UPDATE reservation_rooms SET status = 'checked_out', actual_check_out = now() WHERE id = ANY ($1::uuid[])", [lines.map((l) => l.id)]);
-      await tx.query("UPDATE rooms SET housekeeping_status = 'dirty' WHERE id = ANY ($1::uuid[])", [lines.map((l) => l.room_id)]);
+      await markRoomsDirty(tx, me, lines.map((l) => l.room_id), clock.today);
       const status = await syncReservationStatus(tx, reservationId);
       let folioClosed = false;
       if (status === 'checked_out') {
@@ -222,7 +233,7 @@ export default async function receptionRoutes(app: FastifyInstance) {
         if ((e as { code?: string }).code === '23P01') throw new AppError('room_not_available');
         throw e;
       }
-      await tx.query("UPDATE rooms SET housekeeping_status = 'dirty' WHERE id = $1", [line.room_id]);
+      await markRoomsDirty(tx, me, [line.room_id], clock.today);
       await syncReservationStatus(tx, reservationId);
       await auditHotel(tx, me, 'reception.room_changed', { type: 'reservation', id: reservationId }, `${cur.reference} : chambre ${line.old_number} → ${target.number}${b.reason ? ` (${b.reason})` : ''}`, { after: b, ip: req.ip, requestId: req.id });
       return { reservationId, from: line.old_number, to: target.number };

@@ -24,6 +24,7 @@ import calendarRoutes from './modules/calendar';
 import folioRoutes from './modules/folios';
 import guestsRoutes from './modules/guests';
 import hotelRoutes from './modules/hotel';
+import housekeepingRoutes from './modules/housekeeping';
 import roomsRoutes from './modules/rooms';
 import platformRoutes from './modules/platform';
 import receptionRoutes from './modules/reception';
@@ -159,6 +160,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(calendarRoutes, { prefix: '/api/v1' });
   await app.register(folioRoutes, { prefix: '/api/v1' });
   await app.register(receptionRoutes, { prefix: '/api/v1' });
+  await app.register(housekeepingRoutes, { prefix: '/api/v1' });
   await app.register(billingRoutes, { prefix: '/api/v1' });
   await app.register(supportRoutes, { prefix: '/api/v1' });
   await app.register(platformAuthRoutes, { prefix: '/api/v1' });
