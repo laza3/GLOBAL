@@ -20,6 +20,10 @@ export const keys = {
   ticket: (id: string) => ['tickets', id] as const,
 };
 
+/* ------------------------------------------------------------------ Textes légaux (public) */
+export const useLegal = () =>
+  useQuery({ queryKey: ['legal'], queryFn: () => api.get<{ version: string; company: Record<string, string> | null }>('/legal'), staleTime: 10 * 60_000 });
+
 /* ------------------------------------------------------------------ Session */
 export const useMeQuery = () =>
   useQuery({

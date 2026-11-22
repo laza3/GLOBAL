@@ -84,7 +84,7 @@ function RegisterForm() {
         </Field>
         <div className="flex flex-col gap-1.5">
           <Checkbox
-            label="J'accepte les conditions d'utilisation"
+            label="J'accepte les conditions d'utilisation et la politique de confidentialité"
             checked={accepted}
             onCheckedChange={(c) => setAccepted(c === true)}
             aria-invalid={feedback.fields.acceptTerms ? true : undefined}
@@ -96,9 +96,15 @@ function RegisterForm() {
             </p>
           )}
           <p className="text-[13px] text-ink-3">
-            <Link to="/conditions" className="underline underline-offset-4">
-              Lire les conditions
+            Lire les{' '}
+            <Link to="/conditions" target="_blank" className="underline underline-offset-4">
+              conditions d&apos;utilisation
+            </Link>{' '}
+            et la{' '}
+            <Link to="/confidentialite" target="_blank" className="underline underline-offset-4">
+              politique de confidentialité
             </Link>
+            .
           </p>
         </div>
         <Button type="submit" variant="primary" size="lg" loading={register.isPending}>

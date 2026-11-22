@@ -94,6 +94,11 @@ Chaque moyen (`mvola`, `orange_money`, `airtel_money`, `bank_transfer`, `card`, 
 
 Ajouter un prestataire = implémenter un connecteur (création du paiement, vérification de la signature du webhook) ; le reste (factures, validation, effets, journal) est inchangé.
 
+### Textes légaux
+
+`GET /legal` (public) → `{ version, company }` : version des conditions en vigueur et coordonnées de l'éditeur (réglage `company.profile`).
+L'inscription enregistre `users.terms_version` et `users.terms_accepted_at`.
+
 ### Utilisation des quotas
 
 `GET /hotel/usage` → `{ rooms: { count, max }, users: { count, max } }` : consommation réelle de CET établissement face aux limites de sa

@@ -442,7 +442,7 @@ async function loginPlatform(browser) {
         const opts = { viewport: { width: size.w, height: size.h }, colorScheme: scheme };
         // --- visiteur anonyme
         const anon = await newPage(browser, opts);
-        for (const route of ['/connexion', '/inscription', '/conditions', '/platform/connexion']) {
+        for (const route of ['/connexion', '/inscription', '/conditions', '/confidentialite', '/platform/connexion']) {
           await anon.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
           await audit(anon, `${route} — ${scheme} ${size.n}`, size.n === 'bureau' || size.n === 'mobile' ? `anon${route.replace(/\//g, '-')}-${scheme}-${size.n}` : null);
         }

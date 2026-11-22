@@ -1,5 +1,6 @@
 import { ShieldCheck, WalletCards, Globe2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 import { PageBackdrop } from '../../auth/screens';
 import { ThemeToggle } from '../../ui/theme';
 import { BrandMark } from '../../ui/shell';
@@ -54,6 +55,10 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
           </div>
           <div className="flex flex-col items-center gap-4 text-center text-[14px] text-ink-2">
             {footer}
+            <p className="flex gap-4 text-[13px]">
+              <Link to="/conditions" className="underline underline-offset-4 hover:text-ink">Conditions d&apos;utilisation</Link>
+              <Link to="/confidentialite" className="underline underline-offset-4 hover:text-ink">Confidentialité</Link>
+            </p>
             <ThemeToggle />
           </div>
         </main>

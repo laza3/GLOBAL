@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { SYSTEM_ROLES } from '@hmp/shared';
+import { SYSTEM_ROLES, LEGAL_VERSION } from '@hmp/shared';
 import { tenantTx } from '../db';
 import { AppError, fromDbError } from '../errors';
 import { hashPassword } from '../lib/security';
@@ -85,8 +85,8 @@ export async function registerHotel(
           else throw e;
         }
 
-        await tx.query('INSERT INTO users (id, email, full_name, password_hash) VALUES ($1, $2, $3, $4)', [
-          userId, input.email, input.ownerName, passwordHash,
+        await tx.query('INSERT INTO users (id, email, full_name, password_hash, terms_version, terms_accepted_at) VALUES ($1, $2, $3, $4, $5, now())', [
+          userId, input.email, input.ownerName, passwordHash, LEGAL_VERSION,
         ]);
 
         let ownerRoleId = '';

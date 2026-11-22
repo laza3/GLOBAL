@@ -88,7 +88,21 @@ Les captures du dernier passage sont dans `apps/web/.shots/e2e` (non versionnée
 * Le découpage du code embarquait la bibliothèque de graphiques dans le chargement initial (React dans le mauvais fragment) :
   regroupement corrigé, les graphiques sont de nouveau à la demande.
 
-## 7. Limites connues (ce qui n'est PAS fait)
+## 7. Textes légaux
+
+Les **conditions d'utilisation** (`/conditions`) et la **politique de confidentialité** (`/confidentialite`) sont rédigées d'après le
+fonctionnement réel du service (essai sans carte, paiement vérifié manuellement, lecture seule après échéance, isolation par
+établissement, cookies strictement nécessaires, aucune donnée vendue). Elles ne contiennent aucune coordonnée écrite en dur : l'éditeur
+renseigne le réglage **Société** de la console (nom, forme juridique, adresse, NIF/STAT, e-mail, téléphone) et ces informations
+apparaissent dans les textes (`GET /api/v1/legal`).
+
+Décisions prises (à modifier dans `apps/web/src/pages/legal/` si besoin) : conservation des données 90 jours après la fin du contrat puis
+suppression ; journaux 12 mois maximum ; préavis de 30 jours pour toute modification importante ; responsabilité plafonnée aux 12 derniers
+mois payés ; droit malgache et tribunaux d'Antananarivo ; référence à la loi n° 2014-038 sur la protection des données personnelles.
+L'inscription enregistre la **version** (`LEGAL_VERSION` dans `@hmp/shared`) et la date d'acceptation de chaque utilisateur : à chaque
+changement des textes, mettre à jour cette constante.
+
+## 8. Limites connues (ce qui n'est PAS fait)
 
 * **Pas d'internationalisation** : les textes sont en français dans les composants. L'anglais et le malgache viendront avec un
   catalogue de messages (le réglage de langue affiche « français uniquement »).
@@ -97,8 +111,6 @@ Les captures du dernier passage sont dans `apps/web/.shots/e2e` (non versionnée
   (occupation, ADR, RevPAR…) viendra avec eux.
 * **Pas de réinitialisation de mot de passe** ni d'invitation par e-mail (pas de fournisseur d'e-mail) ; l'écran de connexion le dit.
 * **Un utilisateur membre de plusieurs établissements** ne dispose pas encore d'un sélecteur d'établissement (l'API le permet).
-* **Conditions d'utilisation et politique de confidentialité : à rédiger** (page `/conditions` explicite, à remplacer avant toute
-  ouverture commerciale ; case d'acceptation déjà exigée).
 * **Pas de double authentification (TOTP)** pour les super-administrateurs.
 * **Hors ligne** : l'indicateur reflète l'état réel du navigateur ; il n'existe ni file de synchronisation ni mode hors ligne.
 * **Lecteur d'écran réel (VoiceOver, NVDA) non testé** : l'audit axe-core automatisé ne détecte qu'une partie des défauts.

@@ -1,3 +1,4 @@
+import { LEGAL_VERSION } from '@hmp/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
@@ -55,6 +56,12 @@ export default async function authRoutes(app: FastifyInstance) {
       ),
     );
     return { plans: rows };
+  });
+
+  /* ------------------------------------------------------------------ Textes légaux : version en vigueur et coordonnées de l'éditeur */
+  r.get('/legal', { schema: { tags: ['Public'], summary: 'Version des textes juridiques et coordonnées de l\'éditeur (réglage « company.profile » de la console)' } }, async () => {
+    const company = await app.deps.settings.get<Record<string, string> | null>('company.profile', null);
+    return { version: LEGAL_VERSION, company: company && Object.keys(company).length ? company : null };
   });
 
   /* ------------------------------------------------------------------ Inscription d'un établissement */

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { LEGAL_VERSION } from '@hmp/shared';
 import { Client, ORIGIN, PASSWORD, addStaff, createTestApp, q, registerHotel, uniqueEmail, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -316,5 +317,25 @@ describe('ordre des contrôles : l\'accès avant la validation', () => {
     const res = await reception.client.patch('/api/v1/hotel', { name: 'X' });
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('forbidden');
+  });
+});
+
+describe('textes juridiques', () => {
+  it('l\'inscription enregistre la version acceptée et la date ; la version est publique', async () => {
+    const before = Date.now();
+    const reg = await registerHotel(t);
+    const [u] = await q(t, 'SELECT terms_version, terms_accepted_at FROM users WHERE id = $1', [reg.userId]);
+    expect(u.terms_version).toBe(LEGAL_VERSION);
+    expect(new Date(u.terms_accepted_at).getTime()).toBeGreaterThanOrEqual(before - 1000);
+    const pub = await new Client(t).get('/api/v1/legal');
+    expect(pub.status).toBe(200);
+    expect(pub.body).toEqual({ version: LEGAL_VERSION, company: null });
+  });
+
+  it('les coordonnées de l\'éditeur viennent du réglage « company.profile » de la console, sans rien d\'autre', async () => {
+    await q(t, "INSERT INTO platform_settings (key, value) VALUES ('company.profile', $1::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [JSON.stringify({ name: 'Éditeur SARL', address: 'Antananarivo', email: 'contact@editeur.mg' })]);
+    const pub = await new Client(t).get('/api/v1/legal');
+    expect(pub.body.company).toEqual({ name: 'Éditeur SARL', address: 'Antananarivo', email: 'contact@editeur.mg' });
+    await q(t, "DELETE FROM platform_settings WHERE key = 'company.profile'");
   });
 });

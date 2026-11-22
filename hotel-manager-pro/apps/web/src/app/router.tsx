@@ -24,6 +24,7 @@ export const routes: RouteObject[] = [
       { path: '/connexion', lazy: page(() => import('../pages/auth/login'), (m) => m.LoginPage) },
       { path: '/inscription', lazy: page(() => import('../pages/auth/register'), (m) => m.RegisterPage) },
       { path: '/conditions', lazy: page(() => import('../pages/legal/terms'), (m) => m.default) },
+      { path: '/confidentialite', lazy: page(() => import('../pages/legal/privacy'), (m) => m.default) },
       { path: '/design', lazy: page(() => import('../pages/design-system'), (m) => m.DesignSystemPage) },
       {
         element: <RequireHotelAuth />,
