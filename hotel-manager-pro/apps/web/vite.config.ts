@@ -9,7 +9,8 @@ const api = { '/api': { target: process.env.API_URL ?? 'http://127.0.0.1:3000', 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: { host: '127.0.0.1', port: 5173, proxy: api },
-  preview: { host: '127.0.0.1', port: 4173, proxy: api },
+  // allowedHosts : le mode réseau local (« pnpm local:start --lan ») sert la version compilée à d'autres ordinateurs, qui l'appellent par nom
+  preview: { host: '127.0.0.1', port: 4173, proxy: api, allowedHosts: true },
   build: {
     target: 'es2022',
     sourcemap: false,

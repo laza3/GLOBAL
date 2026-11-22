@@ -36,6 +36,7 @@ import platformAuthRoutes from './modules/platform-auth';
 import staffRoutes from './modules/staff';
 import supportRoutes from './modules/support';
 import authPlugin from './plugins/auth';
+import { isOriginAllowed } from './lib/origins';
 import type { AppDeps } from './types';
 
 // Messages de validation en français
@@ -77,7 +78,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
     hsts: config.cookieSecure ? { maxAge: 31_536_000, includeSubDomains: true } : false,
   });
   await app.register(cors, {
-    origin: (origin, cb) => cb(null, !origin || config.allowedOrigins.includes(origin)),
+    origin: (origin, cb) => cb(null, !origin || isOriginAllowed(config, origin)),
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: ['content-type', 'x-csrf-token', 'idempotency-key'],

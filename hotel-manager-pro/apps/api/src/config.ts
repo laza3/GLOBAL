@@ -50,6 +50,12 @@ const schema = z.object({
   MAIL_FROM: z.string().default('Hotel Manager Pro <ne-pas-repondre@localhost>'),
   PUBLIC_URL: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  /**
+   * Mode « réseau local » (installation sur l'ordinateur d'un hôtel, sans Internet) : accepte aussi les origines du réseau privé
+   * (192.168.x.x, 10.x.x.x, 172.16-31.x.x, nom d'ordinateur), pour que les autres ordinateurs et téléphones de l'hôtel puissent se
+   * connecter. INTERDIT en production (NODE_ENV=production) : les hébergements en ligne n'ont pas de réseau privé à autoriser.
+   */
+  LAN_MODE: bool.default(false),
   /** Trace du SQL de bascule de rôle (tests) : la connexion est superuser, on bascule vers le rôle applicatif. */
   DB_SWITCH_ROLE: bool.default(false),
 });
@@ -75,6 +81,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   if (secureMode && !APP_ENV) throw new Error('Configuration invalide : APP_ENV est obligatoire avec NODE_ENV=production (staging ou production).');
   if (secureMode && APP_ENV === 'development') throw new Error('Configuration invalide : APP_ENV=development est incompatible avec NODE_ENV=production.');
   if (!secureMode && APP_ENV && APP_ENV !== 'development') throw new Error(`Configuration invalide : APP_ENV=${APP_ENV} exige NODE_ENV=production (mêmes réglages de sécurité que la production).`);
+  if (rest.LAN_MODE && secureMode) throw new Error('Configuration invalide : LAN_MODE est incompatible avec NODE_ENV=production (installation locale uniquement).');
   const appEnv: AppEnvironment = APP_ENV ?? 'development';
   const cookieSecure = COOKIE_SECURE ?? rest.NODE_ENV === 'production';
   if (rest.NODE_ENV === 'production' && !cookieSecure) {

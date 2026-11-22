@@ -22,6 +22,8 @@
     "api:seed-demo": "pnpm --filter @hmp/api seed-demo",
     "local:setup": "pnpm --dir apps/api exec tsx scripts/local.ts setup",
     "local:start": "pnpm --dir apps/api exec tsx scripts/local.ts start",
+    "local:backup": "pnpm --dir apps/api exec tsx scripts/local.ts backup",
+    "local:restore": "pnpm --dir apps/api exec tsx scripts/local.ts restore",
     "online:setup": "pnpm --dir apps/api exec tsx scripts/online-setup.ts",
     "check:e2e": "pnpm --filter @hmp/web check:e2e"
   },

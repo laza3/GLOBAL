@@ -4,6 +4,7 @@ import fp from 'fastify-plugin';
 import { AppError } from '../errors';
 import { platformTx } from '../db';
 import { csrfTokenFor, safeEqual, sha256 } from '../lib/security';
+import { isOriginAllowed } from '../lib/origins';
 import { resolveHotelContext } from '../services/session';
 import type { HotelAuthOptions, PlatformContext } from '../types';
 
@@ -26,7 +27,7 @@ export default fp(async (app) => {
 
   const checkOrigin = (req: FastifyRequest) => {
     const origin = req.headers.origin;
-    if (origin && !config.allowedOrigins.includes(origin)) throw new AppError('origin_not_allowed');
+    if (origin && !isOriginAllowed(config, origin)) throw new AppError('origin_not_allowed');
   };
 
   const checkCsrf = (req: FastifyRequest, tokenHash: string) => {

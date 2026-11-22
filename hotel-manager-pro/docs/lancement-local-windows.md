@@ -109,6 +109,8 @@ pnpm install
 pnpm local:start
 ```
 
+> **Installer le logiciel chez un client (hôtel sans Internet, plusieurs appareils, sauvegardes) ?** Ce guide-ci sert à votre propre ordinateur. Pour un client : [version-locale.md](version-locale.md).
+
 ## Dépannage
 
 | Message ou problème | Solution |

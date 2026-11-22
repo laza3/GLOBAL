@@ -15,7 +15,7 @@ par l'équipe, avec la référence de la transaction. **Les textes légaux, les 
 (voir [Limites](#limites-à-connaître-avant-la-production)).
 
 Documentation : [architecture](docs/architecture.md) · [API](docs/api.md) · [interface web](docs/web.md) ·
-[modèle de sécurité](docs/security-model.md) · [design system](docs/design-system.md) · [déploiement et sauvegardes](docs/deployment.md) · [environnements](docs/environnements.md) · [mise en ligne pas à pas](docs/guide-mise-en-ligne.md) · [mises à jour et retour arrière](docs/mises-a-jour.md) · [sauvegardes](docs/sauvegardes.md).
+[modèle de sécurité](docs/security-model.md) · [design system](docs/design-system.md) · [déploiement et sauvegardes](docs/deployment.md) · [environnements](docs/environnements.md) · [mise en ligne pas à pas](docs/guide-mise-en-ligne.md) · [mises à jour et retour arrière](docs/mises-a-jour.md) · [sauvegardes](docs/sauvegardes.md) · [version locale chez un client, sans Internet](docs/version-locale.md).
 
 ## Prérequis
 
@@ -30,6 +30,8 @@ pnpm local:start     # démarre l'API et l'interface, ouvre Chrome sur http://12
 ```
 
 Guide pas à pas pour Windows (installation de Node, pnpm, PostgreSQL, dépannage) : [docs/lancement-local-windows.md](docs/lancement-local-windows.md).
+
+**Installation chez un client, sans Internet** (réseau de l'hôtel, sauvegarde, restauration) : `pnpm local:setup --client`, `pnpm local:start --lan`, `pnpm local:backup`, `pnpm local:restore` — voir [docs/version-locale.md](docs/version-locale.md).
 
 ## Démarrage (développeurs)
 
