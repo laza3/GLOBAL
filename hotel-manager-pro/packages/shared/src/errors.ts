@@ -110,6 +110,10 @@ export const ERRORS = {
   reservation_invoiced: { status: 409, message: 'Cette réservation est déjà facturée : émettez un avoir avant de modifier son montant.' },
   invoice_not_voidable: { status: 409, message: 'Seule une facture émise sans paiement associé peut être annulée ; sinon émettez un avoir.' },
   folio_payment_exceeds_due: { status: 422, message: 'Le montant dépasse le solde restant à payer sur cette note.' },
+  checkin_too_early: { status: 422, message: "L'arrivée est prévue plus tard : l'enregistrement n'est possible qu'à partir du jour d'arrivée." },
+  room_not_ready: { status: 409, message: "La chambre n'est pas prête (à nettoyer ou en nettoyage). Confirmez pour enregistrer l'arrivée quand même." },
+  balance_outstanding: { status: 409, message: 'Il reste un solde à régler. Encaissez-le, ou confirmez le départ avec un solde impayé.' },
+  room_change_same: { status: 422, message: 'Le client occupe déjà cette chambre.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

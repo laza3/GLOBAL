@@ -70,6 +70,7 @@ export const routes: RouteObject[] = [
                 ],
               },
               { path: 'billing/folios/:id', lazy: page(() => import('../pages/billing/folio-detail'), (m) => m.default) },
+              { path: 'reception', lazy: page(() => import('../pages/reception/reception'), (m) => m.default) },
               { path: 'guests', lazy: page(() => import('../pages/guests/guests'), (m) => m.default) },
               { path: 'guests/:id', lazy: page(() => import('../pages/guests/detail'), (m) => m.default) },
               ...soonRoutes,
