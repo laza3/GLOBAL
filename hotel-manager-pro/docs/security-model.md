@@ -68,6 +68,16 @@ qu'aux tests, où la connexion est superuser.
 | Console plateforme qui réécrit son journal | `UPDATE`/`DELETE` non accordés | `platform` |
 | Accès conservé après fin d'essai / d'abonnement | État calculé par dates à chaque requête (ne dépend pas du cron) | `lifecycle` |
 | Double facturation d'un renouvellement | Une seule facture ouverte par période | `lifecycle` |
+| Double réservation sous requêtes simultanées | Chambre affectée à la création ; contrainte d'exclusion ; la seconde requête attend puis échoue | `reservations` (10 requêtes parallèles, un seul succès) |
+| Création en double (double-clic, relance) | `Idempotency-Key` + verrou consultatif ; même clé et autre contenu refusés | `reservations`, `folios`, `restaurant` |
+| Remboursements simultanés au-delà du paiement | Verrou du paiement d'origine dans le déclencheur | `folios` (5 en parallèle, 3 acceptés) |
+| Modifier le montant d'une réservation déjà facturée | Refus 409 ; correction par avoir | `folios` |
+| Escalade de droits par le personnel | On ne donne pas ce qu'on n'a pas ; on ne touche pas un compte plus puissant ; pas soi-même | `staff` |
+| Prise de contrôle d'un compte partagé entre hôtels | `staff_set_temp_password` refuse un compte membre d'un autre établissement | `staff` |
+| Mot de passe provisoire retrouvable | Affiché une fois (`no-store`), jamais journalisé, à changer (marquage en base) | `staff` |
+| Fonction non incluse dans la formule utilisée via l'API | `hotelAuth({ feature })` → 403 `feature_not_in_plan` | `housekeeping`, `restaurant`, `finances`, `staff`, `reports` |
+| Tableau de bord qui contourne les droits | Chaque bloc calculé seulement si la permission est détenue | `reports` |
+| Injection de formule dans un export CSV | Cellules préfixées d'une apostrophe | `finances`, `reports`, `csv` |
 
 ## Couche API
 

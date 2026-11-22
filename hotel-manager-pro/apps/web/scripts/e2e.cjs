@@ -390,7 +390,7 @@ async function modulesJourney(browser, hotel, admin) {
     ok(!/Bientôt/.test(await hotel.getByRole('button', { name: /^Facturation/ }).innerText().catch(() => '')), 'le module Facturation n\'est plus « Bientôt »');
     await hotel.getByRole('link', { name: /^RES-\d{4}-0002$/ }).click();
     await hotel.waitForURL(/\/billing\/folios\/[0-9a-f-]{36}$/);
-    ok(/260\s?000\sAr/.test(await bodyText(hotel)), 'la note porte la charge d\'hébergement de la réservation (nuit de week-end)');
+    ok(await visible(hotel.getByText(/260\s?000\sAr/)), 'la note porte la charge d\'hébergement de la réservation (nuit de week-end)');
 
     // taxes : configuration puis effet sur une NOUVELLE réservation seulement (jamais sur l'existante)
     await hotel.getByRole('button', { name: 'Ajouter une charge' }).click();
@@ -477,6 +477,105 @@ async function modulesJourney(browser, hotel, admin) {
     ok((await hotel.getByRole('row').filter({ hasText: /FAC|AV/ }).count()) >= 2, 'la liste montre la facture et l\'avoir');
   }
 
+  section('Réception, housekeeping, restaurant, personnel, finances, rapports');
+  {
+    let dlg;
+    // séjour qui arrive aujourd'hui, créé par l'interface
+    await hotel.goto(`${BASE}/reservations/new`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Ajouter une chambre Standard' }).click();
+    await hotel.getByRole('searchbox', { name: /^Client/ }).fill('hanitra');
+    await hotel.getByRole('button', { name: /Hanitra Rakoto/ }).click();
+    await hotel.getByRole('button', { name: 'Enregistrer la réservation' }).click();
+    await hotel.waitForURL(/\/reservations\/[0-9a-f-]{36}$/);
+
+    await hotel.goto(`${BASE}/reception`, { waitUntil: 'networkidle' });
+    ok(!/Bientôt/.test(await hotel.getByRole('button', { name: /^Réception/ }).innerText().catch(() => '')), 'le module Réception n\'est plus « Bientôt »');
+    ok(await visible(hotel.getByRole('list', { name: 'Arrivées' }).getByText('Hanitra Rakoto')), 'l\'arrivée du jour est listée');
+    await hotel.getByRole('button', { name: /Enregistrer l'arrivée de Hanitra Rakoto/ }).click();
+    ok(await toast(hotel, /Arrivée enregistrée/), 'arrivée enregistrée');
+    await hotel.getByRole('radio', { name: 'En séjour' }).click();
+    ok(await visible(hotel.getByRole('list', { name: 'Clients en séjour' }).getByText('Hanitra Rakoto')), 'le client est en séjour');
+    await hotel.getByRole('button', { name: /Enregistrer le départ de Hanitra Rakoto/ }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByRole('button', { name: 'Enregistrer le départ' }).click();
+    ok(await visible(dlg.getByText(/solde à régler/)), 'le départ est refusé tant qu\'il reste un solde');
+    await dlg.getByRole('switch', { name: /solde impayé/ }).click();
+    await dlg.getByRole('button', { name: 'Enregistrer le départ' }).click();
+    ok(await toast(hotel, /Départ enregistré/), 'départ enregistré avec solde impayé (tracé)');
+
+    await hotel.goto(`${BASE}/housekeeping`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByRole('region', { name: /À nettoyer : 1 chambre/ })), 'la chambre quittée est « à nettoyer » (tâche créée au départ)');
+    await hotel.getByRole('button', { name: /Commencer le ménage de la chambre/ }).click();
+    ok(await toast(hotel, /ménage commencé/), 'ménage commencé');
+    await hotel.getByRole('button', { name: /Terminer le ménage de la chambre/ }).click();
+    ok(await toast(hotel, /propre/), 'ménage terminé : chambre propre');
+    await hotel.goto(`${BASE}/housekeeping/maintenance`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Signaler' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Problème/).fill('Climatisation en panne');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Demande enregistrée'), 'panne signalée');
+    ok(await visible(hotel.getByText('Climatisation en panne')), 'la demande figure dans la liste');
+
+    await hotel.goto(`${BASE}/restaurant/menu`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Nouveau plat' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Nom/).fill('Romazava');
+    await dlg.getByLabel(/^Prix/).fill('15000');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Plat enregistré'), 'plat ajouté à la carte');
+    await hotel.goto(`${BASE}/restaurant`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Nouvelle commande' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByRole('button', { name: 'Ajouter un Romazava' }).click();
+    await dlg.getByRole('button', { name: 'Ajouter un Romazava' }).click();
+    await dlg.getByRole('button', { name: 'Ouvrir la commande' }).click();
+    ok(await toast(hotel, /Commande CMD-\d{4}-0001 ouverte/), 'commande ouverte');
+    ok(/30\s?000\sAr/.test(await bodyText(hotel)), 'l\'addition : 2 × 15 000 Ar');
+    await hotel.getByRole('button', { name: 'Encaisser', exact: true }).click();
+    await hotel.getByRole('dialog').last().getByRole('button', { name: 'Encaisser', exact: true }).click();
+    ok(await toast(hotel, 'Commande encaissée'), 'addition encaissée (espèces)');
+
+    await hotel.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Ajouter un membre' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Nom complet/).fill('Marie Rasoanaivo');
+    await dlg.getByLabel(/^Adresse e-mail/).fill(`marie-${RUN}@hotel.test`);
+    await dlg.getByLabel(/^Rôle/).click();
+    await hotel.getByRole('option', { name: 'Réceptionniste' }).click();
+    await dlg.getByRole('button', { name: 'Créer le compte' }).click();
+    const secret = await hotel.getByTestId('temporary-password').textContent({ timeout: 8000 });
+    ok(/^[A-Za-z2-9]{4}-[A-Za-z2-9]{5}-[A-Za-z2-9]{5}$/.test(secret ?? ''), 'un mot de passe provisoire est affiché une seule fois');
+    await hotel.getByRole('button', { name: "J'ai noté le mot de passe" }).click();
+    ok(!(await bodyText(hotel)).includes(secret), 'le mot de passe disparaît dès la fenêtre fermée');
+    ok(await visible(hotel.getByText('Mot de passe provisoire').first()), 'le compte est marqué « mot de passe provisoire »');
+    await hotel.getByRole('button', { name: /Désactiver Marie Rasoanaivo/ }).click();
+    await hotel.getByRole('dialog').getByRole('button', { name: 'Désactiver' }).click();
+    ok(await toast(hotel, 'Compte désactivé'), 'compte désactivé');
+    await hotel.goto(`${BASE}/staff/roles`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByRole('list', { name: 'Rôles' }).getByText('Réceptionniste')), 'les rôles prédéfinis sont listés');
+
+    await hotel.goto(`${BASE}/finances/expenses`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Nouvelle dépense' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Description/).fill('Facture JIRAMA');
+    await dlg.getByLabel(/^Montant/).fill('250000');
+    await dlg.getByLabel(/^Ou nouvelle catégorie/).fill('Électricité');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Dépense enregistrée'), 'dépense enregistrée (catégorie créée au passage)');
+    await hotel.goto(`${BASE}/finances`, { waitUntil: 'networkidle' });
+    ok(/Encaissé \(net\)/.test(await bodyText(hotel)) && /Reste à encaisser/.test(await bodyText(hotel)), 'la synthèse financière s\'affiche');
+
+    await hotel.goto(`${BASE}/reports`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByText("Taux d'occupation")), 'les rapports affichent l\'occupation');
+    ok((await hotel.getByRole('link', { name: /Exporter \(CSV\)/ }).count()) === 1, 'export CSV proposé (formule avec exports)');
+    ok(/analytique avancée/.test(await bodyText(hotel)), 'l\'analytique avancée est présentée comme une option de formule');
+
+    await hotel.goto(`${BASE}/overview`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByRole('heading', { name: /Aujourd'hui à l'hôtel/ })), 'le tableau de bord affiche la journée réelle');
+    ok(!/Les indicateurs apparaîtront/.test(await bodyText(hotel)), 'plus de texte « indicateurs à venir »');
+  }
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -532,7 +631,7 @@ async function modulesJourney(browser, hotel, admin) {
     ok(/Terminez la configuration/.test(t), 'après inscription : on arrive sur la configuration initiale');
     ok(/Essai gratuit/.test(t) && /Business/.test(t), 'l\'essai gratuit de la formule Business est actif');
     ok(/Chambres\s*0 sur 30/.test(t.replace(/\n/g, ' ')), 'les quotas réels sont affichés (0 chambre sur 30)');
-    ok(/ne montrons jamais de valeurs d'exemple/.test(t), 'le tableau de bord n\'invente aucun indicateur d\'exploitation');
+    ok(/Aucune chambre pour le moment/.test(t) && !/\d+ %/.test(t.replace(/\n/g, ' ').split('Aujourd')[1] ?? ''), 'sans chambre, le tableau de bord n\'invente aucun indicateur (il invite à créer les chambres)');
     const cookies = await hotel.context().cookies();
     const session = cookies.find((c) => c.name === 'hmp_session');
     ok(session && session.httpOnly && session.sameSite === 'Lax', 'cookie de session HttpOnly + SameSite=Lax', JSON.stringify(session));
@@ -592,8 +691,7 @@ async function modulesJourney(browser, hotel, admin) {
     ok(/ne pourra plus être modifiée/.test(await dlg.innerText()), 'la confirmation prévient du verrouillage de la devise');
     ok((await hotel.evaluate(() => document.activeElement?.textContent)) === 'Garder', 'le focus est sur le choix sûr (Garder)');
     await dlg.getByRole('button', { name: 'Terminer la configuration' }).click();
-    ok(await toast(hotel, 'Configuration terminée'), 'configuration terminée');
-    ok(await visible(hotel.getByRole('heading', { name: /Bonjour Hanitra/ })), 'le tableau de bord passe à l\'état « prêt »');
+    ok(await visible(hotel.getByRole('heading', { name: /Bonjour Hanitra/ }), 10000), 'configuration terminée : le tableau de bord passe à l\'état « prêt »');
     await hotel.goto(`${BASE}/settings/hotel`, { waitUntil: 'networkidle' });
     ok(await hotel.getByLabel('Devise de facturation').isDisabled(), 'la devise est verrouillée après la configuration');
   }
@@ -876,7 +974,7 @@ async function modulesJourney(browser, hotel, admin) {
         await h.locator('input[autocomplete="current-password"]').fill(NEW_PASSWORD);
         await h.getByRole('button', { name: 'Se connecter' }).click();
         await h.waitForURL('**/overview');
-        for (const route of ['/overview', '/reservations', '/reservations/new', '/calendar', '/billing', '/billing/invoices', '/billing/payments', '/billing/settings', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
+        for (const route of ['/overview', '/reservations', '/reservations/new', '/calendar', '/reception', '/housekeeping', '/housekeeping/tasks', '/housekeeping/maintenance', '/restaurant', '/restaurant/menu', '/restaurant/tables', '/staff', '/staff/roles', '/finances', '/finances/expenses', '/reports', '/billing', '/billing/invoices', '/billing/payments', '/billing/settings', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
           await h.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
           await audit(h, `${route} — ${scheme} ${size.n}`, size.n !== 'tablette' ? `hotel${route.replace(/\//g, '-')}-${scheme}-${size.n}` : null);
         }

@@ -305,7 +305,7 @@ function OperationsCard() {
       ) : (
         <div className="flex flex-col gap-5">
           {d.rooms && d.rooms.total === 0 && <p className="rounded-[14px] border border-dashed border-field-border p-4 text-[14px] text-ink-2">Aucune chambre pour le moment. <Link to="/rooms" className="text-accent-ink underline">Créez vos chambres</Link> : l&apos;occupation et les arrivées s&apos;afficheront ici.</p>}
-          <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Indicateurs du jour">
             {d.rooms && d.rooms.total > 0 && <Stat label="Occupation" value={`${(d.rooms.occupancyRate * 100).toFixed(0)} %`} sub={`${d.rooms.occupied} chambre${d.rooms.occupied > 1 ? 's' : ''} occupée${d.rooms.occupied > 1 ? 's' : ''} sur ${d.rooms.total}`} to="/rooms" />}
             {d.stays && <Stat label="Arrivées" value={`${d.stays.arrivalsDone}/${d.stays.arrivals}`} sub="enregistrées aujourd'hui" to="/reception" />}
             {d.stays && <Stat label="Départs" value={`${d.stays.departuresDone}/${d.stays.departures}`} sub={d.stays.overdue ? `${d.stays.overdue} en retard` : "enregistrés aujourd'hui"} to="/reception?section=departures" tone={d.stays.overdue ? 'warning' : undefined} />}
@@ -314,7 +314,7 @@ function OperationsCard() {
             {d.money && <Stat label="Reste à encaisser" value={money(d.money.receivables)} sub={`${d.money.receivablesFolios} note${d.money.receivablesFolios > 1 ? 's' : ''} ouverte${d.money.receivablesFolios > 1 ? 's' : ''}`} to="/billing?payment=due" />}
             {d.housekeeping && <Stat label="Chambres à nettoyer" value={String(d.housekeeping.dirty)} sub={d.housekeeping.issues ? `${d.housekeeping.issues} panne${d.housekeeping.issues > 1 ? 's' : ''} ouverte${d.housekeeping.issues > 1 ? 's' : ''}` : 'aucune panne ouverte'} to="/housekeeping" tone={d.housekeeping.issues ? 'warning' : undefined} />}
             {d.restaurant && <Stat label="Restaurant" value={money(d.restaurant.salesToday)} sub={`${d.restaurant.openOrders} commande${d.restaurant.openOrders > 1 ? 's' : ''} en cours`} to="/restaurant" />}
-          </dl>
+          </ul>
           {d.stays && d.stays.upcomingArrivals.some((u) => u.n > 0) && (
             <div className="flex flex-col gap-2">
               <h3 className="text-[13px] font-medium text-ink-2">Arrivées des 7 prochains jours</h3>
@@ -332,11 +332,13 @@ function OperationsCard() {
 
 function Stat({ label, value, sub, to, tone }: { label: string; value: string; sub: string; to: string; tone?: 'warning' }) {
   return (
-    <Link to={to} className="flex flex-col gap-0.5 rounded-[16px] border border-hairline bg-[var(--glass-data)] p-4 transition-colors hover:bg-accent-soft focus-visible:outline-2">
-      <dt className="text-[13px] text-ink-2">{label}</dt>
-      <dd className={cn('num-display text-[24px] leading-tight font-semibold', tone === 'warning' ? 'text-[var(--st-pending)]' : 'text-ink')}>{value}</dd>
-      <span className="text-[12.5px] text-ink-3">{sub}</span>
-    </Link>
+    <li>
+      <Link to={to} className="flex h-full flex-col gap-0.5 rounded-[16px] border border-hairline bg-[var(--glass-data)] p-4 transition-colors hover:bg-accent-soft focus-visible:outline-2">
+        <span className="text-[13px] text-ink-2">{label}</span>
+        <span className={cn('num-display text-[24px] leading-tight font-semibold', tone === 'warning' ? 'text-[var(--st-pending)]' : 'text-ink')}>{value}</span>
+        <span className="text-[12.5px] text-ink-3">{sub}</span>
+      </Link>
+    </li>
   );
 }
 

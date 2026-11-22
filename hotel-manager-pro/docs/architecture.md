@@ -159,9 +159,24 @@ Navigateur ──cookie HttpOnly + X-CSRF-Token──▶ Fastify (apps/api)
   pour traverser fin d'essai, tolérance et expiration sans toucher aux données.
 * Détail des routes, règles et limites : [api.md](api.md).
 
+## 8ter. Modules métier (Phase 6) — comment ils s'articulent
+
+```
+réservation ──▶ chambres affectées (exclusion SQL) ──▶ calendrier / réception / housekeeping
+     │                                                       │ départ : chambre « à nettoyer » + tâche
+     ▼
+note du client (folio) ◀── restaurant (imputation, une fois) ◀── commandes
+     │  charge d'hébergement = total de la réservation (suit ses changements, figée une fois facturée)
+     ├─▶ encaissements saisis (multi-devises, taux conservé) ──▶ remboursements plafonnés
+     └─▶ facture numérotée sans trou (immuable, PDF) ──▶ avoir
+finances (dépenses) + rapports (nuits à prix figé) + tableau de bord : lecture seule, filtrés par droits et par formule
+```
+
+Principes communs : **état dérivé plutôt que dupliqué** (statut d'une chambre, solde d'une note), **prix et taxes figés** à la saisie (réservation, ligne de commande, facture), **aucune suppression** de réservation / paiement / facture (on annule, on rembourse, on crédite), **audit de chaque action**, **création rejouable** pour les opérations sensibles, **accès par formule** (`hotelAuth({ feature })`).
+
 ## 9. Limites actuelles (ce qui n'est PAS fait)
 
-* **Interface** : accès, espace client et console plateforme existent (Phase 5, voir [web.md](web.md)). Les **modules métier hôteliers** (chambres, réservations, clients, réception, housekeeping, restaurant, facturation des clients, finances, personnel, rapports) viennent aux Phases 6 et suivantes : l'interface les signale « Bientôt ».
+* **Modules métier** : les treize modules existent (Phase 6) — chambres, clients, réservations, calendrier, réception, housekeeping, restaurant, facturation, finances, personnel, rapports, tableau de bord, réglages. Voir [api.md](api.md) et [web.md](web.md).
 * **Tâche de cycle de vie des abonnements** : écrite et testée (`pnpm api:lifecycle`, à planifier toutes les heures). Les droits d'usage sont calculés par dates, donc corrects même si la tâche ne tourne pas ; `platform_mrr` se fie au statut enregistré et exige donc qu'elle tourne.
 * **Aucune passerelle de paiement n'est connectée** (MVola, Orange Money, Airtel Money, carte) : validation manuelle
   uniquement. Les brancher exige des contrats marchands et des clés que ce projet n'a pas.

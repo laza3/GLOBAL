@@ -13,7 +13,7 @@ Le design system (verre, clair/sombre) est décrit dans [design-system.md](desig
 | Zone | Routes |
 |---|---|
 | Public | `/connexion` · `/inscription` · `/conditions` · `/design` (banc d'essai du design system) |
-| Établissement (session requise) | `/overview` · `/settings/hotel` · `/settings/subscription` · `/settings/invoices` · `/settings/support` · `/settings/account` · `/rooms` (+ `categories`, `rates`) · `/guests` · `/guests/:id` · `/reservations` · `/reservations/new` · `/reservations/:id` · modules à venir (`/calendar`, `/reception`, `/housekeeping`, `/restaurant`, `/billing`, `/finances`, `/staff`, `/reports`) |
+| Établissement (session requise) | `/overview` · `/settings/hotel` · `/settings/subscription` · `/settings/invoices` · `/settings/support` · `/settings/account` · `/rooms` (+ `categories`, `rates`) · `/guests` · `/guests/:id` · `/reservations` · `/reservations/new` · `/reservations/:id` · `/calendar` · `/reception` · `/housekeeping` (+ `tasks`, `maintenance`) · `/restaurant` (+ `menu`, `tables`) · `/billing` (+ `invoices`, `payments`, `settings`, `folios/:id`) · `/finances` (+ `expenses`) · `/staff` (+ `roles`) · `/reports` |
 | Console (session super-admin requise) | `/platform/connexion` · `/platform/dashboard` · `hotels` · `hotels/:id` · `subscriptions` · `payments` · `invoices` · `plans` · `licenses` · `support` · `settings` · `audit` |
 
 * L'URL est la source de vérité : filtres, pages et panneaux ouverts (`?open=`, `?ticket=`, `?status=`) sont dans l'adresse
@@ -109,12 +109,21 @@ changement des textes, mettre à jour cette constante.
 * **`/reservations/:id`** : chambres avec **prix nuit par nuit**, montants (taxes détaillées), historique complet, et seulement les actions que l'état de la réservation et vos droits permettent (confirmer, modifier, ajouter / modifier / annuler une chambre, non présenté, annuler avec motif). Si quelqu'un d'autre a modifié la réservation entre-temps, l'écran le dit et se rafraîchit.
 * Le total affiché pendant la création est le **prix des nuits** ; les taxes éventuelles sont ajoutées par le serveur à l'enregistrement (le texte l'indique) — l'interface ne devine pas une taxe qu'elle ne connaît pas.
 
+## 7ter. Autres modules (Phase 6)
+
+* **Calendrier** : un vrai `<table>` (lecteurs d'écran), colonne des chambres figée, une barre par séjour (étiquette textuelle complète, couleur = état), zone hachurée pour une chambre bloquée, ligne d'occupation par nuit ; période dans l'adresse (lien partageable). Déplacer un séjour et bloquer une chambre depuis le panneau (accessible au clavier).
+* **Réception** : la journée (arrivées / départs / en séjour / retards) ; une chambre non prête demande confirmation (tracée) ; le départ avec solde propose d'encaisser ou de confirmer un solde impayé ; départ anticipé et changement de chambre en séjour.
+* **Facturation** : note du client (charges, encaissements avec taux de change visible, factures), encaisser, rembourser, facturer, avoir, PDF ; journal des encaissements ; taxes, moyens d'encaissement, taux du jour. La saisie d'un paiement hors espèces **exige la référence** de la transaction.
+* **Housekeeping** : tableau par état (À nettoyer → En nettoyage → Propre → Contrôlée), « mes tâches », maintenance avec blocage de chambre ; fonction absente de la formule = écran explicatif, pas d'erreur.
+* **Restaurant** : prise de commande par quantités, addition figée, encaissement à table, imputation à la chambre d'un client en séjour.
+* **Personnel** : création de compte avec mot de passe provisoire **montré une seule fois** (copie, consignes), bandeau jusqu'au changement ; rôles prédéfinis et personnalisés (cases à cocher groupées, droits que l'on n'a pas désactivés).
+* **Finances et rapports** : synthèse de trésorerie, dépenses avec export, rapports d'occupation / ADR / RevPAR avec comparaison (formule avancée) et vue « tableau » de chaque graphique ; **tableau de bord** réel, chaque tuile cliquable, absente si l'utilisateur n'a pas le droit de la voir.
+
 ## 8. Limites connues (ce qui n'est PAS fait)
 
 * **Pas d'internationalisation** : les textes sont en français dans les composants. L'anglais et le malgache viendront avec un
   catalogue de messages (le réglage de langue affiche « français uniquement »).
-* **Modules à venir** : calendrier, réception, housekeeping, restaurant, facturation des clients, finances, personnel,
-  rapports (suite de la Phase 6). Le tableau de bord d'exploitation
+* **Hors ligne** : voir ci-dessous ; les treize modules existent et fonctionnent en ligne uniquement. Le tableau de bord d'exploitation
   (occupation, ADR, RevPAR…) viendra avec eux.
 * **Pas de réinitialisation de mot de passe** ni d'invitation par e-mail (pas de fournisseur d'e-mail) ; l'écran de connexion le dit.
 * **Un utilisateur membre de plusieurs établissements** ne dispose pas encore d'un sélecteur d'établissement (l'API le permet).

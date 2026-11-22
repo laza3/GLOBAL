@@ -191,6 +191,80 @@ rend les numéros de pièces illisibles : la sauvegarder séparément de la base
 * **Numérotation** : `PRÉFIXE-AAAA-0001`, un compteur par établissement et par année (le préfixe est un réglage).
 * Les paiements d'une réservation sont portés par sa **note** (`folios`, créée avec la réservation) ; la prise de paiement est l'objet du module Facturation.
 
+### Calendrier (`calendar:read` / `calendar:move`)
+
+| Route | Rôle |
+|---|---|
+| `GET /calendar?from&days&categoryId` | grille : chambres, séjours (y compris terminés), blocages, **occupation de chaque nuit** (jusqu'à 62 jours) |
+| `POST /calendar/blocks`, `PATCH/DELETE /calendar/blocks/:id` | bloquer une chambre (maintenance, hors service, usage propriétaire), avec ou sans date de fin ; refusé si un séjour y est déjà prévu (409) |
+| `POST /calendar/stays/:lineId/move` | déplacer un séjour (autre chambre et/ou autres dates), nuits conservées au prix convenu |
+
+### Facturation client (`billing:*`, `payments:*`)
+
+La **note** (folio) d'une réservation est créée avec elle. Sa charge « hébergement » **suit le total de la réservation** (création, prolongation, remise, annulation, option expirée) tant qu'elle n'est pas facturée ; une réservation **déjà facturée** ne change plus de montant (409 `reservation_invoiced` : émettre un avoir d'abord).
+
+| Route | Rôle |
+|---|---|
+| `GET /folios`, `GET /folios/:id` | notes (charges, paiements, factures, solde) |
+| `POST /folios/:id/charges`, `…/charges/:chargeId/void` | service, frais, remise, ajustement ; taxe en pourcentage possible ; annulation motivée (pas de la charge d'hébergement, pas d'une charge facturée) |
+| `POST /folios/:id/payments` | **encaissement saisi par la réception** (espèces, Mobile Money, carte, virement) : référence exigée hors espèces, jamais plus que le solde, `Idempotency-Key`. Devise étrangère : taux enregistré ou saisi, **conservé avec le paiement** ; contre-valeur dans la devise de la note |
+| `POST /payments/:id/refund` | remboursement partiel ou total (jamais plus que le paiement, **même sous requêtes simultanées** : verrou en base) ; un paiement ne se modifie ni ne se supprime |
+| `GET /payments` | journal des encaissements (filtres), net encaissé |
+| `POST /folios/:id/invoices` | facture numérotée **sans trou** (`PRÉFIXE-AAAA-0001`), **immuable** ; reprend les charges non facturées |
+| `GET /invoices`, `GET /invoices/:id`, `GET /invoices/:id/pdf` | factures et avoirs ; **PDF A4** généré à la demande à partir des données figées (identité du client et de l'hôtel copiées à l'émission) |
+| `POST /invoices/:id/credit-notes` | avoir total ou partiel (plafonné au non-crédité) ; la note du client est créditée du même montant |
+| `POST /invoices/:id/void` | annule une facture sans avoir (ses charges redeviennent facturables ; le numéro n'est jamais réutilisé) |
+| `GET/POST/PATCH /tax-rules`, `GET/PATCH /payment-methods`, `GET/POST /exchange-rates` | taxes (incluse / ajoutée / fixe par adulte et par nuit), moyens d'encaissement, taux de change saisis par l'établissement |
+
+**Aucun paiement n'est simulé ni automatisé** : ni passerelle, ni prélèvement. Le comptable et la réception saisissent ce qu'ils reçoivent réellement. Une taxe ou un tarif modifié ne réécrit jamais une réservation, une charge ou une facture existante.
+
+### Réception (`reception:checkin` / `reception:checkout`)
+
+| Route | Rôle |
+|---|---|
+| `GET /reception/overview?date` | arrivées, départs, clients en séjour, départs en retard, compteurs |
+| `POST /reception/check-in` | à partir du jour d'arrivée, réservation ferme ; chambre à nettoyer refusée (409 `room_not_ready`) sauf `force` (tracé) |
+| `POST /reception/check-out` | solde contrôlé **au dernier départ** (409 `balance_outstanding` sauf `allowUnpaid`, tracé) ; chambre « à nettoyer » + tâche de ménage ; note clôturée quand soldée ; `shorten` retire les nuits non occupées (refusé si facturée) |
+| `POST /reception/change-room` | changement de chambre en séjour : le séjour est **scindé** à la date du jour, les nuits à venir gardent leur prix |
+
+### Housekeeping et maintenance (formule avec `housekeeping`)
+
+| Route | Rôle |
+|---|---|
+| `GET /housekeeping/board`, `GET /housekeeping/tasks`, `GET /housekeeping/staff` | chambres par état de ménage, tâches, personnel assignable |
+| `POST /housekeeping/tasks`, `…/:id/start` · `/complete` · `/inspect` · `/assign` · `/report-issue` | cycle d'une tâche ; **la tâche pilote l'état de la chambre** ; un employé ne traite que **ses** tâches, le responsable attribue et contrôle |
+| `POST /housekeeping/rooms/:id/status` | état forcé (tracé) |
+| `GET/POST /maintenance`, `PATCH /maintenance/:id` | pannes et travaux ; peuvent **bloquer la chambre** à la vente ; résoudre lève le blocage ; coût |
+
+Sans la fonction `housekeeping` dans la formule, une chambre quittée reste directement disponible (personne pour la remettre « propre »).
+
+### Restaurant (formule avec `restaurant`)
+
+Carte (`/restaurant/menu`, `/categories`, `/products`), tables (`/restaurant/tables`, occupée dès qu'une commande est en cours), commandes (`/restaurant/orders`) : prix, nom et **mode de taxe figés sur chaque ligne**, une table = une commande en cours, création rejouable. `POST …/pay` encaisse à table (référence hors espèces, montant exact) ; `POST …/post-to-room` impute l'addition à la **note d'un client en séjour**, **une seule fois** (index unique), facturée avec son séjour ; `GET /restaurant/summary` : ventes du jour.
+
+### Personnel (`staff:read` / `staff:manage`)
+
+| Route | Rôle |
+|---|---|
+| `GET /staff`, `GET /staff/roles` | équipe, rôles (prédéfinis et personnalisés) avec leurs droits |
+| `POST /staff` | crée un compte avec un **mot de passe provisoire affiché une seule fois** (`Cache-Control: no-store`, jamais journalisé) ; aucun e-mail n'est envoyé |
+| `PATCH /staff/:id`, `POST /staff/:id/reset-password` | rôle, fonction, désactivation (sessions fermées sur-le-champ) ; réinitialisation |
+| `POST/PATCH/DELETE /staff/roles` | rôles personnalisés (formule avec `staff_permissions`) |
+
+Garde-fous : **on ne donne pas des droits qu'on n'a pas** et on ne touche pas un compte plus puissant que le sien (un administrateur ne peut ni créer un propriétaire ni modifier l'un d'eux) ; on ne se modifie pas soi-même ; le dernier propriétaire est protégé ; un compte partagé avec un autre établissement ne peut pas être réinitialisé (fonction SQL `staff_set_temp_password`). Le rôle applicatif n'a toujours pas le droit d'écrire dans `users` : création et réinitialisation passent par deux fonctions étroites limitées à l'établissement courant. Le mot de passe provisoire est signalé (`GET /auth/password-status`) jusqu'à son changement.
+
+### Finances (formule avec `finances`)
+
+`GET/POST/PATCH /finances/categories`, `GET/POST/PATCH/DELETE /finances/expenses` (la suppression est tracée avec le contenu), `GET /finances/expenses.csv` (formule avec `exports`), `GET /finances/summary?from&to` : encaissé par moyen (notes **et** restaurant, remboursements déduits), dépenses par catégorie, **résultat de trésorerie**, créances clients (notes ouvertes, options non confirmées exclues), dépenses à payer, série quotidienne.
+
+### Rapports et tableau de bord (`reports:read`)
+
+`GET /reports/performance?from&to` : **occupation, prix moyen (ADR), RevPAR**, calculés sur les nuits réservées au prix figé ; les chambres bloquées ne comptent pas comme disponibles ; options, annulées et « non présenté » ne sont pas des ventes ; charges par nature. Formule avec `reports_advanced` : période précédente, par catégorie, par origine, meilleurs clients (`advanced: false` et `null` sinon). `GET /reports/performance.csv` (formule `exports`, journalisé). `GET /dashboard` : la journée (chambres, arrivées/départs, encaissé, à encaisser, ménage, restaurant) — **chaque bloc n'est renvoyé que si l'utilisateur a le droit de le voir**.
+
+### Accès par formule
+
+Une route peut exiger une **fonction de la formule** (`hotelAuth({ feature })`) : refus 403 `feature_not_in_plan`. Fonctions appliquées : `housekeeping`, `restaurant`, `finances`, `staff_permissions` (rôles personnalisés), `exports`, `reports_advanced`. Les fonctions `multi_currency`, `api_access`, `custom_branding`, `multi_property` existent dans le catalogue mais ne sont **pas encore appliquées** (voir Limites).
+
 ## 8. Cycle de vie des abonnements
 
 `pnpm api:lifecycle` (cron horaire) ou `POST /platform/jobs/lifecycle` :
@@ -213,7 +287,7 @@ Idempotente et sans effet de bord hors base. Les **droits d'usage** ne dépenden
 * **Pas d'envoi d'e-mails ni de SMS** : pas de réinitialisation de mot de passe par e-mail, pas de rappels de renouvellement, pas de notification de ticket. Nécessite un fournisseur.
 * **Pas de double authentification (TOTP)** pour les super-administrateurs (la colonne existe, le parcours n'est pas écrit) : à faire avant une mise en production.
 * **Limitation de débit en mémoire** : correcte pour une instance ; derrière plusieurs instances, la limite se répartit (à passer sur Redis ou sur le proxy).
-* **PDF de facture non généré** (les données sont complètes ; le gabarit PDF viendra avec la facturation hôtelière).
+* **PDF** : factures et avoirs des clients de l'hôtel sont générés (police standard, A4). Le PDF des factures d'abonnement SaaS n'est pas généré (données complètes).
 * **Plan changé pendant qu'une facture de renouvellement est ouverte** : l'ancienne facture reste payable ; elle doit être annulée à la main (`…/void`). Cas rare, à automatiser plus tard.
 * **Modules métier hôteliers** : chambres, clients et réservations existent ; calendrier, facturation client, réception, housekeeping, restaurant, finances, personnel et rapports suivent (Phase 6). Les routes `/_test/*` n'existent que dans les tests.
 * Prix des forfaits : **valeurs d'exemple** (Starter 80 000 / Business 180 000 / Premium 350 000 Ar par mois, Enterprise sur devis) ; à fixer avec le propriétaire du produit depuis la console. Taxe SaaS : 0 % par défaut, à valider avec un comptable.
