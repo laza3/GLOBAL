@@ -70,9 +70,9 @@ Start-App
 Ok "logiciel prêt en $([int]$sw.Elapsed.TotalSeconds) s"
 $meta = Invoke-RestMethod "$base/api/v1/meta"
 if ($meta.environment -ne 'development') { Fail "environnement inattendu : $($meta.environment)" }
-$home = Invoke-WebRequest "$base/" -UseBasicParsing
-if ($home.Content -notmatch 'id="root"') { Fail "la page d'accueil n'est pas l'interface" }
-if (-not $home.Headers['Content-Security-Policy']) { Fail "pas d'en-tête de sécurité sur la page d'accueil" }
+$page = Invoke-WebRequest "$base/" -UseBasicParsing
+if ($page.Content -notmatch 'id="root"') { Fail "la page d'accueil n'est pas l'interface" }
+if (-not $page.Headers['Content-Security-Policy']) { Fail "pas d'en-tête de sécurité sur la page d'accueil" }
 try { Invoke-WebRequest "$base/api/v1/route-inconnue" -UseBasicParsing | Out-Null; Fail 'une route inconnue devrait renvoyer 404' } catch { if ($_.Exception.Response.StatusCode.value__ -ne 404) { Fail "route inconnue : code $($_.Exception.Response.StatusCode.value__)" } }
 Ok "API et interface servies (environnement : $($meta.environment))"
 $lan = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
