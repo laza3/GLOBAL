@@ -79,9 +79,19 @@ async function setup() {
 
   // 1. Connexion au compte administrateur de PostgreSQL (créé lors de l'installation de PostgreSQL)
   const adminUser = process.env.HMP_PG_ADMIN_USER ?? 'postgres';
-  const adminPassword = process.env.HMP_PG_ADMIN_PASSWORD ?? (await ask(`Mot de passe de l'utilisateur « ${adminUser} » de PostgreSQL (choisi à l'installation ; la saisie reste invisible) : `, true));
-  const admin = new pg.Client({ host: HOST, port: PORT, user: adminUser, password: adminPassword, database: 'postgres' });
-  try { await admin.connect(); } catch (e) { explainConnectionError(e, adminUser); }
+  let admin: pg.Client | undefined;
+  for (let attempt = 1; !admin; attempt++) {
+    const password = process.env.HMP_PG_ADMIN_PASSWORD ?? (await ask(`Mot de passe de l'utilisateur « ${adminUser} » de PostgreSQL (choisi à l'installation ; la saisie reste invisible) : `, true));
+    const client = new pg.Client({ host: HOST, port: PORT, user: adminUser, password, database: 'postgres' });
+    try {
+      await client.connect();
+      admin = client;
+    } catch (e) {
+      const retry = (e as { code?: string }).code === '28P01' && !process.env.HMP_PG_ADMIN_PASSWORD && attempt < 3;
+      if (!retry) explainConnectionError(e, adminUser);
+      say(`✘ Mot de passe refusé (${password.length} caractère(s) reçu(s)). Essai ${attempt}/3 : vérifiez les majuscules et le clavier (AZERTY / QWERTY).\n`);
+    }
+  }
 
   try {
     const version = Number((await admin.query<{ v: string }>("SELECT current_setting('server_version_num') AS v")).rows[0]!.v);
