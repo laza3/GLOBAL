@@ -3,6 +3,7 @@ import { buildApp } from './app';
 import { loadConfig } from './config';
 import { createDb } from './db';
 import { assertDatabaseEnvironment } from './lib/environment';
+import { mergedAllowedOrigins } from './lib/vercel-origins';
 
 /**
  * Point d'entrée « fonction serverless » (Vercel) : la MÊME application Fastify que le serveur permanent, sans écouter de port.
@@ -12,7 +13,8 @@ import { assertDatabaseEnvironment } from './lib/environment';
  * bascule de rôle et le contexte d'établissement sont limités à la transaction, donc compatibles).
  */
 // API_DOCS désactivée par défaut ici : sa dépendance @fastify/static exige require() d'un module ES, refusé par Node sur Vercel
-const config = loadConfig({ API_DOCS: 'false', ...process.env });
+// ALLOWED_ORIGINS : les adresses propres du projet Vercel s'ajoutent d'elles-mêmes (voir lib/vercel-origins.ts)
+const config = loadConfig({ API_DOCS: 'false', ...process.env, ALLOWED_ORIGINS: mergedAllowedOrigins(process.env) });
 const db = createDb({
   appUrl: config.DATABASE_URL_APP,
   platformUrl: config.DATABASE_URL_PLATFORM,
