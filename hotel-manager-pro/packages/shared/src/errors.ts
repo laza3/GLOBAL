@@ -136,6 +136,10 @@ export const ERRORS = {
   role_name_taken: { status: 409, message: 'Un rôle porte déjà ce nom.' },
   expense_not_found: { status: 404, message: 'Dépense introuvable.' },
   expense_category_taken: { status: 409, message: 'Une catégorie de dépenses porte déjà ce nom.' },
+  totp_required: { status: 401, message: "Saisissez le code à 6 chiffres de votre application d'authentification." },
+  totp_invalid: { status: 401, message: 'Code de vérification incorrect ou déjà utilisé.' },
+  totp_not_ready: { status: 409, message: "Démarrez d'abord la configuration de la double authentification." },
+  totp_already_enabled: { status: 409, message: 'La double authentification est déjà activée.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

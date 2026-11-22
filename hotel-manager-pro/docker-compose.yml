@@ -1,0 +1,71 @@
+# Déploiement type : PostgreSQL + migrations + API + interface + tâche horaire de cycle de vie.
+#   cp deploy/.env.production.example .env   # puis remplacer TOUS les « CHANGEZ-MOI »
+#   docker compose up -d --build
+#   docker compose run --rm api pnpm --filter @hmp/api create-admin   # premier super-administrateur
+# Voir docs/deployment.md.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hmp_admin
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?définir DB_ADMIN_PASSWORD}
+      POSTGRES_DB: hmp
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hmp_admin -d hmp"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    build: { context: ., target: api }
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_ADMIN_URL: postgres://hmp_admin:${DB_ADMIN_PASSWORD}@db:5432/hmp
+    command: ["pnpm", "--filter", "@hmp/db", "migrate"]
+    restart: "no"
+
+  roles:
+    image: postgres:16
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    environment:
+      DATABASE_ADMIN_URL: postgres://hmp_admin:${DB_ADMIN_PASSWORD}@db:5432/hmp
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?définir APP_DB_PASSWORD}
+      PLATFORM_DB_PASSWORD: ${PLATFORM_DB_PASSWORD:?définir PLATFORM_DB_PASSWORD}
+    volumes: ["./deploy/setup-roles.sh:/setup-roles.sh:ro"]
+    entrypoint: ["sh", "/setup-roles.sh"]
+    restart: "no"
+
+  api:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    depends_on: { roles: { condition: service_completed_successfully } }
+    environment: &api-env
+      NODE_ENV: production
+      DATABASE_URL_APP: postgres://hmp_app:${APP_DB_PASSWORD}@db:5432/hmp
+      DATABASE_URL_PLATFORM: postgres://hmp_platform:${PLATFORM_DB_PASSWORD}@db:5432/hmp
+      CSRF_SECRET: ${CSRF_SECRET:?définir CSRF_SECRET (openssl rand -base64 48)}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?définir ENCRYPTION_KEY (openssl rand -base64 32)}
+      ALLOWED_ORIGINS: ${PUBLIC_URL:?définir PUBLIC_URL, ex. https://hotel.exemple.mg}
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
+      LOG_LEVEL: info
+    # Le conteneur n'est joignable que par le service web : aucun port publié
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["${WEB_PORT:-8080}:8080"]   # à placer derrière un proxy TLS (HTTPS obligatoire : cookies Secure)
+
+  lifecycle:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    depends_on: { roles: { condition: service_completed_successfully } }
+    environment: *api-env
+    # Cycle de vie des abonnements et options échues : toutes les heures
+    command: ["sh", "-c", "while true; do pnpm --filter @hmp/api lifecycle || true; sleep 3600; done"]
+
+volumes:
+  pgdata:

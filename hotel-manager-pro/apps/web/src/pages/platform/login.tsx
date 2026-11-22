@@ -1,6 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { isApiError } from '../../api/client';
 import { usePlatformLogin } from '../../api/platform';
 import { RedirectIfPlatformAuthenticated } from '../../auth/platform-session';
 import { PageBackdrop } from '../../auth/screens';
@@ -26,6 +27,8 @@ function Form() {
   const login = usePlatformLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [needCode, setNeedCode] = useState(false);
   const [feedback, setFeedback] = useState<FormFeedback>({ fields: {} });
 
   const submit = (e: FormEvent) => {
@@ -35,13 +38,17 @@ function Form() {
     if (ep) fields.email = ep;
     const pp = requiredProblem(password, 'Le mot de passe');
     if (pp) fields.password = pp;
+    if (needCode && !code.trim()) fields.code = 'Saisissez le code de votre application (ou un code de secours).';
     if (Object.keys(fields).length) return setFeedback({ fields });
     setFeedback({ fields: {} });
     login.mutate(
-      { email: email.trim(), password },
+      { email: email.trim(), password, code: needCode ? code.trim() : undefined },
       {
         onSuccess: () => navigate(from && from.startsWith('/platform') ? from : '/platform/dashboard', { replace: true }),
-        onError: (err) => setFeedback(feedbackFrom(err)),
+        onError: (err) => {
+          if (isApiError(err) && err.code === 'totp_required') { setNeedCode(true); return setFeedback({ fields: {} }); }
+          setFeedback(feedbackFrom(err));
+        },
       },
     );
   };
@@ -66,6 +73,11 @@ function Form() {
             <Field label="Mot de passe" error={feedback.fields.password} required>
               {(c) => <PasswordInput {...c} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
             </Field>
+            {needCode && (
+              <Field label="Code de vérification" error={feedback.fields.code} hint="6 chiffres de votre application d'authentification, ou un code de secours." required>
+                {(c) => <Input {...c} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} autoFocus />}
+              </Field>
+            )}
             <Button type="submit" variant="primary" size="lg" loading={login.isPending}>
               Se connecter
             </Button>

@@ -133,7 +133,7 @@ describe('export, droits, isolation', () => {
     expect(res.headers['content-disposition']).toContain(`performances-${D(0)}-${D(3)}.csv`);
     const lines = (res.body as string).trim().split('\r\n');
     expect(lines).toHaveLength(5);
-    expect(lines[0].replace(/^\uFEFF/, '')).toBe("Date;Chambres vendues;Chambres disponibles;Taux d'occupation (%);Revenu des nuits;Prix moyen (ADR);RevPAR");
+    expect(lines[0]!.replace(/^\uFEFF/, '')).toBe("Date;Chambres vendues;Chambres disponibles;Taux d'occupation (%);Revenu des nuits;Prix moyen (ADR);RevPAR");
     expect(lines[1]).toBe(`${D(0)};1;4;25,0;100000;100000;25000`);
     expect(lines[3]).toBe(`${D(2)};0;4;0,0;0;0;0`);
     expect(await q(t, "SELECT count(*)::int AS n FROM audit_logs WHERE hotel_id = $1 AND action = 'report.exported'", [s.h.hotelId])).toEqual([{ n: 1 }]);

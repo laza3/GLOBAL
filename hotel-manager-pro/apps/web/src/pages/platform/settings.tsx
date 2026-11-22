@@ -11,6 +11,8 @@ import { Badge, Skeleton, StateBadge } from '../../ui/data';
 import { Field, Input, Select, Switch, Textarea } from '../../ui/form';
 import { Tabs } from '../../ui/tabs';
 import { Callout, PageHeader, Panel } from '../../ui/page';
+import { usePlatformMeQuery, useTotpDisable, useTotpEnable, useTotpSetup } from '../../api/platform';
+import { PasswordInput } from '../../ui/form';
 
 type Kind = 'bool' | 'int' | 'percent' | 'plan' | 'currency' | 'json';
 const SETTINGS: Record<string, { label: string; hint?: string; kind: Kind }> = {
@@ -162,12 +164,65 @@ function Connectors() {
   );
 }
 
+/** Double authentification : la clé se saisit dans l'application (Google Authenticator, Aegis, FreeOTP, Microsoft Authenticator…). */
+function Security() {
+  const me = usePlatformMeQuery();
+  const setup = useTotpSetup();
+  const enable = useTotpEnable();
+  const disable = useTotpDisable();
+  const [secret, setSecret] = useState<{ secret: string; otpauthUrl: string } | null>(null);
+  const [code, setCode] = useState('');
+  const [recovery, setRecovery] = useState<string[] | null>(null);
+  const [password, setPassword] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const fail = (e: unknown) => setError(isApiError(e) ? e.message : "L'action a échoué.");
+  const on = me.data?.totpEnabled;
+  return (
+    <Panel title="Double authentification" description="Un code à 6 chiffres, renouvelé toutes les 30 secondes, s'ajoute au mot de passe. Indispensable pour un compte qui voit toute la plateforme.">
+      {recovery ? (
+        <div className="flex flex-col gap-4">
+          <Callout tone="warning">Notez ces 8 codes de secours : chacun ne sert qu'une fois, en cas de perte de votre téléphone. Ils ne seront plus jamais affichés.</Callout>
+          <ul className="grid gap-2 sm:grid-cols-2" aria-label="Codes de secours">{recovery.map((c) => <li key={c}><code className="num-col block rounded-[10px] bg-silver-soft px-3 py-2 text-[15px] text-ink">{c}</code></li>)}</ul>
+          <Button variant="primary" className="self-start" onClick={() => setRecovery(null)}>J'ai noté mes codes</Button>
+        </div>
+      ) : on ? (
+        <div className="flex flex-col gap-4">
+          <p className="flex items-center gap-2 text-[14px] text-ink"><StateBadge tone="success">Activée</StateBadge>{me.data?.recoveryCodesLeft} code{(me.data?.recoveryCodesLeft ?? 0) > 1 ? 's' : ''} de secours restant{(me.data?.recoveryCodesLeft ?? 0) > 1 ? 's' : ''}.</p>
+          <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+            <Field label="Mot de passe">{(c) => <PasswordInput {...c} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
+            <Field label="Code actuel">{(c) => <Input {...c} inputMode="numeric" autoComplete="one-time-code" value={disableCode} onChange={(e) => setDisableCode(e.target.value)} />}</Field>
+          </div>
+          {error && <Callout tone="danger">{error}</Callout>}
+          <Button variant="danger" className="self-start" loading={disable.isPending} onClick={() => { setError(null); disable.mutate({ password, code: disableCode }, { onSuccess: () => { setPassword(''); setDisableCode(''); toast.success('Double authentification désactivée.'); }, onError: fail }); }}>Désactiver</Button>
+        </div>
+      ) : secret ? (
+        <div className="flex flex-col gap-4">
+          <ol className="flex list-decimal flex-col gap-2 pl-5 text-[14px] text-ink-2">
+            <li>Dans votre application d'authentification, choisissez « Saisir une clé de configuration ».</li>
+            <li>Saisissez cette clé (type : basé sur l'heure) :</li>
+          </ol>
+          <code className="num-col block max-w-full overflow-x-auto rounded-[12px] bg-silver-soft px-4 py-3 text-[17px] tracking-[0.12em] text-ink" data-testid="totp-secret">{secret.secret.replace(/(.{4})/g, '$1 ').trim()}</code>
+          <Field label="Code affiché par l'application" hint="Pour vérifier que tout est bien configuré." required>{(c) => <Input {...c} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />}</Field>
+          {error && <Callout tone="danger">{error}</Callout>}
+          <div className="flex gap-2"><Button variant="primary" loading={enable.isPending} onClick={() => { setError(null); enable.mutate(code.trim(), { onSuccess: (r) => { setSecret(null); setCode(''); setRecovery(r.recoveryCodes); }, onError: fail }); }}>Activer</Button><Button variant="secondary" onClick={() => setSecret(null)}>Annuler</Button></div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <Callout tone="warning">La double authentification n'est pas activée sur votre compte.</Callout>
+          <Button variant="primary" className="self-start" loading={setup.isPending} onClick={() => { setError(null); setup.mutate(undefined, { onSuccess: setSecret, onError: fail }); }}>Activer la double authentification</Button>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 export default function PlatformSettingsPage() {
   useDocumentTitle('Réglages — Console');
   return (
     <>
       <PageHeader title="Réglages" description="Les règles commerciales de la plateforme et les moyens de paiement ouverts aux établissements. Chaque modification est journalisée." />
-      <Tabs label="Sections des réglages" tabs={[{ value: 'general', label: 'Règles commerciales', content: <GeneralSettings /> }, { value: 'payments', label: 'Moyens de paiement', content: <Connectors /> }]} />
+      <Tabs label="Sections des réglages" tabs={[{ value: 'general', label: 'Règles commerciales', content: <GeneralSettings /> }, { value: 'payments', label: 'Moyens de paiement', content: <Connectors /> }, { value: 'security', label: 'Sécurité', content: <Security /> }]} />
     </>
   );
 }

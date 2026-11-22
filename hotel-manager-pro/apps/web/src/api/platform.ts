@@ -4,7 +4,7 @@ import type { InvoicePaymentStatus, Interval, PaymentStatus, TicketCategory, Tic
 
 /* Console plateforme : formes des réponses de /platform/* (voir docs/api.md §7). */
 
-export interface PlatformAdmin { id: string; email: string; fullName: string }
+export interface PlatformAdmin { id: string; email: string; fullName: string; totpEnabled?: boolean; recoveryCodesLeft?: number }
 export interface Paged<T> { items: T[]; total: number; page: number; pageSize: number }
 
 export interface Stats {
@@ -128,7 +128,7 @@ export const usePlatformMeQuery = () =>
 export function usePlatformLogin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { email: string; password: string }) => post<{ admin: { id: string; email: string } }>('/platform/auth/login', input),
+    mutationFn: (input: { email: string; password: string; code?: string }) => post<{ admin: { id: string; email: string } }>('/platform/auth/login', input),
     onSuccess: () => qc.clear(),
   });
 }
@@ -192,3 +192,13 @@ export const useUpdateTicket = () => useAction((i: { id: string; status?: Ticket
 export const useUpdateSetting = () => useAction((i: { key: string; value: unknown }) => patch(`/platform/settings/${i.key}`, { value: i.value }));
 export const useUpdateConnector = () => useAction((i: { code: string; instructions?: string | null; isEnabled?: boolean }) => { const { code, ...body } = i; return patch(`/platform/payment-connectors/${code}`, body); });
 export const useRunLifecycle = () => useAction(() => post<{ trialsExpired: number; cancelledAtPeriodEnd: number; pastDue: number; expired: number; renewalInvoices: number; tentativesExpired: number }>('/platform/jobs/lifecycle'));
+
+export const useTotpSetup = () => useMutation({ mutationFn: () => post<{ secret: string; otpauthUrl: string }>('/platform/auth/totp/setup') });
+export const useTotpEnable = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (code: string) => post<{ enabled: boolean; recoveryCodes: string[] }>('/platform/auth/totp/enable', { code }), onSuccess: () => qc.invalidateQueries({ queryKey: ['platform', 'me'] }) });
+};
+export const useTotpDisable = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (i: { password: string; code: string }) => post<void>('/platform/auth/totp/disable', i), onSuccess: () => qc.invalidateQueries({ queryKey: ['platform', 'me'] }) });
+};
