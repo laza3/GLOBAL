@@ -30,6 +30,8 @@ const schema = z.object({
    * numéros de pièces illisibles : la sauvegarder séparément des sauvegardes de la base.
    */
   ENCRYPTION_KEY: z.string().optional(),
+  /** Interface de documentation interactive (/api/docs). Désactivée par défaut dans la fonction serverless Vercel (voir src/vercel.ts). */
+  API_DOCS: bool.default(true),
   /** Taille maximale des pools de connexions. Défauts adaptés à un serveur permanent ; en serverless (Vercel) : 2 à 3, chaque instance ayant ses propres pools. */
   DB_POOL_MAX_APP: z.coerce.number().int().min(1).max(100).default(20),
   DB_POOL_MAX_PLATFORM: z.coerce.number().int().min(1).max(100).default(8),

@@ -11,7 +11,8 @@ import { assertDatabaseEnvironment } from './lib/environment';
  * 2 à 3 conseillés) et l'adresse de base doit être celle du POOLEUR de connexions du fournisseur (mode « transaction » : la
  * bascule de rôle et le contexte d'établissement sont limités à la transaction, donc compatibles).
  */
-const config = loadConfig();
+// API_DOCS désactivée par défaut ici : sa dépendance @fastify/static exige require() d'un module ES, refusé par Node sur Vercel
+const config = loadConfig({ API_DOCS: 'false', ...process.env });
 const db = createDb({
   appUrl: config.DATABASE_URL_APP,
   platformUrl: config.DATABASE_URL_PLATFORM,

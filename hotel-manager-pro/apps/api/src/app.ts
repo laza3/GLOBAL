@@ -4,7 +4,6 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
 import { ERRORS } from '@hmp/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 import {
@@ -110,13 +109,19 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
     },
     transform: jsonSchemaTransform,
   });
-  await app.register(swaggerUi, { routePrefix: '/api/docs' });
-  // L'interface de documentation a besoin de ses propres ressources (même origine) : CSP dédiée à ce préfixe uniquement
-  app.addHook('onSend', async (req, reply) => {
-    if (req.url.startsWith('/api/docs')) {
-      reply.header('content-security-policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'");
-    }
-  });
+  // Interface de documentation (Swagger UI) : chargée À LA DEMANDE. Sur certains hébergeurs serverless (Vercel) sa dépendance
+  // « @fastify/static » exige un « require() » de module ES que la version de Node de l'hébergeur refuse ; on la désactive donc
+  // là-bas (API_DOCS=false). La spécification /api/openapi.json reste disponible.
+  if (config.API_DOCS) {
+    const { default: swaggerUi } = await import('@fastify/swagger-ui');
+    await app.register(swaggerUi, { routePrefix: '/api/docs' });
+    // L'interface de documentation a besoin de ses propres ressources (même origine) : CSP dédiée à ce préfixe uniquement
+    app.addHook('onSend', async (req, reply) => {
+      if (req.url.startsWith('/api/docs')) {
+        reply.header('content-security-policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'");
+      }
+    });
+  }
   app.get('/api/openapi.json', { schema: { hide: true } }, async () => app.swagger());
 
   /* ------------------------------------------------------------------ Erreurs : un seul format, jamais de détail technique */
