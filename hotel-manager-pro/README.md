@@ -30,7 +30,7 @@ pnpm test                        # 512 tests (shared 41 · db 207 · api 237 · 
 pnpm typecheck
 pnpm web:dev                      # interface : http://127.0.0.1:5173 (relaie /api vers l'API sur le port 3000)
 pnpm check:ui                    # design system (/design) : contrastes + rendu + accessibilité + comportements
-pnpm check:e2e                   # parcours réels (13 modules) dans Chromium + API + base jetables, puis tous les écrans audités (axe WCAG A/AA, 2 thèmes × 3 tailles)
+pnpm check:e2e                   # parcours réels (13 modules) dans Chromium + API + base jetables, puis 330 écrans/états audités (axe WCAG A/AA, 2 thèmes × 3 tailles, sans défilement horizontal ni erreur console)
 ```
 
 ### Lancer l'API
