@@ -3,7 +3,8 @@
 # hotel-manager-pro/ (sans la vidéo Remotion). Rien n'est supprimé ni copié à la main : tous les commits du logiciel sont conservés.
 #
 #   1. Créez sur GitHub un dépôt PRIVÉ VIDE (sans README, sans .gitignore, sans licence), par ex. hotel-manager-pro
-#   2. Depuis le dépôt GLOBAL :   scripts/extract-to-new-repo.sh https://github.com/VOTRE-COMPTE/hotel-manager-pro.git
+#   2. Depuis le dépôt GLOBAL (Windows : clic droit dans le dossier > « Git Bash Here ») :
+#        bash hotel-manager-pro/scripts/extract-to-new-repo.sh https://github.com/VOTRE-COMPTE/hotel-manager-pro.git
 #
 # Résultat dans le nouveau dépôt : branche « main » (= Production) et branche « staging » (= Tests), identiques au départ.
 set -euo pipefail

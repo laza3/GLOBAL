@@ -19,4 +19,9 @@ for table in hotels users reservations payments invoices audit_logs; do
   if [ "$b" -gt "$a" ]; then echo "ANOMALIE : $table a plus de lignes dans la sauvegarde ($b) que dans la base ($a)." >&2; exit 1; fi
   echo "ok  $table : $b ligne(s) restaurée(s)"
 done
+# La base restaurée doit rester UTILISABLE PAR L'APPLICATION : propriétaire hmp_owner et droits des rôles applicatifs conservés
+owner="$(psql "$TARGET" -qtA -c "SELECT relowner::regrole FROM pg_class WHERE relname = 'plans'")"
+grants="$(psql "$TARGET" -qtA -c "SELECT has_table_privilege('hmp_app', 'plans', 'SELECT')")"
+if [ "$owner" != "hmp_owner" ] || [ "$grants" != "t" ]; then echo "ANOMALIE : propriétaire ($owner) ou droits applicatifs ($grants) non conservés." >&2; exit 1; fi
+echo "ok  propriétaire hmp_owner et droits des rôles applicatifs conservés"
 echo "Sauvegarde $DUMP : restaurable."

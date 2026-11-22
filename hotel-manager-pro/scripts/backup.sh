@@ -8,7 +8,8 @@ DIR="${BACKUP_DIR:-./backups}"
 KEEP="${KEEP:-14}"
 mkdir -p "$DIR"
 FILE="$DIR/hmp-$(date -u +%Y%m%dT%H%M%SZ).dump"
-pg_dump --format=custom --no-owner --no-privileges --file="$FILE.partial" "$DATABASE_ADMIN_URL"
+# Propriétaires (hmp_owner) et droits des rôles applicatifs CONSERVÉS : sans eux, une base restaurée ne serait pas utilisable par l'application
+pg_dump --format=custom --file="$FILE.partial" "$DATABASE_ADMIN_URL"
 mv "$FILE.partial" "$FILE"
 # Un fichier vide ou illisible n'est pas une sauvegarde : on vérifie qu'on peut en lire la table des matières
 pg_restore --list "$FILE" >/dev/null

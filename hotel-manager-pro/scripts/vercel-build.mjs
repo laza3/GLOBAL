@@ -67,6 +67,8 @@ writeFileSync(join(FUNC, '.vc-config.json'), JSON.stringify({
   launcherType: 'Nodejs',
   shouldAddHelpers: false, // l'API lit les requêtes Node brutes : aucun « helper » Vercel ne doit toucher au corps
   maxDuration: 30,
+  // Région de la fonction = région de la base (sinon chaque requête SQL traverse un océan). Défaut : Francfort (fra1) ↔ Neon aws-eu-central-1.
+  regions: [process.env.HMP_FUNCTION_REGION ?? 'fra1'],
 }, null, 2));
 
 step('Routage, en-têtes de sécurité et cache');

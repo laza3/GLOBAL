@@ -55,3 +55,9 @@ jobs:
         run: |
           test -n "$DATABASE_ADMIN_URL" || { echo "Secret DATABASE_ADMIN_URL manquant pour l'environnement $APP_ENV" >&2; exit 1; }
           pnpm db:migrate
+      # Ordre idéal : base d'abord, code ensuite. Pour l'obtenir, désactivez le déploiement automatique du projet Vercel
+      # (Settings > Git > Ignored Build Step > « Don't build anything ») et collez son « Deploy Hook » dans le secret VERCEL_DEPLOY_HOOK.
+      - name: Déclencher le déploiement Vercel (si un Deploy Hook est configuré)
+        env: { HOOK: "${{ secrets.VERCEL_DEPLOY_HOOK }}" }
+        run: |
+          if [ -n "$HOOK" ]; then curl -fsS -X POST "$HOOK" >/dev/null && echo "Déploiement Vercel demandé."; else echo "Pas de Deploy Hook : Vercel déploie de lui-même (mode simple, migrations compatibles avec l'ancienne version)."; fi
