@@ -2,6 +2,7 @@ import { buildApp } from './app';
 import { loadConfig } from './config';
 import { createDb } from './db';
 import { assertDatabaseEnvironment } from './lib/environment';
+import { registerWebApp } from './lib/static-web';
 
 /** Démarrage du serveur : configuration validée au démarrage, arrêt propre sur SIGINT/SIGTERM. */
 const config = loadConfig();
@@ -24,6 +25,7 @@ try {
 }
 const app = await buildApp({ db, config });
 logger = app.log;
+if (config.WEB_DIST) registerWebApp(app, config.WEB_DIST); // installation locale : un seul serveur pour l'interface et l'API
 
 let closing = false;
 async function shutdown(signal: string) {

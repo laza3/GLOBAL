@@ -1,0 +1,47 @@
+# Construit et TESTE l'installateur Windows de Hotel Manager Pro (version locale) sur un vrai Windows.
+# Ce fichier est à la racine du dépôt GLOBAL (le projet est dans le sous-dossier hotel-manager-pro/). Dans un dépôt dédié au projet,
+# utilisez .github/workflows/installateur-windows.yml du projet (sans sous-dossier).
+name: Installateur Windows
+on:
+  push:
+    branches: ["claude/**", "main"]
+    paths: ["hotel-manager-pro/**", ".github/workflows/installateur-windows.yml"]
+  workflow_dispatch:
+concurrency: { group: "installateur-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  installateur:
+    runs-on: windows-2022
+    timeout-minutes: 75
+    defaults:
+      run: { working-directory: hotel-manager-pro }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.28.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: hotel-manager-pro/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @hmp/web exec playwright install chromium
+      - name: NSIS
+        run: choco install nsis -y --no-progress
+        shell: cmd
+      - name: Construction de l'installateur
+        run: node scripts/build-windows-installer.mjs
+        shell: bash
+      - name: Test de bout en bout (installation, démarrage, navigateur, sauvegarde, restauration, mise à jour, désinstallation)
+        run: ./scripts/test-windows-installer.ps1
+        shell: pwsh
+      - name: Journaux (en cas d'échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: journaux-installateur
+          path: |
+            C:\hmp-test\ci-*.log
+            C:\hmp-test\donnees\*.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HotelManagerPro-Setup
+          path: hotel-manager-pro/build/installateur/HotelManagerPro-Setup-*.exe
+          retention-days: 30

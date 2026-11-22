@@ -56,6 +56,8 @@ const schema = z.object({
    * connecter. INTERDIT en production (NODE_ENV=production) : les hébergements en ligne n'ont pas de réseau privé à autoriser.
    */
   LAN_MODE: bool.default(false),
+  /** Dossier de l'interface construite (apps/web/dist) : si défini, ce serveur sert aussi l'interface (installation locale). */
+  WEB_DIST: z.string().optional(),
   /** Trace du SQL de bascule de rôle (tests) : la connexion est superuser, on bascule vers le rôle applicatif. */
   DB_SWITCH_ROLE: bool.default(false),
 });

@@ -25,3 +25,4 @@ backups/
 online-*.txt
 sauvegardes/
 copie-supplementaire.txt
+build/
