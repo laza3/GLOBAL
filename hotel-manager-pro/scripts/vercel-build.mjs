@@ -66,7 +66,7 @@ writeFileSync(join(FUNC, '.vc-config.json'), JSON.stringify({
   handler: 'index.mjs',
   launcherType: 'Nodejs',
   shouldAddHelpers: false, // l'API lit les requêtes Node brutes : aucun « helper » Vercel ne doit toucher au corps
-  maxDuration: 30,
+  maxDuration: Number(process.env.HMP_FUNCTION_MAX_DURATION ?? 10), // 10 s : accepté par toutes les offres Vercel (Hobby comprise)
   // Région de la fonction = région de la base (sinon chaque requête SQL traverse un océan). Défaut : Francfort (fra1) ↔ Neon aws-eu-central-1.
   regions: [process.env.HMP_FUNCTION_REGION ?? 'fra1'],
 }, null, 2));

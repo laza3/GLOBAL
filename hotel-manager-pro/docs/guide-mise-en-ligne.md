@@ -1,5 +1,63 @@
 # Guide pas à pas : mettre Hotel Manager Pro en ligne (Staging puis Production)
 
+## Parcours express, gratuit : un seul environnement de test en ligne
+
+Pour **voir le logiciel en ligne sans payer** : GitHub (dépôt privé), Neon (offre gratuite) et Vercel (offre Hobby). Comptez 1 heure. **Vercel Hobby est réservé aux tests et démonstrations** : pour de vrais hôtels qui paient, il faudra le plan Pro (voir plus bas). Les écrans de ces sites changent parfois de nom de bouton : cherchez le même réglage.
+
+1. **Mettre à jour votre dossier** (Invite de commandes) : `cd /d %USERPROFILE%\Documents\GLOBAL\hotel-manager-pro` puis `git pull`.
+2. **Comptes** (connectez-vous avec GitHub) : https://neon.tech et https://vercel.com (offre « Hobby »).
+3. **Dépôt dédié** : sur GitHub, *New repository* `hotel-manager-pro`, **Private**, rien de coché. Puis, dans le dossier `GLOBAL` : clic droit → **Git Bash Here** :
+
+```bash
+bash hotel-manager-pro/scripts/extract-to-new-repo.sh https://github.com/laza3/hotel-manager-pro.git
+```
+
+4. **Base Neon** : *New project* `hmp-staging`, PostgreSQL 16, région **Frankfurt**. Bouton **Connect** : gardez la fenêtre ouverte (l'adresse contient un mot de passe : ne l'envoyez à personne).
+5. **Travailler dans le nouveau dépôt** (Invite de commandes) :
+
+```bash
+cd /d %USERPROFILE%\Documents
+git clone https://github.com/laza3/hotel-manager-pro.git
+cd hotel-manager-pro
+pnpm install
+```
+
+6. **Préparer la base en une commande** :
+
+```bash
+pnpm online:setup
+```
+
+   Elle demande : l'environnement (`staging`), l'adresse Neon (collez-la : des `*` s'affichent), le nom du projet Vercel (`hmp-staging`), puis votre e-mail, nom et mot de passe de **super-administrateur**. Elle crée les rôles, applique les 22 migrations, marque la base « staging », et écrit deux fichiers **secrets** dans le dossier (jamais publiés, jamais affichés dans le terminal) :
+   - `online-staging-vercel.txt` : les réglages à coller dans Vercel ;
+   - `online-staging-admin.txt` : l'adresse d'administration de la base (jamais dans Vercel).
+
+   Relançable sans risque : les secrets déjà créés sont réutilisés. Si vous collez l'adresse de la mauvaise base, elle refuse.
+7. **Projet Vercel** : *Add New → Project* → importez `hotel-manager-pro`. Nom `hmp-staging`, **Framework Preset : Other**, ne changez pas les commandes (`vercel.json` les fournit). Dans **Environment Variables**, collez tout le contenu de `online-staging-vercel.txt` dans le premier champ (Vercel sépare les lignes). **Deploy**.
+8. **Régler la branche** : Settings → Git → **Production Branch** = `staging` → Save, puis Deployments → **Redeploy**.
+9. **Vérifier** (dans Chrome) :
+   - `https://hmp-staging.vercel.app/api/v1/meta` doit afficher `{"environment":"staging"}` ;
+   - `/inscription` affiche le bandeau « Environnement de test » ;
+   - `/platform/connexion` accepte votre super-administrateur.
+   Si l'adresse réelle de Vercel est différente (nom déjà pris), corrigez `ALLOWED_ORIGINS` et `PUBLIC_URL` dans Vercel avec l'adresse exacte, puis **Redeploy**.
+10. **Données de démonstration** (Invite de commandes) :
+
+```bash
+set API_URL=https://hmp-staging.vercel.app
+set DEMO_ORIGIN=https://hmp-staging.vercel.app
+pnpm api:seed-demo
+```
+
+   Connectez-vous avec l'e-mail et le mot de passe affichés sur la page d'accueil du site en ligne.
+
+**Gardez précieusement** (gestionnaire de mots de passe) la ligne `ENCRYPTION_KEY` du fichier `online-staging-vercel.txt`. Ne mettez **pas de vraies données de clients** sur cet environnement de test.
+
+**Limites du gratuit** : la base Neon gratuite se met en veille (premier chargement plus lent) et garde un historique de restauration court ; Vercel Hobby interdit l'usage commercial. Pour **Production** avec de vrais clients : plan Vercel **Pro**, offre Neon payante, sauvegardes (`docs/sauvegardes.md`), puis refaites le même parcours avec `production` (`pnpm online:setup` demande alors de taper PRODUCTION pour confirmer). Le reste de ce document décrit le parcours complet.
+
+---
+
+## Parcours complet (Staging et Production, avec automatisations GitHub)
+
 À faire **une seule fois**. Comptez une demi-journée. Faites d'abord **tout Staging**, validez-le, puis répétez pour Production. Les écrans des sites tiers (GitHub, Neon, Vercel) changent de temps en temps : si un bouton porte un autre nom, cherchez le même réglage.
 
 > **Avant de commencer, trois points de coût.** Vercel **Hobby** est réservé à un usage **non commercial** : pour Production, prévoyez le plan **Pro**. Neon gratuit met la base en veille quand elle est inactive (premier accès plus lent) et limite l'historique de restauration : prévoyez une offre payante pour Production. Un stockage de sauvegardes (Cloudflare R2 ou Backblaze B2) coûte quelques centimes par mois.

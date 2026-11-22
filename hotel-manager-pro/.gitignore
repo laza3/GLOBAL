@@ -22,3 +22,4 @@ backups/
 *.sql.gz
 *.pem
 *.key
+online-*.txt
