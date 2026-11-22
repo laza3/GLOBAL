@@ -4,7 +4,8 @@ import { defineConfig } from 'vite';
 
 // L'interface appelle l'API en même origine (/api) : les cookies de session restent « SameSite » et aucun CORS n'est nécessaire.
 // En développement et en prévisualisation, Vite relaie /api vers le serveur d'API (API_URL, défaut http://127.0.0.1:3000).
-const api = { '/api': { target: process.env.API_URL ?? 'http://127.0.0.1:3000', changeOrigin: false } };
+// xfwd : transmet l'adresse réelle de l'appareil à l'API (limitation de débit par appareil en mode réseau local, voir LAN_MODE)
+const api = { '/api': { target: process.env.API_URL ?? 'http://127.0.0.1:3000', changeOrigin: false, xfwd: true } };
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

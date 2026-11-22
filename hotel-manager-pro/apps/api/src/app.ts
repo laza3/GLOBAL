@@ -64,7 +64,9 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
     },
     genReqId: () => randomUUID(),
     bodyLimit: 1_048_576,
-    trustProxy: config.TRUST_PROXY,
+    // Mode réseau local : l'interface (127.0.0.1) relaie les requêtes des autres appareils avec leur vraie adresse ; on ne fait confiance
+    // qu'à CE relais local, jamais à un « X-Forwarded-For » fourni par un appareil du réseau. L'API n'écoute que 127.0.0.1 dans ce mode.
+    trustProxy: config.LAN_MODE ? ['127.0.0.1', '::1'] : config.TRUST_PROXY,
   });
 
   app.setValidatorCompiler(validatorCompiler);

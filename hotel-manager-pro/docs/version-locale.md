@@ -101,6 +101,24 @@ Connectez-vous avec votre e-mail et votre mot de passe. Tout le personnel peut t
 
 ---
 
+## Plusieurs ordinateurs dans l'hôtel
+
+**Un seul ordinateur « principal »** (le serveur) fait tourner le logiciel et garde les données. Tous les autres appareils — ordinateurs de la réception, du restaurant, de la direction, téléphones, tablettes — **n'ont rien à installer** : seulement Google Chrome (ou un autre navigateur), connecté au même réseau.
+
+Pour **chaque appareil supplémentaire** (2 minutes) :
+1. Le brancher au réseau de l'hôtel : le Wi-Fi du routeur, ou un câble réseau.
+2. Ouvrir Chrome et taper l'adresse affichée dans la fenêtre noire de l'ordinateur principal (`http://192.168.1.20:5173` ou `http://NOM-DU-PC:5173`).
+3. Se connecter avec **son propre compte** (un compte par employé : créés par le propriétaire dans **Personnel**).
+4. Pour ne plus retaper l'adresse : Chrome → menu ⋮ → **Enregistrer et partager → Créer un raccourci** (ordinateur) ou **Ajouter à l'écran d'accueil** (téléphone).
+
+À savoir :
+- Tout le monde travaille **en même temps** et voit les mêmes données instantanément (une chambre réservée à la réception apparaît tout de suite au calendrier de la direction). Deux personnes qui réservent la **même chambre aux mêmes dates** au même instant : une seule réservation passe, l'autre reçoit « chambre non disponible » (testé).
+- Chaque appareil a ses **propres limites de sécurité** : des mots de passe faux saisis sur un poste ne bloquent pas les autres postes (testé, voir plus bas).
+- Les droits dépendent du **rôle** de chaque employé (réception, comptabilité, gouvernante…), comme en ligne.
+- Le **PDF d'une facture** s'ouvre sur l'appareil où l'on clique : il s'imprime depuis cet appareil.
+- **Deux ordinateurs sans réseau entre eux = deux installations séparées**, avec chacune ses propres données, jamais fusionnées. Ne l'acceptez pas pour un même hôtel : il faut toujours un réseau (même un petit routeur) entre les appareils et **un seul** ordinateur principal.
+- **Plusieurs bâtiments** distants (deux hôtels, deux sites) : une installation par site, ou la version en ligne.
+
 ## Mettre à jour une installation (vous)
 
 1. Sur l'ordinateur principal du client, faites une **sauvegarde** (double-clic).
@@ -133,6 +151,6 @@ pnpm local:restore sauvegardes\hmp-AAAAMMJJ-HHMMSS.dump
 
 ## Ce qui a été vérifié, et ce qui ne l'a pas été
 
-**Vérifié** (sous Linux, avec une vraie base PostgreSQL 16 et un vrai navigateur) : installation « client » (mot de passe aléatoire, clé propre) ; démarrage en mode réseau ; inscription et connexion par une autre adresse que `127.0.0.1` ; acceptation des adresses de réseau privé et refus d'Internet (3 tests automatiques) ; sauvegarde vérifiée avec copie supplémentaire ; **panne simulée** (base et `.env` perdus, « ordinateur neuf », restauration) : hôtels retrouvés, clé de chiffrement reprise, connexion hôtel et console réussies ; recompilation de l'interface après modification.
+**Vérifié** (sous Linux, avec une vraie base PostgreSQL 16 et un vrai navigateur) : installation « client » (mot de passe aléatoire, clé propre) ; démarrage en mode réseau ; inscription et connexion par une autre adresse que `127.0.0.1` ; acceptation des adresses de réseau privé et refus d'Internet (3 tests automatiques) ; **limites de sécurité par appareil** (sans cela, quelques mots de passe faux sur un poste bloquaient tous les autres : défaut trouvé pendant ce test, corrigé, couvert par 3 tests automatiques) ; adresse forgée par un appareil du réseau ignorée ; sauvegarde vérifiée avec copie supplémentaire ; **panne simulée** (base et `.env` perdus, « ordinateur neuf », restauration) : hôtels retrouvés, clé de chiffrement reprise, connexion hôtel et console réussies ; recompilation de l'interface après modification.
 
 **Non vérifié** (pas de Windows ici) : les deux fichiers `.cmd`, la tâche planifiée `schtasks`, le pare-feu Windows, le point d'accès mobile de Windows et l'adresse `192.168.137.1`, la connexion depuis un vrai téléphone, la recherche de `pg_dump.exe` dans `C:\Program Files\PostgreSQL`. Faites un **essai complet chez vous** (deux appareils sur votre Wi-Fi, une sauvegarde, une restauration) avant la première installation chez un client.
