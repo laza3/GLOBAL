@@ -26,7 +26,7 @@ function Tile({ label, value, sub, tone }: { label: string; value: string; sub?:
     <div className="surface glass-1 flex flex-col gap-1 p-5 [--surface-radius:var(--r-card)]">
       <dt className="text-[13px] text-ink-2">{label}</dt>
       <dd className={`num-display text-[26px] font-semibold ${tone === 'warning' ? 'text-[var(--st-pending)]' : 'text-ink'}`}>{value}</dd>
-      {sub && <span className="text-[12.5px] text-ink-3">{sub}</span>}
+      {sub && <dd className="text-[12.5px] text-ink-3">{sub}</dd>}
     </div>
   );
 }

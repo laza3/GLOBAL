@@ -19,10 +19,10 @@ const pct = (n: number) => `${(n * 100).toFixed(1).replace('.', ',')} %`;
 
 function Delta({ now, before, invert }: { now: number; before: number | undefined; invert?: boolean }) {
   if (before === undefined) return null;
-  if (before === 0) return <span className="text-[12.5px] text-ink-3">Période précédente : aucune donnée</span>;
+  if (before === 0) return <dd className="text-[12.5px] text-ink-3">Période précédente : aucune donnée</dd>;
   const d = ((now - before) / before) * 100;
   const good = invert ? d <= 0 : d >= 0;
-  return <span className={`text-[12.5px] ${Math.abs(d) < 0.05 ? 'text-ink-3' : good ? 'text-[var(--st-inhouse)]' : 'text-[var(--st-cancelled)]'}`}>{d >= 0 ? '+' : '−'}{Math.abs(d).toFixed(1).replace('.', ',')} % vs période précédente</span>;
+  return <dd className={`text-[12.5px] ${Math.abs(d) < 0.05 ? 'text-ink-3' : good ? 'text-[var(--st-inhouse)]' : 'text-[var(--st-cancelled)]'}`}>{d >= 0 ? '+' : '−'}{Math.abs(d).toFixed(1).replace('.', ',')} % vs période précédente</dd>;
 }
 
 export default function ReportsPage() {

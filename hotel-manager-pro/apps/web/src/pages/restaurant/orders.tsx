@@ -50,8 +50,8 @@ export default function OrdersPage() {
       >
         {s && (
           <dl className="grid gap-4 sm:grid-cols-3" aria-label="Chiffres du jour">
-            <div className="flex flex-col gap-1 rounded-[14px] bg-silver-soft p-4"><dt className="text-[13px] text-ink-2">Ventes du jour</dt><dd className="num-display text-[22px] font-semibold text-ink">{formatMoney(s.sales.total, s.currency)}</dd><span className="text-[12.5px] text-ink-3">{s.sales.count} commande{s.sales.count > 1 ? 's' : ''} · dont {formatMoney(s.sales.postedToRooms, s.currency)} sur les chambres</span></div>
-            <div className="flex flex-col gap-1 rounded-[14px] bg-silver-soft p-4"><dt className="text-[13px] text-ink-2">En cours</dt><dd className="num-display text-[22px] font-semibold text-ink">{s.active.count}</dd><span className="text-[12.5px] text-ink-3">{formatMoney(s.active.total, s.currency)} à encaisser</span></div>
+            <div className="flex flex-col gap-1 rounded-[14px] bg-silver-soft p-4"><dt className="text-[13px] text-ink-2">Ventes du jour</dt><dd className="num-display text-[22px] font-semibold text-ink">{formatMoney(s.sales.total, s.currency)}</dd><dd className="text-[12.5px] text-ink-3">{s.sales.count} commande{s.sales.count > 1 ? 's' : ''} · dont {formatMoney(s.sales.postedToRooms, s.currency)} sur les chambres</dd></div>
+            <div className="flex flex-col gap-1 rounded-[14px] bg-silver-soft p-4"><dt className="text-[13px] text-ink-2">En cours</dt><dd className="num-display text-[22px] font-semibold text-ink">{s.active.count}</dd><dd className="text-[12.5px] text-ink-3">{formatMoney(s.active.total, s.currency)} à encaisser</dd></div>
             <div className="flex flex-col gap-1 rounded-[14px] bg-silver-soft p-4"><dt className="text-[13px] text-ink-2">Annulées aujourd'hui</dt><dd className="num-display text-[22px] font-semibold text-ink">{s.cancelled}</dd></div>
           </dl>
         )}

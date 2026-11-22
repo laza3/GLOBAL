@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { isApiError } from '../api/client';
 import { useCompleteOnboarding, useHotel, useSubscription, useTickets, useUsage } from '../api/hotel';
 import { useDashboard } from '../api/reports';
+import { useT } from '../i18n';
 import type { HotelProfile, SubscriptionResponse } from '../api/types';
 import { useCan, useMe } from '../auth/session';
 import { daysLabel, daysUntil, formatDate } from '../lib/format';
@@ -290,13 +291,14 @@ function SupportCard() {
 
 /** Indicateurs d'exploitation : tous calculés à partir des chambres, réservations et notes réelles ; un bloc absent = pas de droit de le voir. */
 function OperationsCard() {
+  const t = useT();
   const dash = useDashboard();
   const d = dash.data;
   const money = (n: number) => formatMoney(n, d?.currency ?? 'MGA');
   return (
     <section aria-labelledby="ops-h" className={cn(card, 'lg:col-span-8')}>
       <CardTitle icon={<CalendarCheck />}>
-        <span id="ops-h">Aujourd&apos;hui à l&apos;hôtel</span>
+        <span id="ops-h">{t('dash.today')}</span>
       </CardTitle>
       {dash.isPending ? (
         <div className="grid gap-3 sm:grid-cols-2" role="status"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /><span className="sr-only">Chargement</span></div>
@@ -306,14 +308,14 @@ function OperationsCard() {
         <div className="flex flex-col gap-5">
           {d.rooms && d.rooms.total === 0 && <p className="rounded-[14px] border border-dashed border-field-border p-4 text-[14px] text-ink-2">Aucune chambre pour le moment. <Link to="/rooms" className="text-accent-ink underline">Créez vos chambres</Link> : l&apos;occupation et les arrivées s&apos;afficheront ici.</p>}
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Indicateurs du jour">
-            {d.rooms && d.rooms.total > 0 && <Stat label="Occupation" value={`${(d.rooms.occupancyRate * 100).toFixed(0)} %`} sub={`${d.rooms.occupied} chambre${d.rooms.occupied > 1 ? 's' : ''} occupée${d.rooms.occupied > 1 ? 's' : ''} sur ${d.rooms.total}`} to="/rooms" />}
-            {d.stays && <Stat label="Arrivées" value={`${d.stays.arrivalsDone}/${d.stays.arrivals}`} sub="enregistrées aujourd'hui" to="/reception" />}
-            {d.stays && <Stat label="Départs" value={`${d.stays.departuresDone}/${d.stays.departures}`} sub={d.stays.overdue ? `${d.stays.overdue} en retard` : "enregistrés aujourd'hui"} to="/reception?section=departures" tone={d.stays.overdue ? 'warning' : undefined} />}
-            {d.stays && <Stat label="En séjour" value={String(d.stays.inHouse)} sub={d.stays.pendingConfirmation ? `${d.stays.pendingConfirmation} réservation${d.stays.pendingConfirmation > 1 ? 's' : ''} à confirmer` : 'clients dans l\'hôtel'} to="/reception?section=inhouse" />}
-            {d.money && <Stat label="Encaissé aujourd'hui" value={money(d.money.collectedToday)} sub="remboursements déduits" to="/billing/payments" />}
-            {d.money && <Stat label="Reste à encaisser" value={money(d.money.receivables)} sub={`${d.money.receivablesFolios} note${d.money.receivablesFolios > 1 ? 's' : ''} ouverte${d.money.receivablesFolios > 1 ? 's' : ''}`} to="/billing?payment=due" />}
-            {d.housekeeping && <Stat label="Chambres à nettoyer" value={String(d.housekeeping.dirty)} sub={d.housekeeping.issues ? `${d.housekeeping.issues} panne${d.housekeeping.issues > 1 ? 's' : ''} ouverte${d.housekeeping.issues > 1 ? 's' : ''}` : 'aucune panne ouverte'} to="/housekeeping" tone={d.housekeeping.issues ? 'warning' : undefined} />}
-            {d.restaurant && <Stat label="Restaurant" value={money(d.restaurant.salesToday)} sub={`${d.restaurant.openOrders} commande${d.restaurant.openOrders > 1 ? 's' : ''} en cours`} to="/restaurant" />}
+            {d.rooms && d.rooms.total > 0 && <Stat label={t('dash.occupancy')} value={`${(d.rooms.occupancyRate * 100).toFixed(0)} %`} sub={`${d.rooms.occupied} chambre${d.rooms.occupied > 1 ? 's' : ''} occupée${d.rooms.occupied > 1 ? 's' : ''} sur ${d.rooms.total}`} to="/rooms" />}
+            {d.stays && <Stat label={t('dash.arrivals')} value={`${d.stays.arrivalsDone}/${d.stays.arrivals}`} sub="enregistrées aujourd'hui" to="/reception" />}
+            {d.stays && <Stat label={t('dash.departures')} value={`${d.stays.departuresDone}/${d.stays.departures}`} sub={d.stays.overdue ? `${d.stays.overdue} en retard` : "enregistrés aujourd'hui"} to="/reception?section=departures" tone={d.stays.overdue ? 'warning' : undefined} />}
+            {d.stays && <Stat label={t('dash.inhouse')} value={String(d.stays.inHouse)} sub={d.stays.pendingConfirmation ? `${d.stays.pendingConfirmation} réservation${d.stays.pendingConfirmation > 1 ? 's' : ''} à confirmer` : 'clients dans l\'hôtel'} to="/reception?section=inhouse" />}
+            {d.money && <Stat label={t('dash.collected')} value={money(d.money.collectedToday)} sub="remboursements déduits" to="/billing/payments" />}
+            {d.money && <Stat label={t('dash.receivables')} value={money(d.money.receivables)} sub={`${d.money.receivablesFolios} note${d.money.receivablesFolios > 1 ? 's' : ''} ouverte${d.money.receivablesFolios > 1 ? 's' : ''}`} to="/billing?payment=due" />}
+            {d.housekeeping && <Stat label={t('dash.dirty')} value={String(d.housekeeping.dirty)} sub={d.housekeeping.issues ? `${d.housekeeping.issues} panne${d.housekeeping.issues > 1 ? 's' : ''} ouverte${d.housekeeping.issues > 1 ? 's' : ''}` : 'aucune panne ouverte'} to="/housekeeping" tone={d.housekeeping.issues ? 'warning' : undefined} />}
+            {d.restaurant && <Stat label={t('dash.restaurant')} value={money(d.restaurant.salesToday)} sub={`${d.restaurant.openOrders} commande${d.restaurant.openOrders > 1 ? 's' : ''} en cours`} to="/restaurant" />}
           </ul>
           {d.stays && d.stays.upcomingArrivals.some((u) => u.n > 0) && (
             <div className="flex flex-col gap-2">

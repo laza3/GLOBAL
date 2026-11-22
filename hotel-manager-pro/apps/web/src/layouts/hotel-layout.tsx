@@ -14,6 +14,16 @@ import { ALL_NAV, NAV_GROUPS, Sidebar, TabBar, Topbar, useOnline } from '../ui/s
 import { useTheme } from '../ui/theme';
 import { AccessBanner } from './access-banner';
 import { PasswordBanner } from './password-banner';
+import { useEffect } from 'react';
+import { useHotel } from '../api/hotel';
+import { applyHotelLocale } from '../i18n';
+
+/** Applique la langue de l'établissement tant que la personne n'a pas choisi la sienne dans ce navigateur. */
+function LocaleSync() {
+  const hotel = useHotel();
+  useEffect(() => { applyHotelLocale(hotel.data?.locale); }, [hotel.data?.locale]);
+  return null;
+}
 import { BlockedScreen } from './blocked-screen';
 
 const COLLAPSE_KEY = 'hmp-sidebar-collapsed';
@@ -143,6 +153,7 @@ function Shell() {
               initials={initials(me.user.fullName)}
             />
           </div>
+          <LocaleSync />
           <AccessBanner />
           <PasswordBanner />
           <main id="main" tabIndex={-1} className="flex min-w-0 flex-col gap-4 pb-28 outline-none lg:pb-6">

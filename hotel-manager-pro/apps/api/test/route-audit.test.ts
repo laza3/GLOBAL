@@ -9,6 +9,7 @@ afterAll(async () => { await t.close(); });
 const PUBLIC = new Set([
   'GET /api/v1/health', 'GET /api/v1/ready', 'GET /api/v1/legal', 'GET /api/v1/plans',
   'POST /api/v1/auth/register-hotel', 'POST /api/v1/auth/login', 'POST /api/v1/auth/logout',
+  'POST /api/v1/auth/forgot-password', 'POST /api/v1/auth/reset-password',
   'POST /api/v1/platform/auth/login', 'POST /api/v1/platform/auth/logout',
 ]);
 const UUID = '00000000-0000-4000-8000-000000000000';

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { getLocale, t, useT } from '../i18n';
 import { Button } from './button';
 import { Drawer, Menu, Tip, type MenuItem } from './overlay';
 
@@ -62,6 +63,9 @@ export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 export const ALL_NAV = NAV_GROUPS.flatMap((g) => g.items);
+/** Libellé traduit d'une entrée du menu (les entrées de la console plateforme, absentes des catalogues, gardent leur libellé). */
+export const navLabel = (item: NavItem): string => { const k = `nav.${item.id}`; const v = t(k); return v === k ? item.label : v; };
+const groupLabel = (label: string): string => ({ Exploitation: t('nav.group.operations'), Gestion: t('nav.group.management'), Administration: t('nav.group.admin') } as Record<string, string>)[label] ?? label;
 /**
  * Entrées permanentes de la barre d'onglets mobile ; « Plus » ouvre le reste (5 entrées maximum au total).
  * Trois entrées + « Plus » : avec cinq, « Réservations » ne tient pas sur un téléphone de 360 px.
@@ -121,9 +125,10 @@ export function Sidebar({
   soon?: ReadonlySet<string>;
   className?: string;
 }) {
+  useT();
   return (
     <nav
-      aria-label="Navigation principale"
+      aria-label={t('nav.main')}
       className={cn(
         'surface glass-1 flex h-full flex-col gap-1 overflow-y-auto p-3 transition-[width] duration-[var(--d-base)] ease-out [--surface-radius:var(--r-card)]',
         collapsed ? 'w-[4.75rem]' : 'w-64',
@@ -139,7 +144,7 @@ export function Sidebar({
           {collapsed ? (
             <div aria-hidden className="mx-3 mb-1 h-px bg-hairline" />
           ) : (
-            <p className="px-3 pb-1 text-[13px] font-medium text-ink-3">{group.label}</p>
+            <p className="px-3 pb-1 text-[13px] font-medium text-ink-3">{groupLabel(group.label)}</p>
           )}
           {group.items.map((item) => {
             const Icon = item.icon;
@@ -149,7 +154,7 @@ export function Sidebar({
                 type="button"
                 onClick={() => onNavigate(item.id)}
                 aria-current={isActive ? 'page' : undefined}
-                aria-label={collapsed ? (soon?.has(item.id) ? `${item.label}, bientôt disponible` : item.label) : undefined}
+                aria-label={collapsed ? (soon?.has(item.id) ? `${navLabel(item)}, ${t('nav.soon').toLowerCase()}` : navLabel(item)) : undefined}
                 className={cn(
                   'group flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-[12px] px-3 text-left text-[14px] font-medium transition-colors duration-[var(--d-quick)]',
                   collapsed && 'justify-center px-0',
@@ -157,14 +162,14 @@ export function Sidebar({
                 )}
               >
                 <Icon aria-hidden className="size-[19px] shrink-0" strokeWidth={isActive ? 2.1 : 1.75} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                {!collapsed && <span className="truncate">{navLabel(item)}</span>}
                 {!collapsed && soon?.has(item.id) && (
                   <span className="ml-auto rounded-full bg-silver-soft px-2 py-0.5 text-[11.5px] font-medium text-ink-2">Bientôt</span>
                 )}
               </button>
             );
             return collapsed ? (
-              <Tip key={item.id} label={item.label} side="right">
+              <Tip key={item.id} label={navLabel(item)} side="right">
                 {button}
               </Tip>
             ) : (
@@ -212,6 +217,7 @@ export function TabBar({
   tabIds?: string[];
   className?: string;
 }) {
+  useT();
   const [more, setMore] = useState(false);
   const tabs = tabIds.map((id) => items.find((n) => n.id === id)!);
   const rest = items.filter((n) => !tabIds.includes(n.id));
@@ -224,7 +230,7 @@ export function TabBar({
   return (
     <>
       <nav
-        aria-label="Navigation principale"
+        aria-label={t('nav.main')}
         className={cn(
           'surface glass-2 fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex items-stretch gap-1 p-1.5 [--surface-radius:26px]',
           className,
@@ -235,7 +241,7 @@ export function TabBar({
           return (
             <button key={t.id} type="button" onClick={() => onNavigate(t.id)} aria-current={t.id === active ? 'page' : undefined} className={tabClass(t.id === active)}>
               <Icon aria-hidden className="size-5" strokeWidth={t.id === active ? 2.1 : 1.75} />
-              {t.label === "Vue d'ensemble" ? 'Accueil' : t.label}
+              {t.id === 'overview' ? (getLocale() === 'fr' ? 'Accueil' : navLabel(t)) : navLabel(t)}
             </button>
           );
         })}
@@ -264,7 +270,7 @@ export function TabBar({
                 >
                   <Icon aria-hidden className="size-5 shrink-0 text-ink-2" />
                   <span className="flex min-w-0 flex-col items-start leading-tight">
-                    {n.label}
+                    {navLabel(n)}
                     {soon?.has(n.id) && <span className="text-[11.5px] font-normal text-ink-2">Bientôt</span>}
                   </span>
                 </button>

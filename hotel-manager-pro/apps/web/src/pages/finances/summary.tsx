@@ -36,7 +36,7 @@ export default function FinanceSummaryPage() {
                 ['Résultat de trésorerie', money(s.cashResult), s.cashResult < 0 ? 'les sorties dépassent les entrées' : 'encaissé − dépenses payées'],
                 ['Reste à encaisser', money(s.receivables.total), `${s.receivables.folios} note${s.receivables.folios > 1 ? 's' : ''} ouverte${s.receivables.folios > 1 ? 's' : ''}`],
               ].map(([label, value, sub]) => (
-                <div key={label} className="surface glass-1 flex flex-col gap-1 p-5 [--surface-radius:var(--r-card)]"><dt className="text-[13px] text-ink-2">{label}</dt><dd className="num-display text-[24px] font-semibold text-ink">{value}</dd><span className="text-[12.5px] text-ink-3">{sub}</span></div>
+                <div key={label} className="surface glass-1 flex flex-col gap-1 p-5 [--surface-radius:var(--r-card)]"><dt className="text-[13px] text-ink-2">{label}</dt><dd className="num-display text-[24px] font-semibold text-ink">{value}</dd><dd className="text-[12.5px] text-ink-3">{sub}</dd></div>
               ))}
             </dl>
             {s.payables.count > 0 && <Callout tone="warning">{s.payables.count} dépense{s.payables.count > 1 ? 's' : ''} à payer, pour {money(s.payables.total)} au total.</Callout>}

@@ -1,6 +1,6 @@
 import { formatMoney, nightsBetween } from '@hmp/shared';
 import { ArrowLeft, Trash2, UserPlus } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { isApiError } from '../../api/client';
@@ -8,7 +8,9 @@ import { useCreateReservation } from '../../api/reservations';
 import { formatDay, plural } from '../../lib/format';
 import { parseMoneyInput } from '../../lib/money-input';
 import { SOURCE_OPTIONS } from '../../lib/reservation-status';
+import { useMe } from '../../auth/session';
 import { useCurrency } from '../../lib/use-currency';
+import { useDraft } from '../../lib/use-draft';
 import { useDocumentTitle } from '../../lib/use-title';
 import { Button } from '../../ui/button';
 import { Field, Input, SegmentedControl, Select, Textarea } from '../../ui/form';
@@ -46,6 +48,13 @@ export default function NewReservationPage() {
   const [error, setError] = useState<string | null>(null);
   const set = (k: keyof typeof v) => (e: { target: { value: string } }) => setV((s) => ({ ...s, [k]: e.target.value }));
 
+  // Brouillon : la saisie survit à un rechargement ou à une coupure de connexion (jamais envoyée au serveur)
+  const me = useMe();
+  const draftValue = useMemo(() => ({ lines, guest, status, expires, source, v }), [lines, guest, status, expires, source, v]);
+  const draft = useDraft(`hmp_draft_reservation_${me.user.id}`, draftValue, (d) => {
+    setLines(d.lines); setGuest(d.guest); setStatus(d.status); setExpires(d.expires); setSource(d.source); setV(d.v);
+  }, (d) => d.lines.length === 0 && !d.guest && !d.v.deposit && !d.v.discount && !d.v.group && !d.v.requests && !d.v.notes);
+
   // Même clé tant que le contenu est identique (double-clic, nouvelle tentative) ; nouvelle clé dès que le contenu change
   const key = useRef(crypto.randomUUID());
   useEffect(() => { key.current = crypto.randomUUID(); }, [lines, guest, status, expires, source, v]);
@@ -75,6 +84,7 @@ export default function NewReservationPage() {
           rooms: lines.map((l) => ({ categoryId: l.categoryId, roomId: l.roomId ?? null, checkIn: l.checkIn, checkOut: l.checkOut, adults: l.adults, children: l.children })),
         },
       });
+      draft.clear();
       toast.success(`Réservation ${res.reference} créée.`);
       navigate(`/reservations/${res.id}`, { replace: true });
     } catch (e) {
@@ -89,6 +99,13 @@ export default function NewReservationPage() {
         description="Cherchez les chambres libres, ajoutez-en une ou plusieurs, puis indiquez le client. Le prix de chaque nuit est figé à l'enregistrement."
         actions={<Link to="/reservations" className="inline-flex min-h-10 items-center gap-2 text-[14px] font-medium text-accent-ink hover:underline"><ArrowLeft aria-hidden className="size-4" />Retour aux réservations</Link>}
       />
+
+      {draft.restored && (
+        <Callout tone="info">
+          Votre saisie précédente a été retrouvée sur cet appareil.{' '}
+          <button type="button" className="font-medium underline underline-offset-4" onClick={() => { draft.clear(); setLines([]); setGuest(null); setStatus('confirmed'); setSource('direct'); setV({ deposit: '', discount: '', group: '', requests: '', notes: '' }); }}>Tout effacer et recommencer</button>
+        </Callout>
+      )}
 
       <Panel title="1. Dates et chambres" description="Chaque chambre ajoutée garde ses dates : vous pouvez réserver plusieurs chambres, y compris sur des dates différentes.">
         <StayFinder currency={currency} onPick={(l) => setLines((s) => [...s, { ...l, key: crypto.randomUUID() }])} />

@@ -4,6 +4,7 @@ import { useHotel, useUpdateHotel } from '../../api/hotel';
 import type { HotelProfile } from '../../api/types';
 import { useCan } from '../../auth/session';
 import { emailProblem, feedbackFrom, requiredProblem, type FormFeedback } from '../../lib/forms';
+import { LOCALES, setLocale, t, type Locale } from '../../i18n';
 import { useDocumentTitle } from '../../lib/use-title';
 import { Button } from '../../ui/button';
 import { Skeleton } from '../../ui/data';
@@ -37,15 +38,15 @@ const CURRENCIES = [
 
 type Form = {
   name: string; legalName: string; taxId: string; address: string; city: string; country: string; phone: string; email: string; website: string;
-  defaultCurrency: string; timezone: string; checkInTime: string; checkOutTime: string; invoicePrefix: string; reservationPrefix: string; invoiceHeader: string; invoiceFooter: string;
+  locale: Locale; defaultCurrency: string; timezone: string; checkInTime: string; checkOutTime: string; invoicePrefix: string; reservationPrefix: string; invoiceHeader: string; invoiceFooter: string;
 };
 const PROFILE_KEYS = ['name', 'legalName', 'taxId', 'address', 'city', 'country', 'phone', 'email', 'website'] as const;
-const SETTINGS_KEYS = ['defaultCurrency', 'timezone', 'checkInTime', 'checkOutTime', 'invoicePrefix', 'reservationPrefix', 'invoiceHeader', 'invoiceFooter'] as const;
+const SETTINGS_KEYS = ['locale', 'defaultCurrency', 'timezone', 'checkInTime', 'checkOutTime', 'invoicePrefix', 'reservationPrefix', 'invoiceHeader', 'invoiceFooter'] as const;
 const NULLABLE = new Set(['legalName', 'taxId', 'address', 'city', 'phone', 'email', 'website', 'invoiceHeader', 'invoiceFooter']);
 
 const toForm = (h: HotelProfile): Form => ({
   name: h.name, legalName: h.legalName ?? '', taxId: h.taxId ?? '', address: h.address ?? '', city: h.city ?? '', country: h.country, phone: h.phone ?? '',
-  email: h.email ?? '', website: h.website ?? '', defaultCurrency: h.defaultCurrency, timezone: h.timezone, checkInTime: h.checkInTime, checkOutTime: h.checkOutTime,
+  email: h.email ?? '', website: h.website ?? '', locale: (h.locale as Locale) ?? 'fr', defaultCurrency: h.defaultCurrency, timezone: h.timezone, checkInTime: h.checkInTime, checkOutTime: h.checkOutTime,
   invoicePrefix: h.invoicePrefix, reservationPrefix: h.reservationPrefix, invoiceHeader: h.invoiceHeader ?? '', invoiceFooter: h.invoiceFooter ?? '',
 });
 
@@ -110,7 +111,7 @@ function HotelForm({ hotel }: { hotel: HotelProfile }) {
     update.mutate(
       { profile: pick(PROFILE_KEYS), settings: pick(SETTINGS_KEYS) },
       {
-        onSuccess: () => toast.success('Modifications enregistrées.'),
+        onSuccess: () => { if (f.locale !== initial.locale) setLocale(f.locale); toast.success('Modifications enregistrées.'); },
         onError: (e) => setFeedback(feedbackFrom(e, { currency_locked: 'defaultCurrency' })),
       },
     );
@@ -153,8 +154,8 @@ function HotelForm({ hotel }: { hotel: HotelProfile }) {
           <Field label="Fuseau horaire" error={err.timezone}>{(c) => <Select {...c} value={f.timezone} onValueChange={(v) => setF((s) => ({ ...s, timezone: v }))} options={TIMEZONES} disabled={ro} />}</Field>
           <Field label="Heure d'arrivée (check-in)" hint="Format 24 h, ex. 14:00." error={err.checkInTime}>{(c) => <Input {...c} inputMode="numeric" placeholder="14:00" maxLength={5} value={f.checkInTime} onChange={set('checkInTime')} disabled={ro} />}</Field>
           <Field label="Heure de départ (check-out)" hint="Format 24 h, ex. 12:00." error={err.checkOutTime}>{(c) => <Input {...c} inputMode="numeric" placeholder="12:00" maxLength={5} value={f.checkOutTime} onChange={set('checkOutTime')} disabled={ro} />}</Field>
-          <Field label="Langue" hint="Français uniquement pour le moment ; l'anglais et le malgache viendront plus tard.">
-            {(c) => <Input {...c} value="Français" disabled readOnly />}
+          <Field label={t('settings.language')} hint={t('settings.language.hint')}>
+            {(c) => <Select {...c} value={f.locale} onValueChange={(v) => { setF((s) => ({ ...s, locale: v as typeof s.locale })); }} options={LOCALES} disabled={ro} />}
           </Field>
         </div>
       </Panel>
