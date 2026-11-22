@@ -1,0 +1,13 @@
+name: Version publiée
+# Quand vous créez une étiquette de version (git tag v1.2.0 puis git push origin v1.2.0), GitHub publie une « Release »
+# avec la liste automatique des changements : c'est le point de retour en arrière si une mise à jour pose problème.
+on:
+  push: { tags: ["v*.*.*"] }
+permissions: { contents: write }
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh release create "$GITHUB_REF_NAME" --generate-notes --title "Hotel Manager Pro $GITHUB_REF_NAME"
+        env: { GH_TOKEN: "${{ github.token }}" }

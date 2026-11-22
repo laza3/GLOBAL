@@ -30,6 +30,9 @@ const schema = z.object({
    * numéros de pièces illisibles : la sauvegarder séparément des sauvegardes de la base.
    */
   ENCRYPTION_KEY: z.string().optional(),
+  /** Taille maximale des pools de connexions. Défauts adaptés à un serveur permanent ; en serverless (Vercel) : 2 à 3, chaque instance ayant ses propres pools. */
+  DB_POOL_MAX_APP: z.coerce.number().int().min(1).max(100).default(20),
+  DB_POOL_MAX_PLATFORM: z.coerce.number().int().min(1).max(100).default(8),
   /** Durée de vie d'une session (heures). */
   SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(12),
   PLATFORM_SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24).default(8),

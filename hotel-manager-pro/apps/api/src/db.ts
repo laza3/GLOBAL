@@ -25,11 +25,14 @@ export function createDb(opts: {
   appUrl: string;
   platformUrl: string;
   switchRole?: boolean;
+  /** Taille des pools (défauts 20 et 8) : à réduire en serverless, où chaque instance ouvre ses propres connexions. */
+  appMax?: number;
+  platformMax?: number;
   /** Une connexion INACTIVE du pool a été coupée (redémarrage de la base, bascule…). Sans écouteur, Node arrêterait le processus. */
   onPoolError?: (error: Error, pool: 'app' | 'platform') => void;
 }): Db {
-  const app = new pg.Pool({ connectionString: opts.appUrl, max: 20, idleTimeoutMillis: 30_000 });
-  const platform = new pg.Pool({ connectionString: opts.platformUrl, max: 8, idleTimeoutMillis: 30_000 });
+  const app = new pg.Pool({ connectionString: opts.appUrl, max: opts.appMax ?? 20, idleTimeoutMillis: 30_000 });
+  const platform = new pg.Pool({ connectionString: opts.platformUrl, max: opts.platformMax ?? 8, idleTimeoutMillis: 30_000 });
   const report = opts.onPoolError ?? ((error, pool) => console.error(JSON.stringify({ level: 'error', msg: 'connexion inactive du pool coupée', pool, error: error.message })));
   app.on('error', (error) => report(error, 'app'));
   platform.on('error', (error) => report(error, 'platform'));

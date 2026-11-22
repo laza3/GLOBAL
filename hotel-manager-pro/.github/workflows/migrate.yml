@@ -1,0 +1,57 @@
+name: Migrations de la base
+# Applique les migrations SQL de la base de l'environnement concerné quand du code arrive sur « staging » ou « main ».
+#   staging -> base de TESTS        main -> base de PRODUCTION (après approbation manuelle + sauvegarde automatique)
+# Secrets attendus dans GitHub > Settings > Environments (un jeu par environnement) : DATABASE_ADMIN_URL
+# Garde-fou : APP_ENV est comparé au marqueur de la base ; une migration lancée sur la mauvaise base est REFUSÉE avant toute modification.
+on:
+  push: { branches: [staging, main] }
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement à migrer"
+        type: choice
+        options: [staging, production]
+        required: true
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.pick.outputs.environment }}
+    steps:
+      - id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then env="${{ inputs.environment }}";
+          elif [ "${{ github.ref_name }}" = "main" ]; then env=production; else env=staging; fi
+          echo "environment=$env" >> "$GITHUB_OUTPUT"
+
+  # Sauvegarde automatique AVANT toute migration de production
+  backup:
+    needs: select
+    if: needs.select.outputs.environment == 'production'
+    uses: ./.github/workflows/backup.yml
+    with: { environment: production }
+    secrets: inherit
+
+  migrate:
+    needs: [select, backup]
+    # « backup » est ignoré hors production : on continue quand même, mais jamais si la sauvegarde a échoué
+    if: ${{ !cancelled() && needs.select.result == 'success' && (needs.backup.result == 'success' || needs.backup.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    # Pour « production », activez « Required reviewers » dans Settings > Environments : approbation manuelle avant l'exécution
+    environment: ${{ needs.select.outputs.environment }}
+    concurrency: { group: "migrate-${{ needs.select.outputs.environment }}", cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Appliquer les migrations
+        env:
+          NODE_ENV: production
+          APP_ENV: ${{ needs.select.outputs.environment }}
+          DATABASE_ADMIN_URL: ${{ secrets.DATABASE_ADMIN_URL }}
+        run: |
+          test -n "$DATABASE_ADMIN_URL" || { echo "Secret DATABASE_ADMIN_URL manquant pour l'environnement $APP_ENV" >&2; exit 1; }
+          pnpm db:migrate

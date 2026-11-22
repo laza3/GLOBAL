@@ -10,6 +10,8 @@ const db = createDb({
   appUrl: config.DATABASE_URL_APP,
   platformUrl: config.DATABASE_URL_PLATFORM,
   switchRole: config.DB_SWITCH_ROLE,
+  appMax: config.DB_POOL_MAX_APP,
+  platformMax: config.DB_POOL_MAX_PLATFORM,
   onPoolError: (error, pool) => logger.error({ pool, err: error.message }, 'connexion inactive du pool coupée : elle sera rétablie à la prochaine requête'),
 });
 try {

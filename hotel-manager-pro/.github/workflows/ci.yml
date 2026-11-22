@@ -2,6 +2,8 @@ name: CI
 on:
   push: { branches: ["**"] }
   pull_request:
+# Une nouvelle poussée annule la vérification précédente de la même branche (économise le temps de calcul)
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
 jobs:
   test:
     runs-on: ubuntu-latest

@@ -1,0 +1,33 @@
+name: Cycle de vie des abonnements
+# Toutes les heures : essais échus, abonnements impayés, factures de renouvellement, options de réservation échues.
+# Idempotent (relançable sans risque). Équivalent du service « lifecycle » de docker-compose.
+# Secrets (GitHub > Settings > Environments > production) : DATABASE_URL_APP, DATABASE_URL_PLATFORM, CSRF_SECRET, ENCRYPTION_KEY
+# NB : GitHub ne déclenche les tâches planifiées que sur la branche PAR DÉFAUT du dépôt : elle doit être « main ».
+on:
+  schedule: [{ cron: "7 * * * *" }]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [production, staging]
+        default: production
+
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+    concurrency: { group: "lifecycle-${{ inputs.environment || 'production' }}", cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm api:lifecycle
+        env:
+          NODE_ENV: production
+          APP_ENV: ${{ inputs.environment || 'production' }}
+          DATABASE_URL_APP: ${{ secrets.DATABASE_URL_APP }}
+          DATABASE_URL_PLATFORM: ${{ secrets.DATABASE_URL_PLATFORM }}
+          CSRF_SECRET: ${{ secrets.CSRF_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}

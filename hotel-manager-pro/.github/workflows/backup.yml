@@ -1,0 +1,65 @@
+name: Sauvegarde de la base
+# Sauvegarde chiffrée de la base de PRODUCTION chaque nuit, copiée HORS de l'hébergeur de la base (stockage compatible S3 :
+# Cloudflare R2, Backblaze B2, AWS S3…). Appelée aussi automatiquement avant chaque migration de production.
+# Secrets (GitHub > Settings > Environments > production) :
+#   DATABASE_ADMIN_URL   connexion de sauvegarde (lecture suffit)
+#   BACKUP_PASSPHRASE    mot de passe de chiffrement des sauvegardes (à CONSERVER à part : sans lui, impossible de restaurer)
+#   S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY
+# Durée de conservation : règle de cycle de vie du bucket (ex. supprimer après 90 jours), voir docs/sauvegardes.md.
+on:
+  schedule: [{ cron: "17 2 * * *" }]   # chaque nuit à 02:17 UTC (05:17 à Madagascar)
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [production, staging]
+        default: production
+  workflow_call:
+    inputs:
+      environment: { type: string, default: production }
+
+env:
+  PG_CLIENT_MAJOR: "16"   # même version majeure que le serveur PostgreSQL de la base sauvegardée
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier que tous les secrets sont présents (sinon l'échec est visible, jamais silencieux)
+        env:
+          S1: ${{ secrets.DATABASE_ADMIN_URL }}
+          S2: ${{ secrets.BACKUP_PASSPHRASE }}
+          S3: ${{ secrets.S3_ENDPOINT }}
+          S4: ${{ secrets.S3_BUCKET }}
+          S5: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S6: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+        run: |
+          for v in S1 S2 S3 S4 S5 S6; do test -n "${!v}" || { echo "Un secret de sauvegarde est manquant (voir l'en-tête de ce fichier)." >&2; exit 1; }; done
+      - name: Installer le client PostgreSQL ${{ env.PG_CLIENT_MAJOR }}
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y "postgresql-client-${PG_CLIENT_MAJOR}" >/dev/null
+          echo "/usr/lib/postgresql/${PG_CLIENT_MAJOR}/bin" >> "$GITHUB_PATH"
+      - name: Sauvegarder (format compressé, lisibilité vérifiée)
+        env:
+          DATABASE_ADMIN_URL: ${{ secrets.DATABASE_ADMIN_URL }}
+          BACKUP_DIR: ${{ runner.temp }}/backup
+          KEEP: "1"
+        run: scripts/backup.sh
+      - name: Chiffrer (AES-256) puis copier hors de l'hébergeur
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          TARGET_ENV: ${{ inputs.environment || 'production' }}
+        run: |
+          file="$(ls -1 "$RUNNER_TEMP"/backup/hmp-*.dump | head -n1)"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --symmetric --cipher-algo AES256 -o "$file.gpg" "$file"
+          rm -f "$file"
+          aws s3 cp "$file.gpg" "s3://$S3_BUCKET/$TARGET_ENV/$(basename "$file").gpg" --endpoint-url "$S3_ENDPOINT"
+          echo "Sauvegarde chiffrée envoyée : $TARGET_ENV/$(basename "$file").gpg"
