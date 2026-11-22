@@ -18,6 +18,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { askHidden } from './prompt';
 
 const API_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = resolve(API_DIR, '..', '..');
@@ -38,15 +39,10 @@ function fail(message: string): never {
 }
 
 /* ------------------------------------------------------------------------------------------------ utilitaires */
-function ask(label: string, hidden = false): Promise<string> {
+function ask(label: string): Promise<string> {
   return new Promise((resolveAnswer) => {
     const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: Boolean(process.stdin.isTTY) });
-    const out = rl as unknown as { _writeToOutput: (s: string) => void; output: NodeJS.WritableStream };
-    let muted = false;
-    const original = out._writeToOutput.bind(rl);
-    out._writeToOutput = (s: string) => { if (!muted) original(s); };
-    rl.question(label, (answer) => { muted = false; if (hidden) out.output.write('\n'); rl.close(); resolveAnswer(answer); });
-    muted = hidden;
+    rl.question(label, (answer) => { rl.close(); resolveAnswer(answer); });
   });
 }
 
@@ -81,7 +77,7 @@ async function setup() {
   const adminUser = process.env.HMP_PG_ADMIN_USER ?? 'postgres';
   let admin: pg.Client | undefined;
   for (let attempt = 1; !admin; attempt++) {
-    const password = process.env.HMP_PG_ADMIN_PASSWORD ?? (await ask(`Mot de passe de l'utilisateur « ${adminUser} » de PostgreSQL (choisi à l'installation ; la saisie reste invisible) : `, true));
+    const password = process.env.HMP_PG_ADMIN_PASSWORD ?? (await askHidden(`Mot de passe de l'utilisateur « ${adminUser} » de PostgreSQL (choisi à l'installation ; des * s'affichent pendant la saisie) : `));
     const client = new pg.Client({ host: HOST, port: PORT, user: adminUser, password, database: 'postgres' });
     try {
       await client.connect();

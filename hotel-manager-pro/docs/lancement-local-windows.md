@@ -62,7 +62,7 @@ pnpm local:setup
 ```
 
 La commande vous demande :
-1. le **mot de passe de `postgres`** (celui noté à l'étape 1 ; la saisie reste invisible, c'est normal) ;
+1. le **mot de passe de `postgres`** (celui noté à l'étape 1). Une étoile `*` s'affiche à chaque touche tapée ; la commande laisse 3 essais ;
 2. votre **e-mail, votre nom et un mot de passe** pour le compte *super-administrateur* (console de gestion de la plateforme). Vous pouvez appuyer sur Entrée pour passer et le créer plus tard.
 
 Elle affiche des lignes `✔` puis « Terminé ». Elle peut être relancée sans risque : elle ne supprime rien.
@@ -108,6 +108,7 @@ pnpm local:start
 | `'pnpm' n'est pas reconnu` | Fermez et rouvrez l'Invite de commandes, puis refaites l'étape 3. |
 | PowerShell : « l'exécution de scripts est désactivée » | Utilisez l'Invite de commandes (étape 2). |
 | `Mot de passe refusé pour « postgres »` | Relancez `pnpm local:setup` et saisissez le mot de passe choisi à l'installation de PostgreSQL. |
+| Rien ne s'affiche quand je tape le mot de passe | Avec une ancienne version, la saisie était invisible : faites `git pull`. Ou, sans saisie : `set "HMP_PG_ADMIN_PASSWORD=votre_mot_de_passe"` puis `pnpm local:setup` (gardez les guillemets). |
 | `PostgreSQL ne répond pas sur 127.0.0.1:5432` | Windows → « Services » → `postgresql-x64-16` → Démarrer. |
 | `port … occupé` / l'API ne démarre pas | Un autre programme utilise le port 3000 ou 5173 : fermez-le (ou redémarrez le PC), puis `pnpm local:start`. |
 | Chrome ne s'ouvre pas | Ouvrez Chrome et tapez `127.0.0.1:5173` dans la barre d'adresse. |

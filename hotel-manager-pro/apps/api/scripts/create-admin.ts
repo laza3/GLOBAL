@@ -7,26 +7,14 @@
  * Le mot de passe est saisi à l'invite (masqué) — jamais en argument de ligne de commande (il resterait dans l'historique du
  * shell). Pour l'automatisation, ADMIN_PASSWORD est accepté en variable d'environnement.
  */
-import { createInterface } from 'node:readline';
 import pg from 'pg';
 import { AppError } from '../src/errors';
 import { assertStrongPassword, hashPassword } from '../src/lib/security';
+import { askHidden } from './prompt';
 
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
-}
-
-function promptHidden(label: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    const out = rl as unknown as { _writeToOutput: (s: string) => void; output: NodeJS.WritableStream };
-    let muted = false;
-    const original = out._writeToOutput.bind(rl);
-    out._writeToOutput = (s: string) => { if (!muted) original(s); };
-    rl.question(label, (answer) => { muted = false; out.output.write('\n'); rl.close(); resolve(answer); });
-    muted = true;
-  });
 }
 
 const url = process.env.DATABASE_ADMIN_URL ?? fail("DATABASE_ADMIN_URL est requis (compte d'administration de la base).");
@@ -38,8 +26,8 @@ if (fullName.length < 2) fail('ADMIN_NAME est trop court.');
 let password = process.env.ADMIN_PASSWORD;
 if (!password) {
   if (!process.stdin.isTTY) fail('Aucun terminal : fournissez ADMIN_PASSWORD, ou lancez la commande dans un terminal pour saisir le mot de passe à l\'invite.');
-  password = await promptHidden('Mot de passe (10 caractères minimum, lettres et chiffres) : ');
-  const confirm = await promptHidden('Confirmez le mot de passe : ');
+  password = await askHidden('Mot de passe (10 caractères minimum, lettres et chiffres) : ');
+  const confirm = await askHidden('Confirmez le mot de passe : ');
   if (password !== confirm) fail('Les deux saisies ne correspondent pas.');
 }
 try {
