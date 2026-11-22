@@ -11,7 +11,11 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const { chromium } = createRequire(join(ROOT, 'apps', 'web', 'package.json'))('playwright');
+// Playwright n'est pas une dépendance du projet : la CI l'installe à part (dossier HMP_PLAYWRIGHT) ; sinon on cherche une installation existante
+const candidates = [process.env.HMP_PLAYWRIGHT && join(process.env.HMP_PLAYWRIGHT, 'package.json'), join(ROOT, 'apps', 'web', 'package.json'), join(ROOT, 'package.json')].filter(Boolean);
+let chromium;
+for (const base of candidates) { try { ({ chromium } = createRequire(base)('playwright')); break; } catch { /* suivant */ } }
+if (!chromium) { console.error('✘ Playwright introuvable : installez-le (npm install playwright) et indiquez son dossier dans HMP_PLAYWRIGHT.'); process.exit(1); }
 const BASE = process.env.BASE ?? 'http://127.0.0.1:5173';
 const EDITOR = { email: process.env.EDITOR_EMAIL ?? 'editeur@ci.test', password: process.env.EDITOR_PASSWORD ?? 'Editeur-solide-42' };
 const PASSWORD = 'Mot-de-passe-solide-42';

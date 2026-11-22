@@ -17,7 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @hmp/web exec playwright install chromium
+      - name: Navigateur de test (Playwright)
+        shell: pwsh
+        run: |
+          npm install --no-save --prefix "$env:RUNNER_TEMP\pw" playwright@1.63.0
+          & node "$env:RUNNER_TEMP\pw\node_modules\playwright\cli.js" install chromium
+          "HMP_PLAYWRIGHT=$env:RUNNER_TEMP\pw" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: NSIS
         run: choco install nsis -y --no-progress
         shell: cmd
