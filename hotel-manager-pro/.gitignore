@@ -10,3 +10,15 @@ uploads/
 backups/
 .shots/
 .stack/
+
+# Secrets et données réelles : JAMAIS dans Git (seuls les fichiers *.example sont versionnés)
+.env.*
+!.env.example
+!*.example
+.vercel/
+.local/
+*.dump
+*.dump.gpg
+*.sql.gz
+*.pem
+*.key
