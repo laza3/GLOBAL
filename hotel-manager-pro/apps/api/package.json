@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "create-admin": "tsx scripts/create-admin.ts",
-    "lifecycle": "tsx scripts/run-lifecycle.ts"
+    "lifecycle": "tsx scripts/run-lifecycle.ts",
+    "seed-demo": "tsx scripts/seed-demo.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.5",

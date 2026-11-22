@@ -41,6 +41,11 @@ export default async function authRoutes(app: FastifyInstance) {
     reply.setCookie(names.hotelCsrf, csrfTokenFor(config.CSRF_SECRET, tokenHash), { ...base, httpOnly: false });
   };
 
+  /* ------------------------------------------------------------------ Environnement (pour le bandeau « TEST » de l'interface) */
+  r.get('/meta', { schema: { tags: ['Public'], summary: "Environnement de cette instance (development, staging ou production) : l'interface affiche un bandeau hors production" } }, async () => ({
+    environment: config.appEnv,
+  }));
+
   /* ------------------------------------------------------------------ Catalogue public des formules */
   r.get('/plans', {
     schema: { tags: ['Public'], summary: 'Formules et tarifs publics' },

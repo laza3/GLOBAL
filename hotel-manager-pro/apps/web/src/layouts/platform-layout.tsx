@@ -10,6 +10,7 @@ import { useDocumentTitle } from '../lib/use-title';
 import { CommandPalette, useCommandShortcut, type CommandEntry, type MenuItem } from '../ui/overlay';
 import { Sidebar, TabBar, Topbar, useOnline, type NavItem } from '../ui/shell';
 import { useTheme } from '../ui/theme';
+import { EnvironmentBanner } from './environment-banner';
 
 const GROUPS: Array<{ label: string; items: NavItem[] }> = [
   {
@@ -117,6 +118,7 @@ export function PlatformLayout() {
               initials={initials(admin.fullName)}
             />
           </div>
+          <EnvironmentBanner />
           <main id="main" tabIndex={-1} className="flex min-w-0 flex-col gap-4 pb-28 outline-none lg:pb-6">
             <Outlet />
           </main>

@@ -1,3 +1,4 @@
+import { type AppEnvironment } from '@hmp/db';
 import { hkdfSync } from 'node:crypto';
 import { z } from 'zod';
 
@@ -7,6 +8,12 @@ const bool = z
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  /**
+   * Environnement de déploiement : development (ordinateur du développeur), staging (tests en ligne, données FICTIVES) ou production
+   * (données réelles). Facultatif hors production (défaut : development) ; OBLIGATOIRE avec NODE_ENV=production, où il doit valoir
+   * staging ou production. Il est comparé au marqueur de la base au démarrage : une base d'un autre environnement est refusée.
+   */
+  APP_ENV: z.enum(['development', 'staging', 'production']).optional(),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   HOST: z.string().default('127.0.0.1'),
   /** Pool de l'API pour un établissement (rôle hmp_app). */
@@ -42,7 +49,9 @@ const schema = z.object({
   DB_SWITCH_ROLE: bool.default(false),
 });
 
-export type Config = Omit<z.infer<typeof schema>, 'ALLOWED_ORIGINS' | 'COOKIE_SECURE' | 'ENCRYPTION_KEY'> & {
+export type Config = Omit<z.infer<typeof schema>, 'ALLOWED_ORIGINS' | 'COOKIE_SECURE' | 'ENCRYPTION_KEY' | 'APP_ENV'> & {
+  /** Environnement de déploiement (jamais déduit de l'adresse de la base : explicite, et contrôlé contre la base). */
+  appEnv: AppEnvironment;
   allowedOrigins: string[];
   cookieSecure: boolean;
   /** Clé AES-256 (32 octets). */
@@ -56,7 +65,12 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     const problems = parsed.error.issues.map((i) => `  - ${i.path.join('.')} : ${i.message}`).join('\n');
     throw new Error(`Configuration invalide :\n${problems}`);
   }
-  const { ALLOWED_ORIGINS, COOKIE_SECURE, ENCRYPTION_KEY, ...rest } = parsed.data;
+  const { ALLOWED_ORIGINS, COOKIE_SECURE, ENCRYPTION_KEY, APP_ENV, ...rest } = parsed.data;
+  const secureMode = rest.NODE_ENV === 'production';
+  if (secureMode && !APP_ENV) throw new Error('Configuration invalide : APP_ENV est obligatoire avec NODE_ENV=production (staging ou production).');
+  if (secureMode && APP_ENV === 'development') throw new Error('Configuration invalide : APP_ENV=development est incompatible avec NODE_ENV=production.');
+  if (!secureMode && APP_ENV && APP_ENV !== 'development') throw new Error(`Configuration invalide : APP_ENV=${APP_ENV} exige NODE_ENV=production (mêmes réglages de sécurité que la production).`);
+  const appEnv: AppEnvironment = APP_ENV ?? 'development';
   const cookieSecure = COOKIE_SECURE ?? rest.NODE_ENV === 'production';
   if (rest.NODE_ENV === 'production' && !cookieSecure) {
     throw new Error('Configuration invalide : COOKIE_SECURE ne peut pas être désactivé en production.');
@@ -70,5 +84,5 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   } else {
     encryptionKey = Buffer.from(hkdfSync('sha256', rest.CSRF_SECRET, 'hmp', 'document-encryption', 32));
   }
-  return { ...rest, allowedOrigins: ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean), cookieSecure, encryptionKey, encryptionKeyVersion: 1 };
+  return { ...rest, appEnv, allowedOrigins: ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean), cookieSecure, encryptionKey, encryptionKeyVersion: 1 };
 }

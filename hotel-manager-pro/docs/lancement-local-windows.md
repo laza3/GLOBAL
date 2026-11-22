@@ -77,8 +77,17 @@ Attendez environ une minute : Chrome s'ouvre sur **http://127.0.0.1:5173**. Gard
 
 ## Étape 7 — Tester
 
+- **Le plus simple : un hôtel de démonstration déjà rempli** (12 chambres, 6 clients fictifs, 6 réservations). Laissez la fenêtre de l'étape 6 ouverte, ouvrez une **deuxième** Invite de commandes et tapez :
+
+```bash
+cd /d %USERPROFILE%\Documents\GLOBAL\hotel-manager-pro
+pnpm api:seed-demo
+```
+
+  La commande affiche un e-mail et un mot de passe (**notez-les**, ils ne sont affichés qu'une fois). Connectez-vous avec sur la **page d'accueil** `http://127.0.0.1:5173/connexion`. Cette commande refuse de s'exécuter sur une instance de production : les données fictives ne peuvent pas se mélanger aux vraies.
+
 - **Hôtel de test** : sur la page d'accueil, « Créer un compte » (ou http://127.0.0.1:5173/inscription). Un établissement avec une période d'essai est créé ; vous arrivez dans la vue d'ensemble (chambres, réservations, calendrier, facturation, restaurant, rapports…).
-- **Console super-administrateur** : http://127.0.0.1:5173/platform/connexion avec l'e-mail et le mot de passe de l'étape 5.
+- **Console super-administrateur** : http://127.0.0.1:5173/platform/connexion (**une autre page que l'accueil**) avec l'e-mail et le mot de passe de l'étape 5. Aucun établissement n'est nécessaire pour s'y connecter. Cette console gère les abonnements, paiements, licences et l'assistance ; elle ne montre volontairement pas l'intérieur d'un hôtel.
 - Les paiements sont **validés manuellement** (aucun paiement automatique n'est simulé). Le « mot de passe oublié » par e-mail est indisponible tant qu'aucun serveur e-mail n'est configuré : c'est normal.
 
 ## Arrêter et relancer
@@ -97,7 +106,6 @@ pnpm local:start
 cd /d %USERPROFILE%\Documents\GLOBAL\hotel-manager-pro
 git pull
 pnpm install
-pnpm local:setup
 pnpm local:start
 ```
 
@@ -112,6 +120,7 @@ pnpm local:start
 | `PostgreSQL ne répond pas sur 127.0.0.1:5432` | Windows → « Services » → `postgresql-x64-16` → Démarrer. |
 | `port … occupé` / l'API ne démarre pas | Un autre programme utilise le port 3000 ou 5173 : fermez-le (ou redémarrez le PC), puis `pnpm local:start`. |
 | Chrome ne s'ouvre pas | Ouvrez Chrome et tapez `127.0.0.1:5173` dans la barre d'adresse. |
+| Mauvais compte sur la page d'accueil | L'accueil `/connexion` est pour les comptes d'hôtel ; le super-administrateur se connecte sur `/platform/connexion`. |
 | Repartir d'une base vide | Fermez le logiciel, supprimez le fichier `.env`, puis dans l'Invite de commandes : `"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "DROP DATABASE hmp_dev"` et recommencez l'étape 5. |
 
 > Ces scripts ont été testés sous Linux (préparation, démarrage, inscription d'un hôtel et connexion à la console dans un vrai navigateur, arrêt propre). Ils n'ont pas pu être exécutés sous Windows dans l'environnement de développement : si un message d'erreur apparaît, copiez-le tel quel.

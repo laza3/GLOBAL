@@ -19,6 +19,7 @@
     "api:start": "pnpm --filter @hmp/api start",
     "api:create-admin": "pnpm --filter @hmp/api create-admin",
     "api:lifecycle": "pnpm --filter @hmp/api lifecycle",
+    "api:seed-demo": "pnpm --filter @hmp/api seed-demo",
     "local:setup": "pnpm --dir apps/api exec tsx scripts/local.ts setup",
     "local:start": "pnpm --dir apps/api exec tsx scripts/local.ts start",
     "check:e2e": "pnpm --filter @hmp/web check:e2e"

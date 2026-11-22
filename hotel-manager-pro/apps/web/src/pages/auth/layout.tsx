@@ -2,6 +2,7 @@ import { ShieldCheck, WalletCards, Globe2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { PageBackdrop } from '../../auth/screens';
+import { EnvironmentBanner } from '../../layouts/environment-banner';
 import { ThemeToggle } from '../../ui/theme';
 import { BrandMark } from '../../ui/shell';
 
@@ -43,6 +44,7 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
         </aside>
 
         <main id="main" className="order-1 flex flex-col gap-6 lg:order-2">
+          <EnvironmentBanner />
           <div className="flex items-center justify-between lg:hidden">
             <BrandMark />
           </div>

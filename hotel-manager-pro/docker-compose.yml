@@ -43,6 +43,7 @@ services:
     depends_on: { roles: { condition: service_completed_successfully } }
     environment: &api-env
       NODE_ENV: production
+      APP_ENV: ${APP_ENV:-production}   # production (défaut) ou staging : doit correspondre à la base (marqueur d'environnement)
       DATABASE_URL_APP: postgres://hmp_app:${APP_DB_PASSWORD}@db:5432/hmp
       DATABASE_URL_PLATFORM: postgres://hmp_platform:${PLATFORM_DB_PASSWORD}@db:5432/hmp
       CSRF_SECRET: ${CSRF_SECRET:?définir CSRF_SECRET (openssl rand -base64 48)}

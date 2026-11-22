@@ -131,6 +131,7 @@ async function setup() {
       `DATABASE_URL_APP=postgres://hmp_app:${appPassword}@${HOST}:${PORT}/${dbName}`,
       `DATABASE_URL_PLATFORM=postgres://hmp_platform:${platformPassword}@${HOST}:${PORT}/${dbName}`,
       'NODE_ENV=development',
+      'APP_ENV=development',
       'HOST=127.0.0.1',
       `PORT=${API_PORT}`,
       `ALLOWED_ORIGINS=http://127.0.0.1:${WEB_PORT},http://localhost:${WEB_PORT}`,
@@ -217,6 +218,19 @@ function openBrowser(url: string) {
 async function start() {
   if (!existsSync(ENV_FILE)) fail('Fichier .env introuvable : lancez d\'abord « pnpm local:setup ».');
   const env = { ...process.env, ...readEnvFile() };
+  // Nouvelle version récupérée avec « git pull » : les nouvelles tables sont créées automatiquement avant le démarrage
+  if (env.DATABASE_ADMIN_URL) {
+    const client = new pg.Client({ connectionString: env.DATABASE_ADMIN_URL });
+    try {
+      await client.connect();
+      const { applied } = await migrate(client);
+      if (applied.length) say(`✔ Base mise à jour : ${applied.length} nouvelle(s) migration(s) appliquée(s).`);
+    } catch (e) {
+      fail(`Mise à jour de la base impossible : ${(e as Error).message}. PostgreSQL est-il démarré ?`);
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  }
   const apiUrl = `http://127.0.0.1:${API_PORT}`;
   const webUrl = `http://127.0.0.1:${WEB_PORT}`;
   process.on('SIGINT', () => { say('\nArrêt en cours…'); stopAll(0); });

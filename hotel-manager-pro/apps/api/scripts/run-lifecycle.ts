@@ -7,12 +7,14 @@
  */
 import { loadConfig } from '../src/config';
 import { createDb } from '../src/db';
+import { assertDatabaseEnvironment } from '../src/lib/environment';
 import { SettingsCache } from '../src/lib/settings';
 import { runLifecycle } from '../src/services/lifecycle';
 
 const config = loadConfig({ LOG_LEVEL: 'silent', ...process.env });
 const db = createDb({ appUrl: config.DATABASE_URL_APP, platformUrl: config.DATABASE_URL_PLATFORM, switchRole: config.DB_SWITCH_ROLE });
 try {
+  await assertDatabaseEnvironment(db, config);
   const summary = await runLifecycle({ db, config, settings: new SettingsCache(db, 0), now: () => new Date(), mailer: { configured: false, send: async () => false } });
   console.log(JSON.stringify({ at: new Date().toISOString(), ...summary }));
 } catch (err) {

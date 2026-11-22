@@ -26,10 +26,10 @@ describe('chiffrement des pièces d\'identité', () => {
 });
 
 describe('configuration de la clé', () => {
-  const base = { DATABASE_URL_APP: 'x', DATABASE_URL_PLATFORM: 'x', CSRF_SECRET: 'z'.repeat(40) };
+  const base = { DATABASE_URL_APP: 'x', DATABASE_URL_PLATFORM: 'x', CSRF_SECRET: 'z'.repeat(40), APP_ENV: 'production' };
   it('est dérivée en développement, stable d\'un démarrage à l\'autre', () => {
-    const a = loadConfig({ ...base, NODE_ENV: 'development' });
-    const b = loadConfig({ ...base, NODE_ENV: 'development' });
+    const a = loadConfig({ ...base, APP_ENV: 'development', NODE_ENV: 'development' });
+    const b = loadConfig({ ...base, APP_ENV: 'development', NODE_ENV: 'development' });
     expect(a.encryptionKey).toHaveLength(32);
     expect(a.encryptionKey.equals(b.encryptionKey)).toBe(true);
   });
