@@ -191,7 +191,8 @@ await download(PG_ZIP, zip);
 const extracted = join(CACHE, 'pg-extracted');
 rmSync(extracted, { recursive: true, force: true });
 mkdirSync(extracted, { recursive: true });
-if (WIN) run('tar', ['-xf', zip, '-C', extracted]); else run('unzip', ['-q', zip, '-d', extracted]);
+// Windows : « tar.exe » de Windows (bsdtar, lit les .zip). Celui de Git Bash (GNU tar), prioritaire dans le PATH, prend « D:\… » pour un serveur distant.
+if (WIN) run(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', extracted]); else run('unzip', ['-q', zip, '-d', extracted]);
 const pgRoot = join(extracted, 'pgsql');
 if (!existsSync(join(pgRoot, 'bin', 'postgres.exe'))) throw new Error('Archive PostgreSQL inattendue : bin/postgres.exe introuvable.');
 for (const d of ['bin', 'lib', 'share']) cpSync(join(pgRoot, d), join(PAYLOAD, 'runtime', 'pg', d), { recursive: true });
