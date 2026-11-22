@@ -82,6 +82,18 @@ export const ERRORS = {
   possible_duplicate: { status: 409, message: 'Un client semblable existe déjà. Vérifiez la liste, ou confirmez la création.' },
   guest_has_active_stays: { status: 409, message: 'Ce client a des séjours en cours ou à venir : terminez-les ou annulez-les avant de l\'anonymiser.' },
   encryption_unavailable: { status: 500, message: 'Le chiffrement des pièces d\'identité n\'est pas configuré sur ce serveur.' },
+  capacity_exceeded: { status: 422, message: "Cette chambre n'a pas assez de places pour ce nombre de personnes." },
+  min_stay_not_met: { status: 422, message: 'Séjour trop court : cette période impose un nombre de nuits minimal.' },
+  checkin_in_past: { status: 422, message: "La date d'arrivée est déjà passée." },
+  reservation_not_found: { status: 404, message: 'Réservation introuvable.' },
+  tax_rule_not_found: { status: 404, message: 'Règle de taxe introuvable.' },
+  deposit_exceeds_total: { status: 422, message: "L'acompte demandé dépasse le total de la réservation." },
+  reservation_not_editable: { status: 409, message: 'Cette réservation ne peut plus être modifiée dans son état actuel.' },
+  invalid_status_transition: { status: 409, message: 'Ce changement d\'état n\'est pas possible pour cette réservation.' },
+  last_room_line: { status: 409, message: 'Dernière chambre de la réservation : annulez plutôt la réservation entière.' },
+  no_show_too_early: { status: 422, message: 'Une arrivée à venir ne peut pas encore être marquée « non présenté ».' },
+  option_expiry_invalid: { status: 422, message: "L'échéance d'une option doit être dans le futur (un an au plus)." },
+  idempotency_key_reused: { status: 422, message: 'Cette clé d\'idempotence a déjà servi pour une autre demande.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

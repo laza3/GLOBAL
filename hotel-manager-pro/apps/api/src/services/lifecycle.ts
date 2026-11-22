@@ -8,6 +8,8 @@ export interface LifecycleSummary {
   pastDue: number;
   expired: number;
   renewalInvoices: number;
+  /** Options de réservation expirées (chambres libérées), tous établissements. */
+  tentativesExpired: number;
 }
 
 /**
@@ -18,6 +20,7 @@ export interface LifecycleSummary {
  *  3. échéance dépassée sans renouvellement  active    → past_due
  *  4. tolérance dépassée                     past_due  → expired
  *  5. facture de renouvellement émise N jours avant l'échéance (une seule par période)
+ *  6. options de réservation échues : annulées, chambres libérées (aucune donnée hôtelière n'est lue par la plateforme)
  *
  * Idempotent et sans effet de bord hors base. Les DROITS D'USAGE ne dépendent pas de cette tâche : ils sont calculés à
  * partir des dates à chaque requête ; elle met à jour l'état affiché, l'historique et les factures.
@@ -81,6 +84,7 @@ export async function runLifecycle(deps: AppDeps): Promise<LifecycleSummary> {
       if (await createRenewalInvoice(tx, deps, s.id)) renewalInvoices++;
     }
 
-    return { trialsExpired, cancelledAtPeriodEnd, pastDue, expired, renewalInvoices };
+    const { rows: opt } = await tx.query<{ n: number }>('SELECT expire_all_tentatives() AS n');
+    return { trialsExpired, cancelledAtPeriodEnd, pastDue, expired, renewalInvoices, tentativesExpired: opt[0]!.n };
   });
 }

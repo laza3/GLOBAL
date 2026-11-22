@@ -191,4 +191,4 @@ export const useReplyPlatformTicket = () => useAction((i: { id: string; body: st
 export const useUpdateTicket = () => useAction((i: { id: string; status?: TicketStatus; priority?: TicketPriority; assignToMe?: boolean }) => { const { id, ...body } = i; return patch(`/platform/tickets/${id}`, body); });
 export const useUpdateSetting = () => useAction((i: { key: string; value: unknown }) => patch(`/platform/settings/${i.key}`, { value: i.value }));
 export const useUpdateConnector = () => useAction((i: { code: string; instructions?: string | null; isEnabled?: boolean }) => { const { code, ...body } = i; return patch(`/platform/payment-connectors/${code}`, body); });
-export const useRunLifecycle = () => useAction(() => post<{ trialsExpired: number; cancelledAtPeriodEnd: number; pastDue: number; expired: number; renewalInvoices: number }>('/platform/jobs/lifecycle'));
+export const useRunLifecycle = () => useAction(() => post<{ trialsExpired: number; cancelledAtPeriodEnd: number; pastDue: number; expired: number; renewalInvoices: number; tentativesExpired: number }>('/platform/jobs/lifecycle'));

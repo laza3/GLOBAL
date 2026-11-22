@@ -7,3 +7,5 @@ export * from './password';
 export * from './phone';
 export * from './permissions';
 export * from './pricing';
+export * from './reservations';
+export * from './taxes';

@@ -153,7 +153,7 @@ export default function PlatformDashboard() {
               run.mutate(undefined, {
                 onSuccess: (r) =>
                   toast.success(
-                    `Cycle de vie exécuté : ${r.trialsExpired} essai(s) expiré(s), ${r.pastDue} impayé(s), ${r.expired} expiration(s), ${r.cancelledAtPeriodEnd} résiliation(s), ${r.renewalInvoices} facture(s) de renouvellement.`,
+                    `Cycle de vie exécuté : ${r.trialsExpired} essai(s) expiré(s), ${r.pastDue} impayé(s), ${r.expired} expiration(s), ${r.cancelledAtPeriodEnd} résiliation(s), ${r.renewalInvoices} facture(s) de renouvellement, ${r.tentativesExpired} option(s) de réservation expirée(s).`,
                   ),
                 onError: (e) => toast.error(isApiError(e) ? e.message : "L'exécution a échoué."),
               })

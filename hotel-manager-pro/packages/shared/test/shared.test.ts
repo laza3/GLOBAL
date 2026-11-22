@@ -249,3 +249,110 @@ describe('téléphone normalisé', () => {
     expect(normalizePhone('1'.repeat(20))).toBeNull();
   });
 });
+
+import { computeTotals, type TaxRule } from '../src/taxes';
+import { canTransition, isActiveStatus } from '../src/reservations';
+
+describe('totaux d\'un séjour et taxes', () => {
+  const vat = (inclusive: boolean, bps = 2000): TaxRule => ({ id: 'vat', name: 'TVA', kind: 'percentage', rateBps: bps, inclusive });
+  const stay: TaxRule = { id: 'stay', name: 'Taxe de séjour', kind: 'fixed_per_person_night', fixedAmount: 1000, inclusive: false };
+  const rates = [100000, 100000, 100000];
+  it('sans taxe : total = somme des nuits − remise', () => {
+    expect(computeTotals({ rates, discount: 0, personNights: 6, rules: [] })).toEqual({ subtotal: 300000, discount: 0, tax: 0, total: 300000, taxes: [] });
+    expect(computeTotals({ rates, discount: 50000, personNights: 6, rules: [] })).toMatchObject({ subtotal: 300000, discount: 50000, total: 250000 });
+    expect(computeTotals({ rates, discount: 9_999_999, personNights: 6, rules: [] })).toMatchObject({ discount: 300000, total: 0 }); // jamais plus que le tarif
+    expect(computeTotals({ rates: [], discount: 5, personNights: 0, rules: [] }).total).toBe(0);
+  });
+
+  it('taxe en pourcentage AJOUTÉE : calculée sur le hors taxe après remise', () => {
+    const t = computeTotals({ rates, discount: 60000, personNights: 6, rules: [vat(false)] });
+    expect(t).toMatchObject({ subtotal: 300000, discount: 60000, tax: 48000, total: 288000 });
+    expect(t.taxes).toEqual([{ ruleId: 'vat', name: 'TVA', amount: 48000, inclusive: false }]);
+    expect(t.total).toBe(t.subtotal - t.discount + t.tax);
+  });
+
+  it('taxe INCLUSE (tarif TTC) : le total ne change pas, la taxe en est extraite ; la remise suit le TTC', () => {
+    const t = computeTotals({ rates, discount: 0, personNights: 6, rules: [vat(true)] });
+    expect(t.total).toBe(300000); // le client paie le tarif affiché
+    expect(t.subtotal).toBe(250000);
+    expect(t.tax).toBe(50000);
+    expect(t.subtotal - t.discount + t.tax).toBe(t.total);
+    const d = computeTotals({ rates, discount: 30000, personNights: 6, rules: [vat(true)] });
+    expect(d.total).toBe(270000);
+    expect(d.subtotal - d.discount + d.tax).toBe(d.total);
+    expect(d.tax).toBe(45000);
+  });
+
+  it('taxe de séjour fixe : par personne et par nuit, jamais remisée ; cumulée avec une TVA', () => {
+    const t = computeTotals({ rates, discount: 30000, personNights: 6, rules: [vat(false), stay] });
+    expect(t.taxes.map((x) => [x.name, x.amount])).toEqual([['TVA', 54000], ['Taxe de séjour', 6000]]);
+    expect(t.total).toBe(270000 + 54000 + 6000);
+    expect(t.subtotal - t.discount + t.tax).toBe(t.total);
+  });
+
+  it('plusieurs taxes incluses : répartition exacte au prorata, sans centime perdu', () => {
+    const rules: TaxRule[] = [vat(true, 1000), { ...vat(true, 500), id: 'tourism', name: 'Taxe tourisme' }];
+    for (const r of [[33333], [100001, 99999], [7, 11, 13]]) {
+      const t = computeTotals({ rates: r, discount: 0, personNights: 0, rules });
+      expect(t.subtotal - t.discount + t.tax, `${r}`).toBe(t.total);
+      expect(t.total).toBe(r.reduce((a, b) => a + b, 0));
+      expect(t.taxes.reduce((s, x) => s + x.amount, 0)).toBe(t.tax);
+    }
+  });
+
+  it('l\'identité total = hors taxe − remise + taxes tient pour des milliers de combinaisons', () => {
+    let seed = 42;
+    const rnd = (n: number) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+    for (let i = 0; i < 2000; i++) {
+      const r = Array.from({ length: 1 + rnd(6) }, () => rnd(500000));
+      const rules: TaxRule[] = [];
+      if (rnd(2)) rules.push(vat(rnd(2) === 0, 1 + rnd(3000)));
+      if (rnd(3) === 0) rules.push({ ...vat(rnd(2) === 0, 1 + rnd(1500)), id: 'b', name: 'B' });
+      if (rnd(2)) rules.push(stay);
+      const t = computeTotals({ rates: r, discount: rnd(300000), personNights: rnd(20), rules });
+      expect(t.subtotal - t.discount + t.tax, JSON.stringify({ r, rules })).toBe(t.total);
+      expect(t.discount).toBeLessThanOrEqual(t.subtotal);
+      expect(t.total).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+describe('transitions de réservation', () => {
+  it('suit le cycle de vie réel et interdit les retours en arrière', () => {
+    expect(canTransition('tentative', 'confirmed')).toBe(true);
+    expect(canTransition('confirmed', 'checked_in')).toBe(true);
+    expect(canTransition('checked_in', 'checked_out')).toBe(true);
+    expect(canTransition('checked_in', 'cancelled')).toBe(false); // un client présent ne s'« annule » pas
+    expect(canTransition('checked_out', 'confirmed')).toBe(false);
+    expect(canTransition('cancelled', 'confirmed')).toBe(false);
+    expect(canTransition('confirmed', 'no_show')).toBe(true);
+    expect(isActiveStatus('confirmed')).toBe(true);
+    expect(isActiveStatus('cancelled')).toBe(false);
+    expect(isActiveStatus('checked_out')).toBe(false);
+  });
+});
+
+import { spreadDiscount } from '../src/taxes';
+
+describe('répartition d\'une remise sur les nuits', () => {
+  it('prorata, somme exacte, jamais plus que le tarif d\'une nuit', () => {
+    expect(spreadDiscount([100000, 100000, 100000], 30000)).toEqual([10000, 10000, 10000]);
+    expect(spreadDiscount([100, 100, 100], 100)).toEqual([34, 33, 33]); // le plus fort reste d'abord, à égalité la première nuit
+    expect(spreadDiscount([100000, 300000], 40000)).toEqual([10000, 30000]);
+    expect(spreadDiscount([100, 200], 9999)).toEqual([100, 200]); // plafonnée au tarif
+    expect(spreadDiscount([100, 200], 0)).toEqual([0, 0]);
+    expect(spreadDiscount([], 50)).toEqual([]);
+    expect(spreadDiscount([0, 0], 50)).toEqual([0, 0]);
+  });
+  it('la somme est toujours exacte (propriété sur des milliers de cas)', () => {
+    let seed = 7;
+    const rnd = (n: number) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+    for (let i = 0; i < 3000; i++) {
+      const rates = Array.from({ length: 1 + rnd(8) }, () => rnd(400000));
+      const d = rnd(1_500_000);
+      const out = spreadDiscount(rates, d);
+      expect(out.reduce((a, b) => a + b, 0), JSON.stringify({ rates, d })).toBe(Math.min(d, rates.reduce((a, b) => a + b, 0)));
+      out.forEach((x, k) => { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(rates[k]!); });
+    }
+  });
+});
