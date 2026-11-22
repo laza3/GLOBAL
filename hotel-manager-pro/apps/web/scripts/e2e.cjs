@@ -383,6 +383,100 @@ async function modulesJourney(browser, hotel, admin) {
     ok(/from=2027-07-15/.test(hotel.url()), 'la navigation par période est dans l\'adresse (lien partageable)');
   }
 
+  section('Facturation client : note, encaissements, devises, facture PDF, avoir, remboursement');
+  {
+    let dlg;
+    await hotel.goto(`${BASE}/billing`, { waitUntil: 'networkidle' });
+    ok(!/Bientôt/.test(await hotel.getByRole('button', { name: /^Facturation/ }).innerText().catch(() => '')), 'le module Facturation n\'est plus « Bientôt »');
+    await hotel.getByRole('link', { name: /^RES-\d{4}-0002$/ }).click();
+    await hotel.waitForURL(/\/billing\/folios\/[0-9a-f-]{36}$/);
+    ok(/260\s?000\sAr/.test(await bodyText(hotel)), 'la note porte la charge d\'hébergement de la réservation (nuit de week-end)');
+
+    // taxes : configuration puis effet sur une NOUVELLE réservation seulement (jamais sur l'existante)
+    await hotel.getByRole('button', { name: 'Ajouter une charge' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByRole('button', { name: 'Ajouter à la note' }).click();
+    ok(/Décrivez la charge/.test(await dlg.innerText()), 'une charge sans description est refusée');
+    await dlg.getByLabel(/^Description/).fill('Blanchisserie');
+    await dlg.getByLabel(/^Prix unitaire/).fill('20000');
+    await dlg.getByRole('button', { name: 'Ajouter à la note' }).click();
+    ok(await toast(hotel, 'Charge ajoutée'), 'charge ajoutée');
+    ok(/280\s?000\sAr/.test(await hotel.getByLabel('Totaux de la note').innerText()), 'total de la note : 260 000 + 20 000 = 280 000 Ar');
+
+    // encaissement : référence exigée hors espèces, dépassement refusé, espèces OK
+    await hotel.getByRole('button', { name: 'Encaisser' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Moyen/).click();
+    await hotel.getByRole('option', { name: 'MVola' }).click();
+    await dlg.getByLabel(/^Montant reçu/).fill('100000');
+    await dlg.getByRole('button', { name: /Enregistrer l'encaissement/ }).click();
+    ok(/référence de la transaction/.test(await dlg.innerText()), 'Mobile Money exige la référence de la transaction (rien n\'est simulé)');
+    await dlg.getByLabel(/^Référence/).fill('MP260101.1234.A56789');
+    await dlg.getByRole('button', { name: /Enregistrer l'encaissement/ }).click();
+    ok(await toast(hotel, /Encaissement enregistré — reste 180\s?000/), 'encaissement MVola enregistré');
+    await hotel.getByRole('button', { name: 'Encaisser' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Montant reçu/).fill('999999');
+    await dlg.getByLabel(/^Moyen/).click();
+    await hotel.getByRole('option', { name: 'Espèces' }).click();
+    await dlg.getByRole('button', { name: /Enregistrer l'encaissement/ }).click();
+    ok(await visible(dlg.getByText(/dépasse le solde/)), 'un encaissement supérieur au solde est refusé, dans la fenêtre');
+    // paiement en euros : taux demandé, contre-valeur affichée
+    await dlg.getByLabel(/^Devise reçue/).click();
+    await hotel.getByRole('option', { name: /Euro/ }).click();
+    await dlg.getByLabel(/^Montant reçu/).fill('10');
+    await dlg.getByLabel(/^Taux/).fill('5000');
+    ok(/50\s?000\sAr/.test(await dlg.innerText()), 'la contre-valeur d\'un paiement en euros est annoncée avant validation');
+    await dlg.getByRole('button', { name: /Enregistrer l'encaissement/ }).click();
+    ok(await toast(hotel, /reste 130\s?000/), 'paiement en euros converti au taux saisi');
+    ok(/taux 5000/.test(await bodyText(hotel)), 'le taux utilisé est conservé avec le paiement');
+
+    // facture : émise, numérotée, PDF réel
+    await hotel.getByRole('button', { name: 'Facturer' }).click();
+    await hotel.getByRole('dialog').getByRole('button', { name: 'Émettre la facture' }).click();
+    ok(await toast(hotel, /Facture [A-Z0-9-]+-\d{4}-0001 émise/), 'facture numérotée émise');
+    const pdfLink = hotel.getByRole('link', { name: /Télécharger le PDF/ }).first();
+    const href = await pdfLink.getAttribute('href');
+    const pdf = await hotel.request.get(`${BASE}${href}`);
+    const bytes = await pdf.body();
+    ok(pdf.status() === 200 && (pdf.headers()['content-type'] || '').includes('application/pdf') && bytes.subarray(0, 5).toString() === '%PDF-' && bytes.length > 1500, 'le PDF de la facture est un vrai PDF', `${pdf.status()} ${bytes.length}`);
+    ok((await hotel.getByRole('button', { name: 'Facturer' }).count()) === 0, 'plus rien à facturer sur la note');
+
+    // avoir partiel, puis remboursement
+    await hotel.getByRole('button', { name: 'Avoir', exact: true }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Montant TTC/).fill('30000');
+    await dlg.getByRole('button', { name: "Émettre l'avoir" }).click();
+    ok(/Indiquez le motif/.test(await dlg.innerText()), 'le motif de l\'avoir est exigé');
+    await dlg.getByLabel(/^Motif/).fill('Geste commercial');
+    await dlg.getByRole('button', { name: "Émettre l'avoir" }).click();
+    ok(await toast(hotel, /Avoir [A-Z0-9-]+-AV-\d{4}-0001 émis/), 'avoir partiel émis');
+    ok(/250\s?000\sAr/.test(await hotel.getByLabel('Totaux de la note').innerText()), 'la note est créditée de l\'avoir (280 000 − 30 000)');
+    await hotel.getByRole('button', { name: /Rembourser le paiement/ }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Motif/).fill('Erreur de saisie');
+    await dlg.getByLabel(/^Montant à rembourser/).fill('5000000');
+    await dlg.getByRole('button', { name: /Enregistrer le remboursement/ }).click();
+    ok(/Au plus/.test(await dlg.innerText()), 'un remboursement supérieur au paiement est refusé');
+    await dlg.getByLabel(/^Montant à rembourser/).fill('10000');
+    await dlg.getByRole('button', { name: /Enregistrer le remboursement/ }).click();
+    ok(await toast(hotel, 'Remboursement enregistré'), 'remboursement partiel enregistré');
+    ok(/Remboursement/.test(await bodyText(hotel)), 'le remboursement figure dans les encaissements (le paiement d\'origine reste intact)');
+
+    // journal et réglages
+    await hotel.goto(`${BASE}/billing/payments`, { waitUntil: 'networkidle' });
+    ok(/Net encaissé/.test(await bodyText(hotel)), 'le journal des encaissements donne le net encaissé');
+    await hotel.goto(`${BASE}/billing/settings`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Nouvelle taxe' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Nom/).fill('TVA');
+    await dlg.getByLabel(/^Taux/).fill('20');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Taxe enregistrée'), 'taxe créée');
+    await hotel.goto(`${BASE}/billing/invoices`, { waitUntil: 'networkidle' });
+    ok((await hotel.getByRole('row').filter({ hasText: /FAC|AV/ }).count()) >= 2, 'la liste montre la facture et l\'avoir');
+  }
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -782,12 +876,14 @@ async function modulesJourney(browser, hotel, admin) {
         await h.locator('input[autocomplete="current-password"]').fill(NEW_PASSWORD);
         await h.getByRole('button', { name: 'Se connecter' }).click();
         await h.waitForURL('**/overview');
-        for (const route of ['/overview', '/reservations', '/reservations/new', '/calendar', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
+        for (const route of ['/overview', '/reservations', '/reservations/new', '/calendar', '/billing', '/billing/invoices', '/billing/payments', '/billing/settings', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
           await h.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
           await audit(h, `${route} — ${scheme} ${size.n}`, size.n !== 'tablette' ? `hotel${route.replace(/\//g, '-')}-${scheme}-${size.n}` : null);
         }
         const gid = (await (await h.request.get(`${BASE}/api/v1/guests`)).json()).items?.[0]?.id;
         if (gid) { await h.goto(`${BASE}/guests/${gid}`, { waitUntil: 'networkidle' }); await audit(h, `/guests/:id — ${scheme} ${size.n}`, size.n === 'mobile' ? `hotel-guest-${scheme}` : null); }
+        const fid = (await (await h.request.get(`${BASE}/api/v1/folios`)).json()).items?.[0]?.id;
+        if (fid) { await h.goto(`${BASE}/billing/folios/${fid}`, { waitUntil: 'networkidle' }); await audit(h, `/billing/folios/:id — ${scheme} ${size.n}`, size.n === 'mobile' ? `hotel-folio-${scheme}` : null); }
         const rid = (await (await h.request.get(`${BASE}/api/v1/reservations`)).json()).items?.[0]?.id;
         if (rid) { await h.goto(`${BASE}/reservations/${rid}`, { waitUntil: 'networkidle' }); await audit(h, `/reservations/:id — ${scheme} ${size.n}`, size.n === 'mobile' ? `hotel-reservation-${scheme}` : null); }
         // fenêtres et panneaux (focus piégé, feuille basculante sur mobile)

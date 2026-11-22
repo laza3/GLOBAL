@@ -10,7 +10,7 @@ import { auditLabel } from '../../lib/audit-labels';
 import { formatDate, formatDay, plural } from '../../lib/format';
 import { ReservationBadge, SOURCE_LABEL } from '../../lib/reservation-status';
 import { useDocumentTitle } from '../../lib/use-title';
-import { Button } from '../../ui/button';
+import { Button, buttonVariants } from '../../ui/button';
 import { Badge, EmptyState, Skeleton, StateBadge } from '../../ui/data';
 import { ConfirmDialog } from '../../ui/overlay';
 import { Callout, DefinitionList, PageHeader, Panel } from '../../ui/page';
@@ -144,6 +144,7 @@ export default function ReservationDetailPage() {
             </dl>
             {d.depositRequired > 0 && (d.depositSatisfied ? <StateBadge tone="success">Acompte reçu</StateBadge> : <StateBadge tone="warning">Acompte attendu</StateBadge>)}
             <p className="text-[13px] text-ink-2">Les prix de chaque nuit sont figés à la réservation : un changement de tarif n'a pas d'effet sur cette réservation.</p>
+            {d.folioId && can('billing:read') && <Link to={`/billing/folios/${d.folioId}`} className={buttonVariants({ variant: 'secondary' })}>Ouvrir la note : encaisser, facturer</Link>}
           </Panel>
 
           <Panel title="Client et séjour">

@@ -59,6 +59,17 @@ export const routes: RouteObject[] = [
               { path: 'reservations/new', lazy: page(() => import('../pages/reservations/new'), (m) => m.default) },
               { path: 'reservations/:id', lazy: page(() => import('../pages/reservations/detail'), (m) => m.default) },
               { path: 'calendar', lazy: page(() => import('../pages/calendar/calendar'), (m) => m.default) },
+              {
+                path: 'billing',
+                lazy: page(() => import('../pages/billing/layout'), (m) => m.default),
+                children: [
+                  { index: true, lazy: page(() => import('../pages/billing/folios'), (m) => m.default) },
+                  { path: 'invoices', lazy: page(() => import('../pages/billing/invoices'), (m) => m.default) },
+                  { path: 'payments', lazy: page(() => import('../pages/billing/payments'), (m) => m.default) },
+                  { path: 'settings', lazy: page(() => import('../pages/billing/settings'), (m) => m.default) },
+                ],
+              },
+              { path: 'billing/folios/:id', lazy: page(() => import('../pages/billing/folio-detail'), (m) => m.default) },
               { path: 'guests', lazy: page(() => import('../pages/guests/guests'), (m) => m.default) },
               { path: 'guests/:id', lazy: page(() => import('../pages/guests/detail'), (m) => m.default) },
               ...soonRoutes,

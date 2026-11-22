@@ -7,6 +7,7 @@ import { AppError } from '../errors';
 import { auditHotel } from '../lib/audit';
 import { withIdempotency } from '../lib/idempotency';
 import { serialRows } from '../lib/query';
+import { syncRoomCharge } from '../services/folio';
 import { loadPricingContext } from '../services/pricing';
 import {
   addRoomLine, assertDates, expireTentatives, freeRooms, hotelClock, lockReservation, modifyRoomLine, recomputeTotals, syncReservationStatus,
@@ -305,12 +306,12 @@ export default async function reservationsRoutes(app: FastifyInstance) {
             b.status === 'tentative' ? b.tentativeExpiresAt : null, b.discount, me.membershipId],
         );
         const reservationId = inserted[0]!.id;
+        await tx.query('INSERT INTO folios (hotel_id, reservation_id, guest_id, currency) VALUES ($1, $2, $3, $4)', [me.hotelId, reservationId, b.guestId, clock.currency]);
         for (const line of b.rooms) await addRoomLine(tx, { hotelId: me.hotelId, reservationId, status: b.status, today: clock.today }, line);
 
         const totals = await recomputeTotals(tx, reservationId);
         if (b.depositRequired > totals.total) throw new AppError('deposit_exceeds_total');
         if (b.depositRequired > 0) await tx.query('UPDATE reservations SET deposit_required_amount = $2 WHERE id = $1', [reservationId, b.depositRequired]);
-        await tx.query('INSERT INTO folios (hotel_id, reservation_id, guest_id, currency) VALUES ($1, $2, $3, $4)', [me.hotelId, reservationId, b.guestId, clock.currency]);
 
         await auditHotel(tx, me, 'reservation.created', { type: 'reservation', id: reservationId },
           `Réservation ${reference} créée (${b.rooms.length} chambre${b.rooms.length > 1 ? 's' : ''}, ${b.status === 'tentative' ? 'option' : b.status === 'pending' ? 'en attente' : 'confirmée'})`,
@@ -466,6 +467,7 @@ export default async function reservationsRoutes(app: FastifyInstance) {
       if (!canTransition(cur.status, 'cancelled')) throw new AppError('invalid_status_transition');
       await tx.query("UPDATE reservation_rooms SET status = 'cancelled' WHERE reservation_id = $1 AND status IN ('tentative', 'pending', 'confirmed')", [req.params.id]);
       await tx.query("UPDATE reservations SET status = 'cancelled', cancelled_at = now(), cancel_reason = $2, tentative_expires_at = NULL WHERE id = $1", [req.params.id, req.body.reason]);
+      await syncRoomCharge(tx, req.params.id);
       await auditHotel(tx, me, 'reservation.cancelled', { type: 'reservation', id: req.params.id }, `Réservation ${cur.reference} annulée : ${req.body.reason}`, { before: { status: cur.status }, ip: req.ip, requestId: req.id });
       return loadDetail(tx, req.params.id);
     });
@@ -484,6 +486,7 @@ export default async function reservationsRoutes(app: FastifyInstance) {
       if (rows[0]?.d && rows[0].d > clock.today) throw new AppError('no_show_too_early');
       await tx.query("UPDATE reservation_rooms SET status = 'no_show' WHERE reservation_id = $1 AND status IN ('pending', 'confirmed')", [req.params.id]);
       await tx.query("UPDATE reservations SET status = 'no_show' WHERE id = $1", [req.params.id]);
+      await syncRoomCharge(tx, req.params.id);
       await auditHotel(tx, me, 'reservation.no_show', { type: 'reservation', id: req.params.id }, `Réservation ${cur.reference} : client non présenté`, { before: { status: cur.status }, ip: req.ip, requestId: req.id });
       return loadDetail(tx, req.params.id);
     });

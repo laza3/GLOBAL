@@ -63,7 +63,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     description: 'Réservations, arrivées et départs, clients, encaissements.',
     permissions: [
       ...prefix('reservations', 'calendar', 'reception'),
-      'rooms:read', 'guests:read', 'guests:manage', 'billing:read', 'payments:read', 'payments:record',
+      'rooms:read', 'guests:read', 'guests:manage', 'billing:read', 'billing:manage', 'payments:read', 'payments:record',
       'housekeeping:read', 'support:read', 'support:create',
     ],
   },

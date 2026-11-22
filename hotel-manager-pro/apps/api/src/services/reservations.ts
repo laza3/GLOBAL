@@ -4,6 +4,7 @@ import {
 } from '@hmp/shared';
 import type { Tx } from '../db';
 import { AppError } from '../errors';
+import { syncRoomCharge } from './folio';
 import { loadPricingContext, quote } from './pricing';
 
 /**
@@ -206,6 +207,7 @@ export async function recomputeTotals(tx: Tx, reservationId: string): Promise<{ 
             deposit_required_amount = LEAST(deposit_required_amount, $5) WHERE id = $1`,
     [reservationId, totals.subtotal, totals.discount, totals.tax, totals.total, JSON.stringify(totals.taxes)],
   );
+  await syncRoomCharge(tx, reservationId);
   return { subtotal: totals.subtotal, discount: totals.discount, tax: totals.tax, total: totals.total };
 }
 

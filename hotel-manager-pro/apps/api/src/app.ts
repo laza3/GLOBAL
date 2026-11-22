@@ -21,6 +21,7 @@ import { SettingsCache } from './lib/settings';
 import authRoutes from './modules/auth';
 import billingRoutes from './modules/billing';
 import calendarRoutes from './modules/calendar';
+import folioRoutes from './modules/folios';
 import guestsRoutes from './modules/guests';
 import hotelRoutes from './modules/hotel';
 import roomsRoutes from './modules/rooms';
@@ -155,6 +156,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(guestsRoutes, { prefix: '/api/v1' });
   await app.register(reservationsRoutes, { prefix: '/api/v1' });
   await app.register(calendarRoutes, { prefix: '/api/v1' });
+  await app.register(folioRoutes, { prefix: '/api/v1' });
   await app.register(billingRoutes, { prefix: '/api/v1' });
   await app.register(supportRoutes, { prefix: '/api/v1' });
   await app.register(platformAuthRoutes, { prefix: '/api/v1' });
