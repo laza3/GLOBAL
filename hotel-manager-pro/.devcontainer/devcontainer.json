@@ -1,0 +1,10 @@
+{
+  "name": "Hotel Manager Pro",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "postCreateCommand": "npm install -g pnpm@10.28.0 && pnpm install",
+  "customizations": {
+    "vscode": {
+      "settings": { "terminal.integrated.defaultProfile.linux": "bash" }
+    }
+  }
+}
