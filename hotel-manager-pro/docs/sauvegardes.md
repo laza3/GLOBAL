@@ -10,7 +10,20 @@ Une sauvegarde qui n'a jamais été restaurée est une hypothèse, pas une sauve
 
 **Les clés sont aussi importantes que les données.** `ENCRYPTION_KEY` (numéros de pièces d'identité) et `BACKUP_PASSPHRASE` (déchiffrement des sauvegardes) doivent être conservées **hors de l'ordinateur et hors de Vercel/GitHub** : gestionnaire de mots de passe + copie papier dans un lieu sûr. Sans elles, les données chiffrées sont définitivement illisibles.
 
-## Mise en place de la couche 2 (une fois)
+## Mise en place GRATUITE, sans carte (recommandée pour démarrer)
+
+La sauvegarde nocturne fonctionne **sans stockage externe** : la copie chiffrée est conservée comme « artefact » GitHub pendant 30 jours, et **chaque nuit** un test prouve qu'elle se restaure (sur un PostgreSQL jetable fourni par GitHub : même votre réseau bloquant le port 5432 n'est pas un problème).
+
+1. Mettez le dépôt à jour (commande d'extraction du guide), pour que le fichier `.github/workflows/backup.yml` soit dans votre dépôt GitHub.
+2. Récupérez l'adresse **directe** de la base de production : Neon → projet `hmp-production` → **Connect** → décochez « Connection pooling » → copiez l'adresse avec le mot de passe (c'est la ligne `DATABASE_ADMIN_URL` du fichier `online-production-admin.txt`).
+3. Créez le mot de passe de chiffrement : `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Conservez-le à part** (gestionnaire de mots de passe) : sans lui, aucune sauvegarde ne peut être déchiffrée.
+4. GitHub → dépôt → **Settings → Environments → New environment** : `production`. Ajoutez deux **secrets** : `DATABASE_ADMIN_URL` et `BACKUP_PASSPHRASE`.
+5. **Actions → « Sauvegarde de la base » → Run workflow** (`production`). Après 2 à 3 minutes, la pastille est verte, le journal affiche « Restauration vérifiée : … tables… » et, en bas de la page, un **artefact** `sauvegarde-production-…` est disponible.
+6. Vérifiez que la branche par défaut du dépôt est `main` (Settings → Branches) : GitHub ne lance les tâches planifiées que depuis elle. Gardez les notifications d'échec activées (profil GitHub → Settings → Notifications → Actions).
+
+Limites : 30 jours d'historique, et les copies restent chez GitHub. Pour une copie **hors de GitHub**, ajoutez plus tard les secrets S3 ci-dessous.
+
+## Mise en place de la couche 2 avec stockage externe (facultatif)
 
 1. Ouvrez un compte **Cloudflare** → R2 → **Create bucket** `hmp-backups` (ou Backblaze B2, compatible S3).
 2. Créez un **jeton d'accès API** limité à ce bucket (lecture et écriture) : notez `Access Key ID`, `Secret Access Key` et l'adresse du point d'accès (`https://IDENTIFIANT.r2.cloudflarestorage.com`).
@@ -36,7 +49,7 @@ Le fichier `backups/hmp-….dump` n'est **jamais publié** (ignoré par Git). Le
 
 **Cas A — petite erreur récente** (quelques heures) : Neon → votre projet → **Restore** à un instant précédant l'erreur (de préférence vers une *nouvelle branche*, vérifiez, puis basculez). Documentez l'heure de l'incident.
 
-**Cas B — la base est perdue ou corrompue** (restauration depuis la couche 2) :
+**Cas B — la base est perdue ou corrompue** (restauration depuis une sauvegarde chiffrée : artefact GitHub — page de l'exécution, section *Artifacts* — ou stockage externe). Faites-le depuis un **Codespace** (votre réseau bloque peut-être le port 5432) après `sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y && sudo apt-get install -y postgresql-client-16` :
 
 1. Téléchargez le dernier `….dump.gpg` depuis le bucket.
 2. Déchiffrez (Git Bash ; `gpg` est fourni avec Git for Windows) :
