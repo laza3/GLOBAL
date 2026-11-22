@@ -1,7 +1,8 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { isApiError } from '../../api/client';
+import { Pager } from '../../ui/pager';
+import { useDebounced } from '../../lib/use-debounced';
 import { fmt } from '../../ui/stats';
 import { Button } from '../../ui/button';
 import { useDirectory } from '../../api/platform';
@@ -15,36 +16,6 @@ export const HotelLink = ({ id, name }: { id: string; name: string }) => (
     {name}
   </Link>
 );
-
-/** Valeur qui ne change qu'une fois la frappe terminée (recherche sans requête à chaque touche). */
-export function useDebounced<T>(value: T, ms = 300): T {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setV(value), ms);
-    return () => clearTimeout(id);
-  }, [value, ms]);
-  return v;
-}
-
-export function Pager({ page, pageSize, total, onPage }: { page: number; pageSize: number; total: number; onPage: (p: number) => void }) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (total <= pageSize) return total > 0 ? <p className="text-[13px] text-ink-2">{fmt.int.format(total)} résultat{total > 1 ? 's' : ''}</p> : null;
-  return (
-    <nav aria-label="Pagination" className="flex items-center justify-between gap-3">
-      <p className="text-[13px] text-ink-2" role="status">
-        Page {page} sur {pages} — {fmt.int.format(total)} résultats
-      </p>
-      <div className="flex gap-2">
-        <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Page précédente">
-          <ChevronLeft aria-hidden className="size-4" />
-        </Button>
-        <Button size="sm" variant="secondary" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Page suivante">
-          <ChevronRight aria-hidden className="size-4" />
-        </Button>
-      </div>
-    </nav>
-  );
-}
 
 /** Plusieurs devises ne s'additionnent jamais : une ligne par devise. */
 export function Amounts({ rows, empty = '—' }: { rows: Array<{ currency: string; amount: number }>; empty?: string }) {
@@ -142,3 +113,5 @@ export function HotelPicker({ value, onChange, error }: { value: { id: string; n
     </div>
   );
 }
+
+export { Pager, useDebounced };

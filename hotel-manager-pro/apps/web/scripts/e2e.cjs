@@ -39,7 +39,7 @@ async function newPage(browser, opts = {}) {
   return page;
 }
 
-const visible = (loc, timeout = 6000) => loc.first().waitFor({ state: 'visible', timeout }).then(() => true, () => false);
+const visible = (loc, timeout = 6000) => loc.filter({ visible: true }).first().waitFor({ state: 'visible', timeout }).then(() => true, () => false);
 const gone = (loc, timeout = 6000) => loc.first().waitFor({ state: 'hidden', timeout }).then(() => true, () => false);
 const toast = (page, text) => visible(page.locator('[data-sonner-toast]').filter({ hasText: text }));
 const bodyText = (page) => page.locator('body').innerText();
@@ -155,6 +155,93 @@ async function modulesJourney(browser, hotel, admin) {
     const sim = await bodyText(hotel);
     ok(/Total — 3 nuits/.test(sim) && /720\s?000\sAr/.test(sim), 'simulateur : vendredi + samedi au tarif week-end, dimanche au tarif normal = 720 000 Ar', sim.slice(-300));
     ok(/Saison : Haute saison/.test(sim), 'le simulateur dit d\'où vient chaque tarif');
+
+    /* ---------------------------------------------------------------- Clients */
+    section('Clients : fiche, doublons, notes, pièces d\'identité chiffrées, fusion, anonymisation, export');
+    await hotel.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByText('Aucun client pour le moment')), 'sans client, l\'écran invite à créer le premier');
+    await hotel.getByRole('button', { name: 'Créer le premier client' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(/prénom et le nom sont obligatoires/.test(await dlg.innerText()), 'client : prénom et nom exigés');
+    await dlg.getByLabel(/^Prénom/).fill('Hanitra');
+    await dlg.getByLabel(/^Nom\*?$/).fill('Rakoto');
+    await dlg.getByLabel('E-mail').fill('hanitra@client.test');
+    await dlg.getByLabel(/^Téléphone/).fill('034 00 000 00');
+    await dlg.getByLabel('Ville').fill('Nosy Be');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    await hotel.waitForURL(/\/guests\/[0-9a-f-]{36}/);
+    await hotel.getByRole('heading', { name: 'Hanitra Rakoto', level: 1 }).waitFor();
+    ok(/hanitra@client\.test/.test(await bodyText(hotel)), 'la fiche s\'ouvre après la création');
+
+    await hotel.getByRole('button', { name: 'Ajouter' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel('Note').fill('Allergique aux fruits de mer');
+    await dlg.getByRole('button', { name: 'Ajouter la note' }).click();
+    ok(await toast(hotel, 'Note ajoutée'), 'note ajoutée');
+    ok(await visible(hotel.getByText('Allergique aux fruits de mer')), 'la note figure sur la fiche');
+    ok((await hotel.getByRole('button', { name: /Modifier la note|Supprimer la note/ }).count()) === 0, 'aucune action ne modifie ou supprime une note (ajout seul)');
+
+    await hotel.getByRole('button', { name: 'Ajouter' }).nth(1).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel('Type').click();
+    await hotel.getByRole('option', { name: 'Passeport' }).click();
+    await dlg.getByLabel(/^Numéro/).fill('PA1234567');
+    await dlg.getByRole('button', { name: 'Enregistrer la pièce' }).click();
+    ok(await toast(hotel, 'Pièce enregistrée'), 'pièce d\'identité enregistrée');
+    let txt = await bodyText(hotel);
+    ok(/•••• 4567/.test(txt) && !txt.includes('PA1234567'), 'le numéro est masqué dans la fiche (4 derniers caractères seulement)');
+    await hotel.getByRole('button', { name: /Afficher le numéro complet/ }).click();
+    ok((await hotel.getByTestId('document-number').textContent({ timeout: 6000 })) === 'PA1234567', 'le propriétaire peut afficher le numéro complet (consultation journalisée)');
+    await hotel.getByRole('button', { name: 'Masquer' }).click();
+    ok(!(await bodyText(hotel)).includes('PA1234567'), 'le numéro disparaît dès la fenêtre fermée');
+
+    // doublon : même téléphone, écrit autrement
+    await hotel.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Nouveau client' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Prénom/).fill('Rakoto');
+    await dlg.getByLabel(/^Nom\*?$/).fill('Hanitra');
+    await dlg.getByLabel(/^Téléphone/).fill('+261 34 00 000 00');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await visible(hotel.getByText('Ce client existe peut-être déjà')), 'un doublon probable (même téléphone) est signalé');
+    ok(/même téléphone/.test(await hotel.getByRole('dialog').innerText()), 'avec la raison');
+    await hotel.getByRole('button', { name: 'Créer quand même' }).click();
+    await hotel.waitForURL(/\/guests\/[0-9a-f-]{36}/);
+    ok(await visible(hotel.getByRole('heading', { name: 'Rakoto Hanitra', level: 1 })), 'création confirmée malgré le doublon');
+
+    // fusion du doublon dans la première fiche
+    await hotel.getByRole('button', { name: 'Fusionner' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/Fiche à conserver/).fill('hanitra@client');
+    await dlg.getByRole('button', { name: /Hanitra Rakoto/ }).click();
+    await dlg.getByRole('button', { name: 'Fusionner' }).click();
+    ok(await toast(hotel, 'Fiches fusionnées'), 'fiches fusionnées');
+    await hotel.getByRole('heading', { name: 'Hanitra Rakoto', level: 1 }).waitFor();
+    await hotel.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
+    ok((await hotel.getByRole('row').filter({ hasText: 'Rakoto' }).count()) === 1, 'après fusion, une seule fiche dans la liste');
+    await hotel.getByRole('searchbox').fill('+261 340000000');
+    await hotel.waitForTimeout(900);
+    ok(await visible(hotel.getByRole('link', { name: 'Hanitra Rakoto' })), 'recherche par téléphone sous une autre forme');
+
+    // export
+    const csv = await hotel.request.get(`${BASE}/api/v1/guests/export.csv`);
+    const body = await csv.text();
+    ok(csv.status() === 200 && body.startsWith('﻿Prénom;Nom;') && body.includes('Hanitra'), 'export CSV lisible par Excel (BOM, séparateur ;)');
+
+    // anonymisation
+    await hotel.getByRole('button', { name: 'Nouveau client' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Prénom/).fill('Efface');
+    await dlg.getByLabel(/^Nom\*?$/).fill('Moi');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    await hotel.waitForURL(/\/guests\/[0-9a-f-]{36}/);
+    await hotel.getByRole('button', { name: 'Anonymiser' }).click();
+    ok(/effacées définitivement/.test(await hotel.getByRole('dialog').innerText()), 'l\'anonymisation prévient qu\'elle est définitive');
+    await hotel.getByRole('dialog').getByRole('button', { name: 'Anonymiser définitivement' }).click();
+    ok(await toast(hotel, 'Client anonymisé'), 'client anonymisé');
+    await hotel.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
+    ok(!(await bodyText(hotel)).includes('Efface'), 'un client anonymisé disparaît du fichier');
   }
 
 }
@@ -548,10 +635,12 @@ async function modulesJourney(browser, hotel, admin) {
         await h.locator('input[autocomplete="current-password"]').fill(NEW_PASSWORD);
         await h.getByRole('button', { name: 'Se connecter' }).click();
         await h.waitForURL('**/overview');
-        for (const route of ['/overview', '/reservations', '/rooms', '/rooms/categories', '/rooms/rates', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
+        for (const route of ['/overview', '/reservations', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
           await h.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
           await audit(h, `${route} — ${scheme} ${size.n}`, size.n !== 'tablette' ? `hotel${route.replace(/\//g, '-')}-${scheme}-${size.n}` : null);
         }
+        const gid = (await (await h.request.get(`${BASE}/api/v1/guests`)).json()).items?.[0]?.id;
+        if (gid) { await h.goto(`${BASE}/guests/${gid}`, { waitUntil: 'networkidle' }); await audit(h, `/guests/:id — ${scheme} ${size.n}`, size.n === 'mobile' ? `hotel-guest-${scheme}` : null); }
         // fenêtres et panneaux (focus piégé, feuille basculante sur mobile)
         await h.goto(`${BASE}/settings/invoices`, { waitUntil: 'networkidle' });
         await h.getByRole('row').filter({ hasText: 'FS-' }).first().getByRole('button', { name: /Détails/ }).click().catch(async () => h.getByRole('button', { name: /FS-\d{4}-\d{6}/ }).first().click());

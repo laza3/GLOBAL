@@ -152,6 +152,22 @@ lectures passent. Chaque écriture est inscrite au journal d'audit de l'établis
 * **Règle de prix d'une nuit** (`@hmp/shared`, testée) : 1) le tarif propre à la chambre remplace tout ; 2) sinon la période de la catégorie qui couvre la nuit — priorité la plus haute, puis la plus courte, puis la plus récente — avec le tarif **week-end** (nuits du vendredi et du samedi) s'il existe ; 3) sinon le tarif de base de la catégorie. Le séjour minimal est celui de la période de la **nuit d'arrivée**. Les montants sont dans la devise de l'établissement, en entiers de la plus petite unité.
 * Les réservations existantes ne sont **jamais recalculées** quand un tarif change : leur prix est figé nuit par nuit à l'enregistrement.
 
+### Clients (`guests:read` / `guests:manage` / `guests:read_id_document` / `guests:export`)
+
+| Route | Rôle |
+|---|---|
+| `GET /guests` (`q`, `vip`, `tag`, `sort`, `page`, `pageSize`) | recherche par nom, e-mail ou téléphone (« 034 00 000 00 », « +261 34 00 000 00 » et « 340000000 » désignent le même numéro) |
+| `GET /guests/duplicates`, `POST /guests` | doublons probables (même téléphone normalisé ; même nom et même date de naissance si connue) → 409 `possible_duplicate` avec les candidats, sauf `confirmDuplicate: true` ; un **e-mail** déjà pris est toujours refusé (409 `guest_email_taken`) |
+| `GET /guests/:id`, `PATCH /guests/:id` | fiche (coordonnées, notes, pièces masquées, séjours, statistiques) ; modification avec `version` |
+| `POST /guests/:id/notes` | notes en **ajout seul** (aucune route ne les modifie ni ne les supprime) |
+| `POST/DELETE /guests/:id/documents`, `GET …/documents/:docId/reveal` | pièces d'identité : numéro chiffré **AES-256-GCM** (IV aléatoire, altération détectée), seuls les 4 derniers caractères sont lisibles ; la lecture complète exige `guests:read_id_document`, répond `Cache-Control: no-store` et est **journalisée** (sans le numéro) |
+| `POST /guests/:id/merge` | fusion d'un doublon (rien n'est supprimé ni déplacé : l'historique est réuni à la lecture) |
+| `POST /guests/:id/anonymize` (`confirm: true`) | droit à l'effacement : données personnelles, pièces et notes effacées, la ligne et les séjours restent ; **refusé** tant qu'un séjour est en cours ou à venir (fonction SQL étroite `anonymize_guest`) |
+| `GET /guests/export.csv` | export Excel (séparateur `;`, BOM UTF-8), **injection de formule neutralisée**, fiches anonymisées et fusionnées exclues, journalisé |
+
+La clé de chiffrement est `ENCRYPTION_KEY` (32 octets en base64, `openssl rand -base64 32`) : **obligatoire en production**, dérivée en développement. La perdre
+rend les numéros de pièces illisibles : la sauvegarder séparément de la base.
+
 ## 8. Cycle de vie des abonnements
 
 `pnpm api:lifecycle` (cron horaire) ou `POST /platform/jobs/lifecycle` :

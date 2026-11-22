@@ -77,6 +77,11 @@ export const ERRORS = {
   category_code_taken: { status: 409, message: 'Ce code de catégorie existe déjà. Choisissez-en un autre.' },
   category_inactive: { status: 422, message: 'Cette catégorie est désactivée : activez-la ou choisissez-en une autre.' },
   room_has_future_stays: { status: 409, message: "Cette chambre a des séjours ou des blocages à venir. Déplacez-les ou annulez-les avant de l'archiver." },
+  guest_not_found: { status: 404, message: 'Client introuvable.' },
+  guest_email_taken: { status: 409, message: 'Un client est déjà enregistré avec cette adresse e-mail.' },
+  possible_duplicate: { status: 409, message: 'Un client semblable existe déjà. Vérifiez la liste, ou confirmez la création.' },
+  guest_has_active_stays: { status: 409, message: 'Ce client a des séjours en cours ou à venir : terminez-les ou annulez-les avant de l\'anonymiser.' },
+  encryption_unavailable: { status: 500, message: 'Le chiffrement des pièces d\'identité n\'est pas configuré sur ce serveur.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

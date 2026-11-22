@@ -4,5 +4,6 @@ export * from './errors';
 export * from './legal';
 export * from './money';
 export * from './password';
+export * from './phone';
 export * from './permissions';
 export * from './pricing';

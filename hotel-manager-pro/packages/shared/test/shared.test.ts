@@ -232,3 +232,20 @@ describe('tarification', () => {
     expect(quoteStay('2026-12-10', '2026-12-13', { periods, baseRate: 100000 }).minStayRespected).toBe(true);
   });
 });
+
+import { normalizePhone } from '../src/phone';
+
+describe('téléphone normalisé', () => {
+  it('rapproche les écritures d\'un même numéro malgache', () => {
+    const same = ['034 00 000 00', '+261 34 00 000 00', '00261 34 00 000 00', '(0)34-00-000-00'.replace('(0)', '0'), '261340000000'];
+    for (const s of same) expect(normalizePhone(s), s).toBe('261340000000');
+  });
+  it('respecte l\'indicatif d\'un numéro international et refuse les saisies sans numéro', () => {
+    expect(normalizePhone('+33 6 12 34 56 78')).toBe('33612345678');
+    expect(normalizePhone('0033 6 12 34 56 78')).toBe('33612345678');
+    expect(normalizePhone('0612345678', '33')).toBe('33612345678');
+    expect(normalizePhone('abc')).toBeNull();
+    expect(normalizePhone('12 34')).toBeNull();
+    expect(normalizePhone('1'.repeat(20))).toBeNull();
+  });
+});

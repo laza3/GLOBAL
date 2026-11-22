@@ -26,7 +26,7 @@ stop() {
     rm -f "$STATE/$f.pid"
   done
   pkill -f "vite preview --host 127.0.0.1 --port $WEB_PORT" 2>/dev/null || true
-  pkill -f "tsx src/index.ts" 2>/dev/null || true
+  pkill -f "src/index.ts" 2>/dev/null || true
   psql_admin -d postgres -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" >/dev/null 2>&1 || true
   psql_admin -d postgres -c "ALTER ROLE hmp_app NOLOGIN PASSWORD NULL" -c "ALTER ROLE hmp_platform NOLOGIN PASSWORD NULL" >/dev/null 2>&1 || true
 }
