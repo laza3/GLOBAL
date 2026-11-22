@@ -1,0 +1,8 @@
+# Fins de ligne identiques sur Windows, macOS et Linux.
+# Les migrations SQL sont protégées par une somme de contrôle : un « CRLF » inséré par Windows ferait croire à une modification.
+* text=auto eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary

@@ -21,7 +21,17 @@ Documentation : [architecture](docs/architecture.md) · [API](docs/api.md) · [i
 
 Node ≥ 22, pnpm 10, PostgreSQL 16.
 
-## Démarrage
+## Lancer le logiciel sur son ordinateur (débutant, Windows / macOS / Linux)
+
+```bash
+pnpm install
+pnpm local:setup     # une seule fois : base de données, tables, fichier .env, 1er super-administrateur
+pnpm local:start     # démarre l'API et l'interface, ouvre Chrome sur http://127.0.0.1:5173
+```
+
+Guide pas à pas pour Windows (installation de Node, pnpm, PostgreSQL, dépannage) : [docs/lancement-local-windows.md](docs/lancement-local-windows.md).
+
+## Démarrage (développeurs)
 
 ```bash
 pnpm install
