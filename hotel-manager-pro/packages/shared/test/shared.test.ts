@@ -153,3 +153,82 @@ describe('politique de mot de passe', () => {
     expect(passwordProblem('x'.repeat(129) + '1')).toMatch(/trop long/);
   });
 });
+
+import { addDays, eachNight, isDateString, isWeekendNight, nightsBetween, overlaps, todayIn, weekday } from '../src/dates';
+import { periodFor, priceNight, quoteStay, type RatePeriod } from '../src/pricing';
+
+describe('dates calendaires', () => {
+  it('valide les dates réelles et refuse les autres', () => {
+    expect(isDateString('2026-11-22')).toBe(true);
+    expect(isDateString('2024-02-29')).toBe(true);
+    expect(isDateString('2026-02-29')).toBe(false);
+    expect(isDateString('2026-13-01')).toBe(false);
+    expect(isDateString('22/11/2026')).toBe(false);
+    expect(() => addDays('pas-une-date', 1)).toThrow(RangeError);
+  });
+  it('calcule les nuits : arrivée incluse, départ exclu', () => {
+    expect(nightsBetween('2026-11-21', '2026-11-24')).toBe(3);
+    expect(eachNight('2026-12-30', '2027-01-02')).toEqual(['2026-12-30', '2026-12-31', '2027-01-01']);
+    expect(eachNight('2026-11-21', '2026-11-21')).toEqual([]);
+    expect(nightsBetween('2026-11-24', '2026-11-21')).toBe(-3);
+    expect(addDays('2026-02-28', 1)).toBe('2026-03-01');
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+  });
+  it('« départ le 21 » et « arrivée le 21 » ne se chevauchent pas', () => {
+    expect(overlaps('2026-11-18', '2026-11-21', '2026-11-21', '2026-11-23')).toBe(false);
+    expect(overlaps('2026-11-18', '2026-11-22', '2026-11-21', '2026-11-23')).toBe(true);
+  });
+  it('week-end = nuits du vendredi et du samedi', () => {
+    expect(weekday('2026-11-22')).toBe(0); // dimanche
+    expect(isWeekendNight('2026-11-20')).toBe(true); // vendredi
+    expect(isWeekendNight('2026-11-21')).toBe(true); // samedi
+    expect(isWeekendNight('2026-11-22')).toBe(false);
+  });
+  it('« aujourd\'hui » dépend du fuseau : à Madagascar il est déjà demain à 22 h UTC', () => {
+    const now = new Date('2026-11-21T22:30:00Z');
+    expect(todayIn('Indian/Antananarivo', now)).toBe('2026-11-22');
+    expect(todayIn('UTC', now)).toBe('2026-11-21');
+  });
+});
+
+describe('tarification', () => {
+  const season = (over: Partial<RatePeriod>): RatePeriod => ({ startsOn: '2026-12-01', endsOn: '2026-12-31', nightlyRate: 200000, weekendRate: null, minStay: 1, priority: 0, ...over });
+
+  it('tarif de base hors saison ; la saison l\'emporte ; le tarif de la chambre l\'emporte sur tout', () => {
+    const periods = [season({ name: 'Fêtes' })];
+    expect(priceNight('2026-11-15', { periods, baseRate: 100000 })).toMatchObject({ rate: 100000, source: 'base' });
+    expect(priceNight('2026-12-10', { periods, baseRate: 100000 })).toMatchObject({ rate: 200000, source: 'season', periodName: 'Fêtes' });
+    expect(priceNight('2026-12-10', { periods, baseRate: 100000, roomRate: 150000 })).toMatchObject({ rate: 150000, source: 'room' });
+    expect(priceNight('2026-12-10', { periods, baseRate: 100000, roomRate: 0 })).toMatchObject({ rate: 0, source: 'room' }); // 0 = gratuité explicite, pas « absent »
+  });
+  it('la date de fin de la période est incluse', () => {
+    const periods = [season({})];
+    expect(priceNight('2026-12-31', { periods, baseRate: 1 }).source).toBe('season');
+    expect(priceNight('2027-01-01', { periods, baseRate: 1 }).source).toBe('base');
+    expect(priceNight('2026-11-30', { periods, baseRate: 1 }).source).toBe('base');
+  });
+  it('tarif de week-end le vendredi et le samedi seulement', () => {
+    const periods = [season({ weekendRate: 260000 })];
+    expect(priceNight('2026-12-04', { periods, baseRate: 1 }).rate).toBe(260000); // vendredi
+    expect(priceNight('2026-12-05', { periods, baseRate: 1 }).rate).toBe(260000); // samedi
+    expect(priceNight('2026-12-06', { periods, baseRate: 1 }).rate).toBe(200000); // dimanche
+  });
+  it('chevauchement : priorité la plus haute, puis la période la plus courte, puis la plus récente ; les inactives sont ignorées', () => {
+    const large = season({ name: 'Haute saison', nightlyRate: 200000 });
+    const court = season({ name: 'Noël', startsOn: '2026-12-24', endsOn: '2026-12-26', nightlyRate: 300000 });
+    expect(periodFor('2026-12-25', [large, court])?.name).toBe('Noël');
+    expect(periodFor('2026-12-25', [large, { ...court, priority: -1 }])?.name).toBe('Haute saison'); // la priorité d'abord
+    expect(periodFor('2026-12-25', [large, { ...court, isActive: false }])?.name).toBe('Haute saison');
+    expect(periodFor('2026-12-25', [])).toBeNull();
+  });
+  it('devis d\'un séjour : somme nuit par nuit à cheval sur deux tarifs, séjour minimal de la nuit d\'arrivée', () => {
+    const periods = [season({ minStay: 3 })];
+    const q = quoteStay('2026-11-30', '2026-12-03', { periods, baseRate: 100000 });
+    expect(q.nights.map((n) => n.rate)).toEqual([100000, 200000, 200000]);
+    expect(q.subtotal).toBe(500000);
+    expect(q.minStay).toBe(1); // la nuit d'arrivée (30/11) est hors période
+    const q2 = quoteStay('2026-12-10', '2026-12-12', { periods, baseRate: 100000 });
+    expect(q2).toMatchObject({ minStay: 3, minStayRespected: false, subtotal: 400000 });
+    expect(quoteStay('2026-12-10', '2026-12-13', { periods, baseRate: 100000 }).minStayRespected).toBe(true);
+  });
+});

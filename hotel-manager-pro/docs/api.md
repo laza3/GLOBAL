@@ -132,6 +132,26 @@ maintenance échue ne coupe pas l'usage, elle désactive le support (`supportAct
 (`invoice: true`), la licence reste `pending` jusqu'au règlement validé. Suspension : réversible ; révocation : définitive.
 Le journal `license_events` garde chaque acte.
 
+## 7bis. Modules métier de l'établissement
+
+Toutes les routes ci-dessous exigent une session d'établissement et la permission indiquée ; en lecture seule (abonnement échu) seules les
+lectures passent. Chaque écriture est inscrite au journal d'audit de l'établissement.
+
+### Chambres (`rooms:read` / `rooms:manage`)
+
+| Route | Rôle |
+|---|---|
+| `GET/POST /rooms/categories`, `PATCH /rooms/categories/:id` | catégories (code unique par établissement, tarif de base) ; une catégorie se désactive, elle ne se supprime pas |
+| `GET /rooms` (`categoryId`, `status`, `q`, `archived`), `POST /rooms`, `POST /rooms/bulk`, `PATCH /rooms/:id`, `POST /rooms/:id/archive` · `/restore` | chambres avec leur **état du jour dérivé** (disponible, réservée aujourd'hui, occupée, à nettoyer, en nettoyage, maintenance, hors service) ; la création en série est « tout ou rien » |
+| `GET/POST /rooms/rates`, `PATCH/DELETE /rooms/rates/:id` | périodes tarifaires (saisons) par catégorie |
+| `GET /rooms/pricing?categoryId&roomId&checkIn&checkOut` | devis nuit par nuit : exactement ce que les réservations factureront |
+
+* **Limite de la formule** appliquée par la base (402 `room_limit_reached`), y compris en série (rien n'est créé) et à la restauration d'une chambre archivée.
+* **Concurrence optimiste** : `PATCH /rooms/:id` exige `version` ; une modification obsolète → 409 `version_conflict`.
+* **Archivage** refusé (409) tant qu'un séjour ou un blocage est à venir (« à venir » = jour de l'établissement, dans son fuseau).
+* **Règle de prix d'une nuit** (`@hmp/shared`, testée) : 1) le tarif propre à la chambre remplace tout ; 2) sinon la période de la catégorie qui couvre la nuit — priorité la plus haute, puis la plus courte, puis la plus récente — avec le tarif **week-end** (nuits du vendredi et du samedi) s'il existe ; 3) sinon le tarif de base de la catégorie. Le séjour minimal est celui de la période de la **nuit d'arrivée**. Les montants sont dans la devise de l'établissement, en entiers de la plus petite unité.
+* Les réservations existantes ne sont **jamais recalculées** quand un tarif change : leur prix est figé nuit par nuit à l'enregistrement.
+
 ## 8. Cycle de vie des abonnements
 
 `pnpm api:lifecycle` (cron horaire) ou `POST /platform/jobs/lifecycle` :

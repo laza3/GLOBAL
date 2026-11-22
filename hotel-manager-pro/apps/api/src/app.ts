@@ -21,6 +21,7 @@ import { SettingsCache } from './lib/settings';
 import authRoutes from './modules/auth';
 import billingRoutes from './modules/billing';
 import hotelRoutes from './modules/hotel';
+import roomsRoutes from './modules/rooms';
 import platformRoutes from './modules/platform';
 import platformAuthRoutes from './modules/platform-auth';
 import supportRoutes from './modules/support';
@@ -90,7 +91,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
       },
       tags: [
         { name: 'Public' }, { name: 'Authentification' }, { name: 'Établissement' }, { name: 'Abonnement et facturation' },
-        { name: 'Assistance' }, { name: 'Plateforme' },
+        { name: 'Chambres' }, { name: 'Assistance' }, { name: 'Plateforme' },
       ],
       components: { securitySchemes: { sessionCookie: { type: 'apiKey', in: 'cookie', name: 'hmp_session' } } },
     },
@@ -147,6 +148,7 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(authPlugin);
   await app.register(authRoutes, { prefix: '/api/v1' });
   await app.register(hotelRoutes, { prefix: '/api/v1' });
+  await app.register(roomsRoutes, { prefix: '/api/v1' });
   await app.register(billingRoutes, { prefix: '/api/v1' });
   await app.register(supportRoutes, { prefix: '/api/v1' });
   await app.register(platformAuthRoutes, { prefix: '/api/v1' });

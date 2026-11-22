@@ -94,3 +94,14 @@ export const FEATURE_LABEL: Record<string, string> = {
   priority_support: 'Support prioritaire',
   multi_property: 'Multi-établissements',
 };
+
+export const ROOM_STATUS: Record<string, { label: string; token: 'inhouse' | 'confirmed' | 'pending' | 'cancelled' | 'departed' | 'champagne'; icon: 'door' | 'calendar' | 'bed' | 'sparkles' | 'wrench' | 'ban' | 'archive' }> = {
+  available: { label: 'Disponible', token: 'inhouse', icon: 'door' },
+  reserved: { label: 'Réservée aujourd\'hui', token: 'confirmed', icon: 'calendar' },
+  occupied: { label: 'Occupée', token: 'champagne', icon: 'bed' },
+  to_clean: { label: 'À nettoyer', token: 'pending', icon: 'sparkles' },
+  cleaning: { label: 'En nettoyage', token: 'pending', icon: 'sparkles' },
+  maintenance: { label: 'En maintenance', token: 'cancelled', icon: 'wrench' },
+  out_of_service: { label: 'Hors service', token: 'departed', icon: 'ban' },
+  archived: { label: 'Archivée', token: 'departed', icon: 'archive' },
+};

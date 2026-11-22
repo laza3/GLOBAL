@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { AppError } from '../errors';
 import { auditHotel } from '../lib/audit';
+import { buildUpdate } from '../lib/sql';
 
 const profileSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -36,13 +37,8 @@ const SETTINGS_COLUMNS: Record<string, string> = {
   invoicePrefix: 'invoice_prefix', reservationPrefix: 'reservation_prefix', invoiceHeader: 'invoice_header', invoiceFooter: 'invoice_footer',
 };
 
-/** Construit un UPDATE à partir des seules clés autorisées (liste blanche) : aucune colonne arbitraire n'est modifiable. */
-function buildUpdate(table: string, columns: Record<string, string>, patch: Record<string, unknown>, whereCol: string, whereVal: string) {
-  const entries = Object.entries(patch).filter(([k, v]) => k in columns && v !== undefined);
-  if (entries.length === 0) throw new AppError('validation_error', [{ path: '', message: 'Aucune modification fournie.' }]);
-  const sets = entries.map(([k], i) => `${columns[k]} = $${i + 1}`);
-  return { sql: `UPDATE ${table} SET ${sets.join(', ')} WHERE ${whereCol} = $${entries.length + 1}`, args: [...entries.map(([, v]) => v), whereVal], keys: entries.map(([k]) => k) };
-}
+const updateBy = (table: string, columns: Record<string, string>, patch: Record<string, unknown>, whereCol: string, whereVal: string) =>
+  buildUpdate(table, columns, patch, { column: whereCol, value: whereVal });
 
 export default async function hotelRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -78,7 +74,7 @@ export default async function hotelRoutes(app: FastifyInstance) {
     schema: { tags: ['Établissement'], summary: 'Modifier le profil de l\'établissement', body: profileSchema },
   }, async (req) => {
     const me = req.hotel!;
-    const u = buildUpdate('hotels', PROFILE_COLUMNS, req.body, 'id', me.hotelId);
+    const u = updateBy('hotels', PROFILE_COLUMNS, req.body, 'id', me.hotelId);
     await me.tenant(async (tx) => {
       await tx.query(u.sql, u.args);
       await auditHotel(tx, me, 'hotel.profile_updated', { type: 'hotel', id: me.hotelId }, `Profil modifié : ${u.keys.join(', ')}`, { after: req.body, ip: req.ip, requestId: req.id });
@@ -97,7 +93,7 @@ export default async function hotelRoutes(app: FastifyInstance) {
       const { rows } = await me.tenant((tx) => tx.query('SELECT default_currency FROM hotel_settings WHERE hotel_id = $1', [me.hotelId]));
       if (rows[0].default_currency !== patch.defaultCurrency) throw new AppError('currency_locked');
     }
-    const u = buildUpdate('hotel_settings', SETTINGS_COLUMNS, patch, 'hotel_id', me.hotelId);
+    const u = updateBy('hotel_settings', SETTINGS_COLUMNS, patch, 'hotel_id', me.hotelId);
     await me.tenant(async (tx) => {
       await tx.query(u.sql, u.args);
       await auditHotel(tx, me, 'hotel.settings_updated', { type: 'hotel_settings', id: me.hotelId }, `Réglages modifiés : ${u.keys.join(', ')}`, { after: patch, ip: req.ip, requestId: req.id });

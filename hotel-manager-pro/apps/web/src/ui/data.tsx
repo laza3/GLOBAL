@@ -1,4 +1,9 @@
 import {
+  Archive,
+  Ban,
+  Sparkles,
+  Wrench,
+  DoorOpen,
   ArrowDown,
   CircleCheck,
   Info,
@@ -16,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { ROOM_STATUS } from '../lib/labels';
 
 /* ---------------------------------------------------------------------------------------------
  * Badges de statut : TOUJOURS icône + libellé (la couleur ne porte jamais seule le sens).
@@ -92,6 +98,21 @@ export function StateBadge({ tone, children, className }: { tone: keyof typeof T
     <span className={cn(badgeBase, className)} style={{ color: `var(--st-${token})`, background: `var(--st-${token}-soft)` }}>
       <Icon aria-hidden className="size-3.5" />
       {children}
+    </span>
+  );
+}
+
+const ROOM_ICONS = { door: DoorOpen, calendar: CalendarCheck, bed: BedDouble, sparkles: Sparkles, wrench: Wrench, ban: Ban, archive: Archive } as const;
+
+/** État d'affichage d'une chambre (dérivé côté base) : icône + libellé + teinte. */
+export function RoomStatusBadge({ status, className }: { status: string; className?: string }) {
+  const spec = ROOM_STATUS[status] ?? ROOM_STATUS.available!;
+  const Icon = ROOM_ICONS[spec.icon];
+  const style = spec.token === 'champagne' ? { color: 'var(--champagne-ink)', background: 'var(--champagne-soft)' } : { color: `var(--st-${spec.token})`, background: `var(--st-${spec.token}-soft)` };
+  return (
+    <span className={cn(badgeBase, className)} style={style}>
+      <Icon aria-hidden className="size-3.5" />
+      {spec.label}
     </span>
   );
 }

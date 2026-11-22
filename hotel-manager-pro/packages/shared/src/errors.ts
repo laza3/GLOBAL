@@ -73,6 +73,10 @@ export const ERRORS = {
   invalid_timezone: { status: 422, message: 'Fuseau horaire inconnu. Exemple pour Madagascar : Indian/Antananarivo.' },
   version_conflict: { status: 409, message: 'Cet élément a été modifié par quelqu\'un d\'autre. Rechargez-le avant de réessayer.' },
   plan_change_pending: { status: 409, message: 'Une demande de changement de formule est déjà en cours.' },
+  room_number_taken: { status: 409, message: 'Ce numéro de chambre existe déjà dans votre établissement.' },
+  category_code_taken: { status: 409, message: 'Ce code de catégorie existe déjà. Choisissez-en un autre.' },
+  category_inactive: { status: 422, message: 'Cette catégorie est désactivée : activez-la ou choisissez-en une autre.' },
+  room_has_future_stays: { status: 409, message: "Cette chambre a des séjours ou des blocages à venir. Déplacez-les ou annulez-les avant de l'archiver." },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

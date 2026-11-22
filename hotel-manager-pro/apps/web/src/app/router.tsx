@@ -46,6 +46,15 @@ export const routes: RouteObject[] = [
                   { path: 'account', lazy: page(() => import('../pages/settings/account'), (m) => m.default) },
                 ],
               },
+              {
+                path: 'rooms',
+                lazy: page(() => import('../pages/rooms/layout'), (m) => m.default),
+                children: [
+                  { index: true, lazy: page(() => import('../pages/rooms/rooms'), (m) => m.default) },
+                  { path: 'categories', lazy: page(() => import('../pages/rooms/categories'), (m) => m.default) },
+                  { path: 'rates', lazy: page(() => import('../pages/rooms/rates'), (m) => m.default) },
+                ],
+              },
               ...soonRoutes,
             ],
           },

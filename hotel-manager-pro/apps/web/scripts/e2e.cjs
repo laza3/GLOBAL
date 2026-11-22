@@ -78,14 +78,105 @@ async function loginPlatform(browser) {
 }
 
 /* ------------------------------------------------------------------------------------------------ */
+/* Parcours des modules métier (un bloc par module, ajoutés au fil des phases) */
+async function modulesJourney(browser, hotel, admin) {
+  section('Chambres : catégories, chambres, tarifs saisonniers');
+  {
+    await hotel.goto(`${BASE}/rooms`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByText('Commencez par créer une catégorie')), 'sans catégorie, l\'écran guide vers la première étape');
+    ok(!/Bientôt/.test(await hotel.getByRole('button', { name: /^Chambres/ }).innerText()), 'le module Chambres n\'est plus « Bientôt »');
+    await hotel.getByRole('link', { name: 'Créer une catégorie' }).click();
+    await hotel.waitForURL('**/rooms/categories');
+    await hotel.getByRole('button', { name: 'Nouvelle catégorie' }).first().click();
+    let dlg = hotel.getByRole('dialog');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(/Le code est obligatoire/.test(await dlg.innerText()), 'catégorie : le code est exigé');
+    await dlg.getByLabel('Code').fill('STD');
+    await dlg.getByLabel(/^Nom/).fill('Standard');
+    await dlg.getByLabel(/Tarif de base par nuit/).fill('100 000');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Catégorie enregistrée'), 'catégorie créée');
+    ok(/100\s?000\sAr/.test(await hotel.getByRole('row').filter({ hasText: 'Standard' }).first().innerText()), 'le tarif de base s\'affiche en Ariary');
+
+    await hotel.goto(`${BASE}/rooms`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Ajouter en série' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel('Catégorie').click();
+    await hotel.getByRole('option', { name: 'Standard' }).click();
+    await dlg.getByLabel(/^De\*?$/).fill('101');
+    await dlg.getByLabel(/^À\*?$/).fill('105');
+    ok(/101 à 105 — 5 chambres/.test(await dlg.innerText()), 'l\'aperçu annonce ce qui sera créé');
+    await dlg.getByRole('button', { name: 'Créer les chambres' }).click();
+    ok(await toast(hotel, '5 chambres créées'), 'création en série');
+    ok((await hotel.getByRole('row').filter({ hasText: 'Disponible' }).count()) === 5, 'les 5 chambres sont « disponibles » (état dérivé)');
+
+    await hotel.getByRole('button', { name: 'Ajouter une chambre' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel('Catégorie').click();
+    await hotel.getByRole('option', { name: 'Standard' }).click();
+    await dlg.getByLabel('Numéro').fill('101');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await visible(dlg.getByText(/existe déjà/)), 'un numéro en double est refusé, dans la fenêtre');
+    await dlg.getByLabel('Numéro').fill('201');
+    await dlg.getByLabel(/Tarif propre à la chambre/).fill('150000');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Chambre créée'), 'chambre créée avec un tarif propre');
+    const r201 = hotel.getByRole('row').filter({ hasText: '201' });
+    ok(/150\s?000\sAr/.test(await r201.first().innerText()) && /tarif propre/.test(await r201.first().innerText()), 'le tarif propre est signalé');
+
+    await hotel.getByRole('button', { name: 'Modifier la chambre 101' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/Nom \(facultatif\)/).fill('Vue mer');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Chambre modifiée'), 'chambre modifiée');
+    ok(/Vue mer/.test(await bodyText(hotel)), 'le nouveau nom s\'affiche');
+
+    await hotel.getByRole('button', { name: 'Archiver la chambre 105' }).click();
+    ok(await toast(hotel, 'Chambre 105 archivée'), 'chambre archivée');
+    ok(await gone(hotel.getByRole('row').filter({ hasText: '105' })), 'une chambre archivée disparaît de la liste');
+    await hotel.getByRole('switch', { name: 'Archivées' }).click();
+    ok(await visible(hotel.getByRole('button', { name: 'Restaurer la chambre 105' })), 'les archivées sont consultables');
+    await hotel.getByRole('button', { name: 'Restaurer la chambre 105' }).click();
+    ok(await toast(hotel, 'Chambre 105 restaurée'), 'chambre restaurée');
+
+    await hotel.goto(`${BASE}/rooms/rates`, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Nouvelle période' }).first().click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Nom/).fill('Haute saison');
+    await dlg.getByLabel('Première nuit').fill('2027-07-01');
+    await dlg.getByLabel(/Dernière nuit/).fill('2027-08-31');
+    await dlg.getByLabel('Tarif par nuit').fill('200000');
+    await dlg.getByLabel(/Tarif week-end/).fill('260000');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Période enregistrée'), 'période tarifaire créée');
+    await hotel.getByLabel('Arrivée').fill('2027-07-09');
+    await hotel.getByLabel('Départ').fill('2027-07-12');
+    await hotel.waitForTimeout(800);
+    const sim = await bodyText(hotel);
+    ok(/Total — 3 nuits/.test(sim) && /720\s?000\sAr/.test(sim), 'simulateur : vendredi + samedi au tarif week-end, dimanche au tarif normal = 720 000 Ar', sim.slice(-300));
+    ok(/Saison : Haute saison/.test(sim), 'le simulateur dit d\'où vient chaque tarif');
+  }
+
+}
+
+/* ------------------------------------------------------------------------------------------------ */
 (async () => {
   const browser = await chromium.launch();
+  const QUICK = !!process.env.E2E_QUICK; // inscription + modules métier seulement (itération rapide)
   const SWEEP_ONLY = !!process.env.E2E_SWEEP_ONLY; // rejoue seulement le balayage, sur les données d'un parcours complet précédent
   let hotelName = `Hôtel Baobab ${RUN}`;
   let email = `owner-${RUN}@e2e.test`;
   let hotel, admin, hotelId;
   if (SWEEP_ONLY) ({ hotelName, email, hotelId } = JSON.parse(fs.readFileSync(path.join(SHOTS, 'state.json'), 'utf8')));
 
+  if (QUICK) {
+    hotel = await registerHotel(browser, { name: hotelName, email });
+    admin = await loginPlatform(browser);
+    await modulesJourney(browser, hotel, admin);
+    console.log(`\n${failures === 0 ? 'Modules : tout passe.' : failures + ' vérification(s) en échec.'}`);
+    await browser.close();
+    process.exit(failures === 0 ? 0 : 1);
+  }
   if (!SWEEP_ONLY) {
   /* ================================================================ 1. Accès et inscription */
   section('Accès et inscription');
@@ -134,7 +225,7 @@ async function loginPlatform(browser) {
   /* ================================================================ 2. Navigation et modules à venir */
   section('Navigation et modules à venir');
   {
-    ok((await hotel.getByText('Bientôt', { exact: true }).count()) >= 11, 'les 11 modules non développés sont signalés « Bientôt »');
+    ok((await hotel.getByText('Bientôt', { exact: true }).count()) >= 10, 'les modules non développés sont signalés « Bientôt »');
     await hotel.getByRole('button', { name: /Réservations/ }).click();
     await hotel.waitForURL('**/reservations');
     const t = await bodyText(hotel);
@@ -179,9 +270,11 @@ async function loginPlatform(browser) {
     ok(await hotel.getByLabel('Devise de facturation').isDisabled(), 'la devise est verrouillée après la configuration');
   }
 
+  admin = await loginPlatform(browser);
+  await modulesJourney(browser, hotel, admin);
+
   /* ================================================================ 4. Choix d'une formule, facture, paiement */
   section('Abonnement, facture et paiement (validation manuelle)');
-  admin = await loginPlatform(browser);
   {
     await hotel.goto(`${BASE}/settings/subscription`, { waitUntil: 'networkidle' });
     const t = await bodyText(hotel);
@@ -455,7 +548,7 @@ async function loginPlatform(browser) {
         await h.locator('input[autocomplete="current-password"]').fill(NEW_PASSWORD);
         await h.getByRole('button', { name: 'Se connecter' }).click();
         await h.waitForURL('**/overview');
-        for (const route of ['/overview', '/reservations', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
+        for (const route of ['/overview', '/reservations', '/rooms', '/rooms/categories', '/rooms/rates', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
           await h.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
           await audit(h, `${route} — ${scheme} ${size.n}`, size.n !== 'tablette' ? `hotel${route.replace(/\//g, '-')}-${scheme}-${size.n}` : null);
         }
