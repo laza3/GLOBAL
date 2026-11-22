@@ -5,7 +5,8 @@ name: Installateur Windows
 on:
   push:
     branches: ["claude/**", "main"]
-    paths: ["hotel-manager-pro/**", ".github/workflows/installateur-windows.yml"]
+    # Pas de reconstruction pour de la simple documentation (les minutes Windows comptent double sur un dépôt privé)
+    paths: ["hotel-manager-pro/**", "!hotel-manager-pro/docs/**", "!hotel-manager-pro/README.md", ".github/workflows/installateur-windows.yml"]
   workflow_dispatch:
 concurrency: { group: "installateur-${{ github.ref }}", cancel-in-progress: true }
 jobs:

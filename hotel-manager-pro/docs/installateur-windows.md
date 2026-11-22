@@ -8,12 +8,12 @@ Un seul fichier, **`HotelManagerPro-Setup-….exe`**, installe tout sur l'ordina
 
 L'installateur est **construit et testé automatiquement sur un vrai Windows** par GitHub. À chaque fois, le test fait : installation silencieuse → démarrage → navigateur (inscription d'un hôtel, console éditeur) → sauvegarde → panne simulée → restauration → mise à jour par-dessus → désinstallation. Le fichier n'est proposé que si tout est passé.
 
-1. GitHub → votre dépôt → **Actions** → **Installateur Windows**.
-2. Cliquez sur la dernière exécution **avec la coche verte**.
-3. En bas de la page, section **Artifacts** : téléchargez **HotelManagerPro-Setup** (un zip qui contient le `.exe`, à décompresser).
-4. Mettez le `.exe` sur une clé USB (environ 150 Mo). Il est conservé 30 jours sur GitHub : retéléchargez-le quand il faut.
+1. GitHub → le dépôt (**GLOBAL**, ou votre dépôt `hotel-manager-pro`) → **Actions** → **Installateur Windows**.
+2. Cliquez sur la dernière exécution **avec la coche verte**. (Celle validée à la livraison : <https://github.com/laza3/GLOBAL/actions/runs/45047407410>.)
+3. En bas de la page, section **Artifacts** : téléchargez **HotelManagerPro-Setup** (un zip d'environ 70 Mo qui contient le `.exe`, à décompresser par clic droit → « Extraire tout »).
+4. Mettez le `.exe` sur une clé USB. Il est conservé 30 jours sur GitHub : retéléchargez-le ou reconstruisez-le quand il faut.
 
-Pour en fabriquer un nouveau après une modification du logiciel : Actions → **Installateur Windows** → **Run workflow**.
+Pour en fabriquer un nouveau après une modification du logiciel : dans votre dépôt dédié, Actions → **Installateur Windows** → **Run workflow** ; dans GLOBAL, la construction démarre toute seule à chaque modification du logiciel (pas pour la documentation). Chaque construction prend environ 6 minutes.
 
 ## 2. Installer chez le client (5 minutes)
 
@@ -93,6 +93,27 @@ PostgreSQL utilise le port inhabituel **54329** et n'écoute que l'ordinateur lu
 | Windows a été éteint brutalement | Rien à faire : la base se répare au démarrage suivant. |
 | Mot de passe oublié d'un employé | Le propriétaire : **Personnel** → l'employé → réinitialiser le mot de passe. |
 | Mot de passe oublié du propriétaire | Pas de réinitialisation par e-mail en local (aucun e-mail configuré). Cas à traiter par l'éditeur : voir « À prévoir » ci-dessous. |
+
+## Ce qui a été vérifié, et ce qui ne l'a pas été
+
+**Vérifié sur un vrai Windows** (serveur Windows 2022 de GitHub, à chaque construction : le fichier n'est proposé que si tout passe) :
+- construction de l'installateur (68 Mo) et **installation silencieuse** : fichiers, raccourcis du bureau et du menu Démarrer, règle de pare-feu, entrée dans « Programmes et fonctionnalités » ;
+- bibliothèques natives (hachage des mots de passe, PDF) utilisables depuis le dossier installé ;
+- **premier démarrage en environ 11 secondes** (création de la base, tables, compte éditeur) ; logiciel accessible aussi par l'adresse du réseau (pas seulement `127.0.0.1`) ;
+- dans un **vrai navigateur** : création d'un hôtel, vue d'ensemble, rechargement direct d'une page profonde, connexion à la console de l'éditeur, **aucune erreur** (y compris de sécurité) dans la console du navigateur ;
+- **sauvegarde** pendant que le logiciel tourne, arrêt, puis **panne simulée** (données supprimées, base neuve) et **restauration** : l'hôtel et la console sont retrouvés, **la clé de chiffrement d'origine est reprise** ;
+- **mise à jour par-dessus** : les données sont conservées et l'hôtel retrouvé ;
+- **désinstallation** : programme, raccourcis et règle de pare-feu retirés ; **données conservées**.
+
+**Non vérifié** (à essayer chez vous avant le premier client) :
+- le **double-clic** à la main et l'écran SmartScreen, la fenêtre de l'assistant d'installation (le test utilise l'installation silencieuse) ;
+- la **sauvegarde automatique de 13 h 30** (la tâche est créée au premier lancement normal ; le test l'écarte) et le **démarrage automatique** avec Windows ;
+- l'accès depuis un **vrai téléphone ou un autre ordinateur** sur un vrai Wi-Fi, le **réseau classé « Public »** et le **point d'accès mobile** de Windows ;
+- le comportement avec un **antivirus** tiers (un fichier non signé peut être signalé) ;
+- l'affichage des accents dans la fenêtre noire sur un Windows 10 ancien (le programme force l'UTF-8) ;
+- un Windows en **32 bits** (non pris en charge : Windows 64 bits uniquement).
+
+**Marche à suivre pour valider chez vous** (15 minutes) : installez sur votre propre PC, lancez, créez un hôtel de test, ouvrez l'adresse du réseau sur votre téléphone, faites une sauvegarde puis « Restaurer », redémarrez Windows pour voir le démarrage automatique. Notez tout message d'erreur tel quel.
 
 ## À savoir
 
