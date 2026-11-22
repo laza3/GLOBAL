@@ -140,6 +140,8 @@ export const ERRORS = {
   totp_invalid: { status: 401, message: 'Code de vérification incorrect ou déjà utilisé.' },
   totp_not_ready: { status: 409, message: "Démarrez d'abord la configuration de la double authentification." },
   totp_already_enabled: { status: 409, message: 'La double authentification est déjà activée.' },
+  email_unavailable: { status: 501, message: "L'envoi d'e-mails n'est pas configuré sur ce serveur : demandez à un administrateur de votre établissement de réinitialiser votre mot de passe." },
+  reset_token_invalid: { status: 400, message: 'Ce lien de réinitialisation est invalide, expiré ou déjà utilisé. Demandez-en un nouveau.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

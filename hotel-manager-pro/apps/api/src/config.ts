@@ -33,6 +33,10 @@ const schema = z.object({
   PLATFORM_AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(5),
   /** À activer derrière un proxy de confiance (adresse IP réelle pour la limitation de débit et les journaux). */
   TRUST_PROXY: bool.default(false),
+  // E-mails (facultatif) : sans SMTP_URL aucun e-mail ne part et la réinitialisation par e-mail est indisponible
+  SMTP_URL: z.string().optional(),
+  MAIL_FROM: z.string().default('Hotel Manager Pro <ne-pas-repondre@localhost>'),
+  PUBLIC_URL: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Trace du SQL de bascule de rôle (tests) : la connexion est superuser, on bascule vers le rôle applicatif. */
   DB_SWITCH_ROLE: bool.default(false),

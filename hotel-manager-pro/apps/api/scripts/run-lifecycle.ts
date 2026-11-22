@@ -13,7 +13,7 @@ import { runLifecycle } from '../src/services/lifecycle';
 const config = loadConfig({ LOG_LEVEL: 'silent', ...process.env });
 const db = createDb({ appUrl: config.DATABASE_URL_APP, platformUrl: config.DATABASE_URL_PLATFORM, switchRole: config.DB_SWITCH_ROLE });
 try {
-  const summary = await runLifecycle({ db, config, settings: new SettingsCache(db, 0), now: () => new Date() });
+  const summary = await runLifecycle({ db, config, settings: new SettingsCache(db, 0), now: () => new Date(), mailer: { configured: false, send: async () => false } });
   console.log(JSON.stringify({ at: new Date().toISOString(), ...summary }));
 } catch (err) {
   console.error('Échec du cycle de vie des abonnements :', err instanceof Error ? err.message : err);

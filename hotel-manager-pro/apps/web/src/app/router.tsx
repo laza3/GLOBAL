@@ -22,6 +22,8 @@ export const routes: RouteObject[] = [
     errorElement: <RouteErrorPage />,
     children: [
       { path: '/connexion', lazy: page(() => import('../pages/auth/login'), (m) => m.LoginPage) },
+      { path: '/mot-de-passe-oublie', lazy: page(() => import('../pages/auth/forgot'), (m) => m.ForgotPasswordPage) },
+      { path: '/reinitialisation', lazy: page(() => import('../pages/auth/reset'), (m) => m.ResetPasswordPage) },
       { path: '/inscription', lazy: page(() => import('../pages/auth/register'), (m) => m.RegisterPage) },
       { path: '/conditions', lazy: page(() => import('../pages/legal/terms'), (m) => m.default) },
       { path: '/confidentialite', lazy: page(() => import('../pages/legal/privacy'), (m) => m.default) },

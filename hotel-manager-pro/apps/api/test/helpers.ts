@@ -10,7 +10,10 @@ import { hashPassword } from '../src/lib/security';
 export const PASSWORD = 'Mot-de-passe-solide-42';
 export const ORIGIN = 'http://127.0.0.1:5173';
 
+export interface SentMail { to: string; subject: string; text: string }
+
 export interface TestApp {
+  mails: SentMail[];
   app: FastifyInstance;
   db: Db;
   tdb: TestDatabase;
@@ -19,7 +22,8 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
+export async function createTestApp(env: Record<string, string> = {}, opts: { mailer?: boolean } = {}): Promise<TestApp> {
+  const mails: SentMail[] = [];
   const tdb = await createDatabaseFromTemplate();
   // Connexion superuser + bascule de rôle : la RLS et les droits par rôle s'appliquent réellement
   const db = createDb({ appUrl: tdb.url, platformUrl: tdb.url, switchRole: true });
@@ -32,6 +36,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
   let fixedNow: Date | null = null;
   const app = await buildApp({
     db, config, now: () => fixedNow ?? new Date(),
+    mailer: opts.mailer === false ? undefined : { configured: true, async send(m) { mails.push(m); return true; } },
     // Route factice protégée : vérifie le contrôle d'accès (permission + état d'abonnement) en attendant les vrais modules
     extend: async (a) => {
       a.post('/api/v1/_test/rooms', { preValidation: a.hotelAuth({ permission: 'rooms:manage' }) }, async () => ({ created: true }));
@@ -40,7 +45,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
   });
   await app.ready();
   return {
-    app, db, tdb, config,
+    mails, app, db, tdb, config,
     setNow: (d) => { fixedNow = d; },
     async close() {
       await app.close();

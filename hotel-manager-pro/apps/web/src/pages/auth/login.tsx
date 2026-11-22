@@ -67,7 +67,8 @@ function LoginForm() {
           Se connecter
         </Button>
         <p className="text-[13px] leading-snug text-ink-3">
-          Mot de passe oublié ? La réinitialisation automatique n&apos;est pas encore disponible : demandez à un administrateur de votre établissement ou au support.
+          <Link to="/mot-de-passe-oublie" className="font-medium text-accent-ink underline-offset-4 hover:underline">Mot de passe oublié ?</Link>{' '}
+          Vous recevrez un lien par e-mail, si le service d&apos;e-mail est configuré sur ce serveur ; sinon, un administrateur de votre établissement peut le réinitialiser.
         </p>
       </form>
     </AuthLayout>

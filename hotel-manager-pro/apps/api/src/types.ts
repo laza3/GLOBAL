@@ -1,6 +1,7 @@
 import type { AccessDecision, Permission } from '@hmp/shared';
 import type { Config } from './config';
 import type { Db, Tx } from './db';
+import type { Mailer } from './lib/mailer';
 import type { SettingsCache } from './lib/settings';
 
 export interface Entitlements {
@@ -59,6 +60,7 @@ export interface AppDeps {
   config: Config;
   settings: SettingsCache;
   now: () => Date;
+  mailer: Mailer;
 }
 
 declare module 'fastify' {

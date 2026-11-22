@@ -17,6 +17,7 @@ import { z } from 'zod';
 import type { Config } from './config';
 import { anonTx, platformTx, type Db } from './db';
 import { AppError, fromDbError } from './errors';
+import { createMailer, type Mailer } from './lib/mailer';
 import { SettingsCache } from './lib/settings';
 import authRoutes from './modules/auth';
 import billingRoutes from './modules/billing';
@@ -45,13 +46,15 @@ export interface BuildOptions {
   db: Db;
   config: Config;
   now?: () => Date;
+  /** E-mails : remplacé dans les tests pour lire les messages envoyés. */
+  mailer?: Mailer;
   /** Routes supplémentaires (tests : route protégée factice tant que les modules métier n'existent pas). */
   extend?: (app: FastifyInstance) => Promise<void>;
 }
 
 export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   const { db, config } = opts;
-  const deps: AppDeps = { db, config, settings: new SettingsCache(db, config.NODE_ENV === 'test' ? 0 : 15_000), now: opts.now ?? (() => new Date()) };
+  const deps: AppDeps = { db, config, settings: new SettingsCache(db, config.NODE_ENV === 'test' ? 0 : 15_000), now: opts.now ?? (() => new Date()), mailer: opts.mailer ?? createMailer({ smtpUrl: config.SMTP_URL, from: config.MAIL_FROM, log: (m) => console.warn(JSON.stringify({ level: 'warn', msg: m })) }) };
 
   const app = Fastify({
     logger: config.LOG_LEVEL === 'silent' ? false : {

@@ -4,7 +4,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { anonTx } from '../db';
 import { AppError } from '../errors';
-import { assertStrongPassword, csrfTokenFor, dummyVerify, hashPassword, sha256, verifyPassword } from '../lib/security';
+import { assertStrongPassword, csrfTokenFor, dummyVerify, hashPassword, newSessionToken, sha256, verifyPassword } from '../lib/security';
 import { cookieNames } from '../plugins/auth';
 import { registerHotel } from '../services/registration';
 import { createHotelSession, resolveHotelContext, toMe } from '../services/session';
@@ -159,6 +159,41 @@ export default async function authRoutes(app: FastifyInstance) {
     setSession(reply, session.token, session.tokenHash);
     const ctx = (await resolveHotelContext(app.deps, session.tokenHash))!;
     return { ...toMe(ctx), csrfToken: csrfTokenFor(config.CSRF_SECRET, session.tokenHash) };
+  });
+
+  /* ------------------------------------------------------------------ Mot de passe oublié */
+  r.post('/auth/forgot-password', {
+    config: authLimit,
+    schema: {
+      tags: ['Authentification'],
+      summary: 'Demander un lien de réinitialisation par e-mail',
+      description: "Réponse IDENTIQUE que le compte existe ou non (pas d'énumération de comptes). Indisponible (501) si aucun serveur d'e-mail n'est configuré : l'API ne prétend jamais avoir envoyé un message qui ne part pas.",
+      body: z.object({ email: z.email().max(254).transform((v) => v.trim().toLowerCase()) }),
+    },
+  }, async (req, reply) => {
+    if (!app.deps.mailer.configured) throw new AppError('email_unavailable');
+    const token = newSessionToken();
+    const { rows } = await anonTx(db, (tx) => tx.query<{ user_id: string; full_name: string }>("SELECT * FROM auth_request_reset($1, $2, interval '60 minutes')", [req.body.email, sha256(token)]));
+    if (rows[0]) {
+      const base = config.PUBLIC_URL ?? config.allowedOrigins[0] ?? '';
+      await app.deps.mailer.send({
+        to: req.body.email,
+        subject: 'Réinitialisation de votre mot de passe',
+        text: `Bonjour ${rows[0].full_name},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 60 minutes, utilisable une seule fois) :\n${base}/reinitialisation?token=${token}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.`,
+      }).catch((e: unknown) => req.log.error({ err: (e as Error).message }, 'envoi de l’e-mail de réinitialisation impossible'));
+    }
+    return reply.code(202).send({ accepted: true });
+  });
+
+  r.post('/auth/reset-password', {
+    config: authLimit,
+    schema: { tags: ['Authentification'], summary: 'Choisir un nouveau mot de passe avec le lien reçu (toutes les sessions sont fermées)', body: z.object({ token: z.string().min(20).max(200), newPassword: z.string().max(128) }) },
+  }, async (req, reply) => {
+    assertStrongPassword(req.body.newPassword, '');
+    const hash = await hashPassword(req.body.newPassword);
+    const { rows } = await anonTx(db, (tx) => tx.query<{ id: string | null }>('SELECT auth_consume_reset($1, $2) AS id', [sha256(req.body.token), hash]));
+    if (!rows[0]?.id) throw new AppError('reset_token_invalid');
+    return reply.code(204).send();
   });
 
   r.get('/auth/password-status', {
