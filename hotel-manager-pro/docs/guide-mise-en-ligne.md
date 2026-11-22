@@ -34,7 +34,7 @@ pnpm online:setup
 
    Relançable sans risque : les secrets déjà créés sont réutilisés. Si vous collez l'adresse de la mauvaise base, elle refuse.
 7. **Projet Vercel** : *Add New → Project* → importez `hotel-manager-pro`. Nom `hmp-staging`, **Framework Preset : Other**, ne changez pas les commandes (`vercel.json` les fournit). Dans **Environment Variables**, collez tout le contenu de `online-staging-vercel.txt` dans le premier champ (Vercel sépare les lignes). **Deploy**.
-8. **Régler la branche** : Settings → Git → **Production Branch** = `staging` → Save, puis Deployments → **Redeploy**.
+8. **Branche** : ce premier projet de test suit la branche `main` (réglage par défaut de Vercel) : c'est suffisant tant que vous n'avez qu'un environnement. Le jour où vous créerez le vrai projet Production, vous passerez celui-ci sur la branche `staging` (Settings → Git → Production Branch) et le projet Production suivra `main`.
 9. **Vérifier** (dans Chrome) :
    - `https://hmp-staging.vercel.app/api/v1/meta` doit afficher `{"environment":"staging"}` ;
    - `/inscription` affiche le bandeau « Environnement de test » ;
