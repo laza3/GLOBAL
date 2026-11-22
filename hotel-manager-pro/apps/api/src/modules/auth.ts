@@ -161,6 +161,15 @@ export default async function authRoutes(app: FastifyInstance) {
     return { ...toMe(ctx), csrfToken: csrfTokenFor(config.CSRF_SECRET, session.tokenHash) };
   });
 
+  r.get('/auth/password-status', {
+    preValidation: app.hotelAuth({ blockedOk: true, lapsedOk: true }),
+    schema: { tags: ['Authentification'], summary: 'Le mot de passe est-il provisoire (à changer) ?' },
+  }, async (req) => {
+    const me = req.hotel!;
+    const { rows } = await me.tenant((tx) => tx.query<{ must_change_password: boolean }>('SELECT must_change_password FROM users WHERE id = $1', [me.userId]));
+    return { mustChange: rows[0]?.must_change_password ?? false };
+  });
+
   r.post('/auth/change-password', {
     config: authLimit,
     preValidation: app.hotelAuth({ blockedOk: true, lapsedOk: true }),

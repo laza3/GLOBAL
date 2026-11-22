@@ -126,6 +126,16 @@ export const ERRORS = {
   order_empty: { status: 422, message: 'La commande est vide.' },
   order_target_not_in_house: { status: 422, message: "Seul un client actuellement en séjour peut recevoir une commande sur sa chambre." },
   order_amount_mismatch: { status: 422, message: "Le montant doit être celui de l'addition." },
+  role_not_found: { status: 404, message: 'Rôle introuvable.' },
+  member_not_found: { status: 404, message: 'Membre du personnel introuvable.' },
+  last_owner: { status: 409, message: "Il doit toujours rester au moins un propriétaire actif dans l'établissement." },
+  cannot_modify_self: { status: 409, message: 'Vous ne pouvez pas modifier votre propre rôle ni désactiver votre propre compte.' },
+  privilege_escalation: { status: 403, message: "Vous ne pouvez pas accorder des droits que vous n'avez pas vous-même, ni modifier un compte qui en a davantage que vous." },
+  role_in_use: { status: 409, message: 'Ce rôle est attribué à des membres du personnel : changez leur rôle avant de le supprimer.' },
+  system_role_immutable: { status: 409, message: 'Un rôle prédéfini ne peut pas être modifié.' },
+  role_name_taken: { status: 409, message: 'Un rôle porte déjà ce nom.' },
+  expense_not_found: { status: 404, message: 'Dépense introuvable.' },
+  expense_category_taken: { status: 409, message: 'Une catégorie de dépenses porte déjà ce nom.' },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

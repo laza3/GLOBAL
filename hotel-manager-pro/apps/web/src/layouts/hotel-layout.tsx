@@ -13,6 +13,7 @@ import { CommandPalette, useCommandShortcut, type CommandEntry, type MenuItem } 
 import { ALL_NAV, NAV_GROUPS, Sidebar, TabBar, Topbar, useOnline } from '../ui/shell';
 import { useTheme } from '../ui/theme';
 import { AccessBanner } from './access-banner';
+import { PasswordBanner } from './password-banner';
 import { BlockedScreen } from './blocked-screen';
 
 const COLLAPSE_KEY = 'hmp-sidebar-collapsed';
@@ -143,6 +144,7 @@ function Shell() {
             />
           </div>
           <AccessBanner />
+          <PasswordBanner />
           <main id="main" tabIndex={-1} className="flex min-w-0 flex-col gap-4 pb-28 outline-none lg:pb-6">
             <Outlet />
           </main>
