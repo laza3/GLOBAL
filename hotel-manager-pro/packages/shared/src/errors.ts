@@ -117,6 +117,15 @@ export const ERRORS = {
   feature_not_in_plan: { status: 403, message: "Cette fonction n'est pas incluse dans votre formule. Passez à une formule supérieure depuis l'espace abonnement." },
   hk_task_invalid_state: { status: 409, message: "Cette tâche n'est pas dans l'état attendu pour cette action." },
   maintenance_invalid_state: { status: 409, message: 'Cette demande de maintenance est déjà clôturée.' },
+  table_busy: { status: 409, message: 'Cette table a déjà une commande en cours.' },
+  table_label_taken: { status: 409, message: 'Une table porte déjà ce nom.' },
+  menu_category_taken: { status: 409, message: 'Une catégorie de la carte porte déjà ce nom.' },
+  product_unavailable: { status: 422, message: "Un des plats n'est plus à la carte." },
+  order_not_found: { status: 404, message: 'Commande introuvable.' },
+  order_not_editable: { status: 409, message: 'Cette commande est clôturée : elle ne peut plus être modifiée.' },
+  order_empty: { status: 422, message: 'La commande est vide.' },
+  order_target_not_in_house: { status: 422, message: "Seul un client actuellement en séjour peut recevoir une commande sur sa chambre." },
+  order_amount_mismatch: { status: 422, message: "Le montant doit être celui de l'addition." },
   license_not_found: { status: 404, message: 'Licence introuvable.' },
 
   // Générique

@@ -80,6 +80,15 @@ export const routes: RouteObject[] = [
                   { path: 'maintenance', lazy: page(() => import('../pages/housekeeping/maintenance'), (m) => m.default) },
                 ],
               },
+              {
+                path: 'restaurant',
+                lazy: page(() => import('../pages/restaurant/layout'), (m) => m.default),
+                children: [
+                  { index: true, lazy: page(() => import('../pages/restaurant/orders'), (m) => m.default) },
+                  { path: 'menu', lazy: page(() => import('../pages/restaurant/menu'), (m) => m.default) },
+                  { path: 'tables', lazy: page(() => import('../pages/restaurant/tables'), (m) => m.default) },
+                ],
+              },
               { path: 'guests', lazy: page(() => import('../pages/guests/guests'), (m) => m.default) },
               { path: 'guests/:id', lazy: page(() => import('../pages/guests/detail'), (m) => m.default) },
               ...soonRoutes,
