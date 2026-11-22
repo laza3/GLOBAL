@@ -137,3 +137,4 @@ if ($LASTEXITCODE -eq 0) { Fail 'règle de pare-feu restée' }
 Ok 'programme retiré, données conservées, raccourcis et pare-feu nettoyés'
 
 Write-Host "`n✔ INSTALLATEUR VALIDÉ de bout en bout sur Windows" -ForegroundColor Green
+exit 0 # sinon pwsh renvoie le code de la dernière commande native (netsh « règle introuvable » = 1, résultat ATTENDU)
