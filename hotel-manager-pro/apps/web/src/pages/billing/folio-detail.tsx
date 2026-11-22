@@ -58,7 +58,7 @@ export default function FolioDetailPage() {
       </dl>
 
       <Panel title="Charges">
-        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Charges de la note">
+        <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Charges de la note">
           <table className="w-full min-w-[40rem] text-[14px]">
             <caption className="sr-only">Charges de la note</caption>
             <thead><tr className="border-b border-hairline text-left text-[13px] text-ink-2"><th scope="col" className="py-2 font-medium">Description</th><th scope="col" className="py-2 font-medium">Date</th><th scope="col" className="py-2 text-right font-medium">Hors taxe</th><th scope="col" className="py-2 text-right font-medium">Taxe</th><th scope="col" className="py-2 text-right font-medium">Total</th><th scope="col" className="py-2 font-medium">Facture</th><th scope="col" className="py-2"><span className="sr-only">Actions</span></th></tr></thead>
@@ -81,7 +81,7 @@ export default function FolioDetailPage() {
       </Panel>
 
       <Panel title="Encaissements">
-        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Encaissements de la note">
+        <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Encaissements de la note">
           <table className="w-full min-w-[40rem] text-[14px]">
             <caption className="sr-only">Encaissements et remboursements</caption>
             <thead><tr className="border-b border-hairline text-left text-[13px] text-ink-2"><th scope="col" className="py-2 font-medium">Date</th><th scope="col" className="py-2 font-medium">Nature</th><th scope="col" className="py-2 font-medium">Moyen</th><th scope="col" className="py-2 text-right font-medium">Montant</th><th scope="col" className="py-2 font-medium">Référence</th><th scope="col" className="py-2"><span className="sr-only">Actions</span></th></tr></thead>

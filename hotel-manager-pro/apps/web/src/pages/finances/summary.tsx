@@ -52,7 +52,7 @@ export default function FinanceSummaryPage() {
             </div>
             <details className="text-[14px]">
               <summary className="min-h-9 cursor-pointer text-accent-ink">Détail jour par jour</summary>
-              <div className="mt-2 overflow-x-auto" tabIndex={0} role="region" aria-label="Détail quotidien">
+              <div className="relative mt-2 overflow-x-auto" tabIndex={0} role="region" aria-label="Détail quotidien">
                 <table className="w-full min-w-[28rem] text-[14px]"><caption className="sr-only">Encaissé et dépensé chaque jour</caption>
                   <thead><tr className="border-b border-hairline text-left text-[13px] text-ink-2"><th scope="col" className="py-2 font-medium">Jour</th><th scope="col" className="py-2 text-right font-medium">Encaissé</th><th scope="col" className="py-2 text-right font-medium">Dépensé</th></tr></thead>
                   <tbody>{s.daily.filter((d) => d.collected || d.spent).map((d) => <tr key={d.day} className="border-b border-hairline"><th scope="row" className="py-2 text-left font-normal">{formatDay(d.day)}</th><td className="num-col py-2 text-right">{money(d.collected)}</td><td className="num-col py-2 text-right">{money(d.spent)}</td></tr>)}</tbody>

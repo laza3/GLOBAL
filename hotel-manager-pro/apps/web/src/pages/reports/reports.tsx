@@ -88,7 +88,7 @@ export default function ReportsPage() {
               <div className="grid gap-6 lg:grid-cols-2">
                 <section aria-labelledby="by-cat" className="flex flex-col gap-3">
                   <h2 id="by-cat" className="text-[16px] font-semibold text-ink">Par catégorie de chambres</h2>
-                  <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Performances par catégorie"><table className="w-full min-w-[28rem] text-[14px]"><caption className="sr-only">Occupation, prix moyen et revenu par catégorie</caption>
+                  <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Performances par catégorie"><table className="w-full min-w-[28rem] text-[14px]"><caption className="sr-only">Occupation, prix moyen et revenu par catégorie</caption>
                     <thead><tr className="border-b border-hairline text-left text-[13px] text-ink-2"><th scope="col" className="py-2 font-medium">Catégorie</th><th scope="col" className="py-2 text-right font-medium">Occupation</th><th scope="col" className="py-2 text-right font-medium">ADR</th><th scope="col" className="py-2 text-right font-medium">Revenu</th></tr></thead>
                     <tbody>{p.byCategory?.map((c) => <tr key={c.id} className="border-b border-hairline"><th scope="row" className="py-2 text-left font-medium text-ink">{c.name}<span className="block text-[12.5px] font-normal text-ink-3">{c.rooms} chambre{c.rooms > 1 ? 's' : ''}</span></th><td className="num-col py-2 text-right">{pct(c.occupancyRate)}</td><td className="num-col py-2 text-right">{money(c.adr)}</td><td className="num-col py-2 text-right">{money(c.revenue)}</td></tr>)}</tbody></table></div>
                 </section>
@@ -99,7 +99,7 @@ export default function ReportsPage() {
                 <section aria-labelledby="top" className="flex flex-col gap-3 lg:col-span-2">
                   <h2 id="top" className="text-[16px] font-semibold text-ink">Meilleurs clients de la période</h2>
                   {p.topGuests && p.topGuests.length > 0 ? (
-                    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Meilleurs clients"><table className="w-full min-w-[26rem] text-[14px]"><caption className="sr-only">Les dix clients au plus fort revenu</caption>
+                    <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Meilleurs clients"><table className="w-full min-w-[26rem] text-[14px]"><caption className="sr-only">Les dix clients au plus fort revenu</caption>
                       <thead><tr className="border-b border-hairline text-left text-[13px] text-ink-2"><th scope="col" className="py-2 font-medium">Client</th><th scope="col" className="py-2 text-right font-medium">Séjours</th><th scope="col" className="py-2 text-right font-medium">Nuits</th><th scope="col" className="py-2 text-right font-medium">Revenu</th></tr></thead>
                       <tbody>{p.topGuests.map((g) => <tr key={g.guestId} className="border-b border-hairline"><th scope="row" className="py-2 text-left font-medium text-ink">{g.name}</th><td className="num-col py-2 text-right">{g.stays}</td><td className="num-col py-2 text-right">{g.nights}</td><td className="num-col py-2 text-right">{money(g.revenue)}</td></tr>)}</tbody></table></div>
                   ) : <p className="text-[14px] text-ink-2">Aucun séjour sur la période.</p>}
