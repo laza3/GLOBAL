@@ -7,8 +7,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 DUMP="${1:-$(ls -1t "${BACKUP_DIR:-./backups}"/hmp-*.dump | head -1)}"
 SCRATCH="hmp_verify_$$"
-ADMIN="${DATABASE_ADMIN_URL%/*}/postgres"
-TARGET="${DATABASE_ADMIN_URL%/*}/$SCRATCH"
+BASE="${DATABASE_ADMIN_URL%%\?*}"
+QUERY="${DATABASE_ADMIN_URL#"$BASE"}"            # options éventuelles (?sslmode=require)
+ADMIN="$DATABASE_ADMIN_URL"                       # base existante : sert à créer/supprimer la base jetable
+TARGET="${BASE%/*}/$SCRATCH$QUERY"
+export RESTORE_ADMIN_URL="$ADMIN"
 cleanup() { psql "$ADMIN" -qtA -c "DROP DATABASE IF EXISTS \"$SCRATCH\" WITH (FORCE)" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 scripts/restore.sh "$DUMP" "$TARGET" >/dev/null

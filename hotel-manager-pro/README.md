@@ -15,7 +15,7 @@ par l'équipe, avec la référence de la transaction. **Les textes légaux, les 
 (voir [Limites](#limites-à-connaître-avant-la-production)).
 
 Documentation : [architecture](docs/architecture.md) · [API](docs/api.md) · [interface web](docs/web.md) ·
-[modèle de sécurité](docs/security-model.md) · [design system](docs/design-system.md) · [déploiement et sauvegardes](docs/deployment.md).
+[modèle de sécurité](docs/security-model.md) · [design system](docs/design-system.md) · [déploiement et sauvegardes](docs/deployment.md) · [environnements](docs/environnements.md) · [mise en ligne pas à pas](docs/guide-mise-en-ligne.md) · [mises à jour et retour arrière](docs/mises-a-jour.md) · [sauvegardes](docs/sauvegardes.md).
 
 ## Prérequis
 

@@ -1,5 +1,7 @@
 # Déploiement, exploitation et sauvegardes
 
+> **Chemin recommandé** : Vercel (interface + API serverless) + base hébergée, avec Staging et Production séparés — voir [environnements](environnements.md), [mise en ligne pas à pas](guide-mise-en-ligne.md), [mises à jour](mises-a-jour.md) et [sauvegardes](sauvegardes.md). Ce document décrit l'alternative **Docker Compose** sur un serveur à soi (mêmes principes : `APP_ENV` obligatoire, base marquée par environnement).
+
 ## Architecture de déploiement
 
 ```
@@ -14,7 +16,7 @@ Internet ──HTTPS──▶ proxy TLS (Caddy, Traefik, nginx…) ──▶ web
 ## Mise en route (Docker Compose)
 
 ```bash
-cp deploy/.env.production.example .env          # remplacer TOUS les « CHANGEZ-MOI » (voir ci-dessous)
+cp deploy/.env.production.example .env          # remplacer TOUS les « CHANGEZ-MOI » ; APP_ENV=production (ou staging sur un serveur de tests)
 docker compose up -d --build                    # base, migrations, rôles, API, interface, tâche horaire
 docker compose run --rm api pnpm --filter @hmp/api create-admin   # premier super-administrateur (aucun compte par défaut)
 ```

@@ -4,10 +4,14 @@
 set -euo pipefail
 DUMP="${1:?usage : restore.sh fichier.dump URL_BASE_CIBLE}"
 TARGET="${2:?usage : restore.sh fichier.dump URL_BASE_CIBLE}"
-ADMIN="${TARGET%/*}/postgres"
-DB="${TARGET##*/}"
+# L'adresse peut porter des options (?sslmode=require chez un hébergeur) : on les sépare du nom de la base
+BASE="${TARGET%%\?*}"
+QUERY="${TARGET#"$BASE"}"
+DB="${BASE##*/}"
+# Connexion d'administration (pour CREATE/DROP DATABASE) : RESTORE_ADMIN_URL, sinon la base « postgres » du même serveur
+ADMIN="${RESTORE_ADMIN_URL:-${BASE%/*}/postgres$QUERY}"
 CREATED=0
-if [ "$(psql "$ADMIN" -qtA -c "SELECT 1 FROM pg_database WHERE datname = '$DB'")" != "1" ]; then
+if ! psql "$TARGET" -qtA -c "SELECT 1" >/dev/null 2>&1; then
   psql "$ADMIN" -qtA -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$DB\""
   CREATED=1
 fi
@@ -16,7 +20,7 @@ if [ "$(psql "$TARGET" -qtA -c "SELECT count(*) FROM information_schema.tables W
   exit 1
 fi
 # Les trois rôles doivent exister sur le serveur cible (même serveur, ou après deploy/prepare-managed-db.sql sur un nouveau serveur)
-if [ "$(psql "$ADMIN" -qtA -c "SELECT count(*) FROM pg_roles WHERE rolname IN ('hmp_owner', 'hmp_app', 'hmp_platform')")" != "3" ]; then
+if [ "$(psql "$TARGET" -qtA -c "SELECT count(*) FROM pg_roles WHERE rolname IN ('hmp_owner', 'hmp_app', 'hmp_platform')")" != "3" ]; then
   echo "Rôles hmp_owner / hmp_app / hmp_platform absents du serveur cible : exécutez d'abord deploy/prepare-managed-db.sql." >&2
   exit 1
 fi
