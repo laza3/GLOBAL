@@ -20,7 +20,7 @@ const COUNTRIES = [
 const orNull = (s: string) => (s.trim() === '' ? null : s.trim());
 
 /* ------------------------------------------------------------------ Fiche client (création / modification, avec doublons) */
-export function GuestModal({ guest, onClose, onSaved }: { guest: GuestFull | null; onClose: () => void; onSaved?: (id: string) => void }) {
+export function GuestModal({ guest, onClose, onSaved }: { guest: GuestFull | null; onClose: () => void; onSaved?: (id: string, name: string) => void }) {
   const save = useSaveGuest();
   const [v, setV] = useState({
     firstName: guest?.firstName ?? '', lastName: guest?.lastName ?? '', email: guest?.email ?? '', phone: guest?.phone ?? '', birthDate: guest?.birthDate ?? '',
@@ -51,7 +51,7 @@ export function GuestModal({ guest, onClose, onSaved }: { guest: GuestFull | nul
     try {
       const r = await save.mutateAsync({ id: guest?.id, body: guest ? { ...b, version: guest.version } : b });
       toast.success(guest ? 'Fiche modifiée.' : 'Client créé.');
-      onSaved?.(guest?.id ?? r.id ?? '');
+      onSaved?.(guest?.id ?? r.id ?? '', `${v.firstName.trim()} ${v.lastName.trim()}`);
       return undefined;
     } catch (e) {
       if (isApiError(e) && e.code === 'possible_duplicate') {

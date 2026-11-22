@@ -1,8 +1,8 @@
 /** Modules de l'application : lesquels existent, lesquels arrivent (affichés honnêtement, jamais simulés). */
-export const AVAILABLE = new Set(['overview', 'settings', 'rooms', 'guests']);
+export const AVAILABLE = new Set(['overview', 'settings', 'rooms', 'guests', 'reservations', 'calendar']);
 
 export const SOON: ReadonlySet<string> = new Set([
-  'reservations', 'calendar', 'reception', 'housekeeping', 'restaurant', 'billing', 'finances', 'staff', 'reports',
+  'reception', 'housekeeping', 'restaurant', 'billing', 'finances', 'staff', 'reports',
 ]);
 
 export const MODULE_INFO: Record<string, { title: string; summary: string; scope: string[] }> = {

@@ -28,6 +28,15 @@ export const AUDIT_LABELS: Record<string, string> = {
   'license.maintenance_extended': 'Maintenance prolongée',
   'setting.updated': 'Réglage modifié',
   'job.lifecycle_run': 'Cycle de vie exécuté',
+  'reservation.created': 'Réservation créée',
+  'reservation.updated': 'Réservation modifiée',
+  'reservation.room_added': 'Chambre ajoutée',
+  'reservation.room_updated': 'Chambre modifiée',
+  'reservation.room_cancelled': 'Chambre annulée',
+  'reservation.confirmed': 'Réservation confirmée',
+  'reservation.cancelled': 'Réservation annulée',
+  'reservation.no_show': 'Client non présenté',
+  'reservation.option_expired': 'Option expirée',
 };
 
 export const auditLabel = (action: string) => AUDIT_LABELS[action] ?? action;

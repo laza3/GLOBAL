@@ -13,7 +13,7 @@ Le design system (verre, clair/sombre) est décrit dans [design-system.md](desig
 | Zone | Routes |
 |---|---|
 | Public | `/connexion` · `/inscription` · `/conditions` · `/design` (banc d'essai du design system) |
-| Établissement (session requise) | `/overview` · `/settings/hotel` · `/settings/subscription` · `/settings/invoices` · `/settings/support` · `/settings/account` · 11 modules à venir (`/reservations`, `/calendar`, `/rooms`, `/guests`, `/reception`, `/housekeeping`, `/restaurant`, `/billing`, `/finances`, `/staff`, `/reports`) |
+| Établissement (session requise) | `/overview` · `/settings/hotel` · `/settings/subscription` · `/settings/invoices` · `/settings/support` · `/settings/account` · `/rooms` (+ `categories`, `rates`) · `/guests` · `/guests/:id` · `/reservations` · `/reservations/new` · `/reservations/:id` · modules à venir (`/calendar`, `/reception`, `/housekeeping`, `/restaurant`, `/billing`, `/finances`, `/staff`, `/reports`) |
 | Console (session super-admin requise) | `/platform/connexion` · `/platform/dashboard` · `hotels` · `hotels/:id` · `subscriptions` · `payments` · `invoices` · `plans` · `licenses` · `support` · `settings` · `audit` |
 
 * L'URL est la source de vérité : filtres, pages et panneaux ouverts (`?open=`, `?ticket=`, `?status=`) sont dans l'adresse
@@ -102,12 +102,19 @@ mois payés ; droit malgache et tribunaux d'Antananarivo ; référence à la loi
 L'inscription enregistre la **version** (`LEGAL_VERSION` dans `@hmp/shared`) et la date d'acceptation de chaque utilisateur : à chaque
 changement des textes, mettre à jour cette constante.
 
+## 7bis. Réservations (interface)
+
+* **`/reservations`** : liste filtrable (recherche par référence, nom, e-mail ou numéro de chambre ; état ; tri récentes / arrivée), pagination, solde et acompte attendu visibles.
+* **`/reservations/new`** : on **cherche d'abord** (dates, personnes) ; chaque catégorie affiche ses chambres libres et le **prix exact du séjour** (le même calcul que le serveur : tarif propre à la chambre, saison, week-end), puis on ajoute une ou plusieurs chambres (attribution automatique ou choix de la chambre), le client (recherche ou création sans quitter la page), l'état (confirmée / en attente / **option** avec échéance), l'acompte et la remise. Une chambre déjà réservée sur ces nuits n'est **pas proposée**. L'envoi est protégé contre le double-clic (`Idempotency-Key` stable tant que le contenu ne change pas).
+* **`/reservations/:id`** : chambres avec **prix nuit par nuit**, montants (taxes détaillées), historique complet, et seulement les actions que l'état de la réservation et vos droits permettent (confirmer, modifier, ajouter / modifier / annuler une chambre, non présenté, annuler avec motif). Si quelqu'un d'autre a modifié la réservation entre-temps, l'écran le dit et se rafraîchit.
+* Le total affiché pendant la création est le **prix des nuits** ; les taxes éventuelles sont ajoutées par le serveur à l'enregistrement (le texte l'indique) — l'interface ne devine pas une taxe qu'elle ne connaît pas.
+
 ## 8. Limites connues (ce qui n'est PAS fait)
 
 * **Pas d'internationalisation** : les textes sont en français dans les composants. L'anglais et le malgache viendront avec un
   catalogue de messages (le réglage de langue affiche « français uniquement »).
-* **Aucun module métier hôtelier** : chambres, réservations, calendrier, clients, réception, housekeeping, restaurant,
-  facturation des clients, finances, personnel, rapports (Phases 6 et suivantes). Le tableau de bord d'exploitation
+* **Modules à venir** : calendrier, réception, housekeeping, restaurant, facturation des clients, finances, personnel,
+  rapports (suite de la Phase 6). Le tableau de bord d'exploitation
   (occupation, ADR, RevPAR…) viendra avec eux.
 * **Pas de réinitialisation de mot de passe** ni d'invitation par e-mail (pas de fournisseur d'e-mail) ; l'écran de connexion le dit.
 * **Un utilisateur membre de plusieurs établissements** ne dispose pas encore d'un sélecteur d'établissement (l'API le permet).

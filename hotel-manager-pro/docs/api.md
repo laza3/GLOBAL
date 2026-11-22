@@ -168,6 +168,29 @@ lectures passent. Chaque écriture est inscrite au journal d'audit de l'établis
 La clé de chiffrement est `ENCRYPTION_KEY` (32 octets en base64, `openssl rand -base64 32`) : **obligatoire en production**, dérivée en développement. La perdre
 rend les numéros de pièces illisibles : la sauvegarder séparément de la base.
 
+### Réservations (`reservations:read` / `:create` / `:update` / `:cancel`)
+
+| Route | Rôle |
+|---|---|
+| `GET /reservations/availability?checkIn&checkOut&adults&children&categoryId&excludeLineId` | par catégorie : chambres libres (avec capacité suffisante), **prix exact du séjour**, séjour minimal ; libère d'abord les options échues. `excludeLineId` : la chambre d'une ligne en cours de modification reste proposée |
+| `GET /reservations` (`q`, `status` multiple, `source`, `guestId`, `from`/`to`, `sort`, `page`) | liste avec client, séjour, chambres, total, **solde** et acompte (vue `reservation_balances`) ; recherche par référence, nom, e-mail ou numéro de chambre |
+| `GET /reservations/:id` | détail : chambres et **prix de chaque nuit**, taxes figées, solde, historique, et les **actions possibles** (`actions.confirm`, `cancel`, `noShow`…) |
+| `POST /reservations` | création : 1 à 20 chambres, statut `confirmed` (défaut), `pending` ou `tentative` (option, `tentativeExpiresAt` obligatoire et futur), acompte, remise |
+| `PATCH /reservations/:id` | en-tête (client, origine, groupe, notes, acompte, remise, échéance de l'option) — `version` obligatoire |
+| `POST /reservations/:id/rooms`, `PATCH …/rooms/:lineId`, `POST …/rooms/:lineId/cancel` | ajouter, modifier (dates, chambre, personnes) ou annuler une chambre ; la **dernière** chambre ne s'annule pas seule (409 `last_room_line`) |
+| `POST /reservations/:id/confirm` · `/cancel` (`reason` obligatoire) · `/no-show` | transitions d'état (matrice `canTransition` de `@hmp/shared`) ; « non présenté » refusé avant la date d'arrivée |
+
+* **Aucune double réservation, garantie par la base.** Chaque chambre est **affectée dès la création** (la première libre par numéro, si `roomId` est omis) et la contrainte d'exclusion `room_allocations_no_overlap` interdit tout chevauchement — séjours **et** blocages (maintenance, hors service) — même sous requêtes simultanées : la seconde attend la première puis échoue en 409 `room_not_available` (ou prend la chambre libre suivante en attribution automatique). Testé avec 10 requêtes parallèles sur une chambre (un seul succès) et 6 sur 2 chambres. Le jour du départ, la chambre est de nouveau vendable (départ exclu).
+* **Tout ou rien** : une réservation à plusieurs chambres dont une seule est indisponible n'écrit rien.
+* **Prix figés** : le prix de chaque nuit est copié dans `reservation_room_nights` à l'enregistrement. Modifier les dates garde le prix convenu des nuits conservées ; seules les nuits ajoutées prennent le tarif courant ; un changement de catégorie rechiffre tout. Une saison ou un tarif modifié ensuite ne touche jamais une réservation existante.
+* **Montants** : `total = hors taxe − remise + taxes` exactement (contrainte de la base). Taxes (table `tax_rules`) : pourcentage **incluse** dans le tarif, pourcentage **ajoutée**, ou fixe **par adulte et par nuit** (taxe de séjour) ; leur détail est figé dans la réservation (`taxes`). La remise saisie est répartie sur les nuits au prorata (plus fort reste) ; un acompte ne peut pas dépasser le total (422 `deposit_exceeds_total`) et est ramené au total si un séjour raccourcit.
+* **Options** : une option (`tentative`) bloque la chambre jusqu'à son échéance. Passée celle-ci, elle est annulée automatiquement (motif « Option expirée ») : avant chaque calcul de disponibilité (`expire_my_tentatives()`, limitée à l'établissement) et par la tâche planifiée de la plateforme (`expire_all_tentatives()` — la plateforme n'a toujours aucun droit sur les tables métier).
+* **Création rejouable** : en-tête `Idempotency-Key` — même clé et même contenu = même réponse, sans doublon (double-clic, relance du navigateur), y compris pour deux envois simultanés (verrou consultatif) ; même clé avec un autre contenu → 422 `idempotency_key_reused`.
+* **Concurrence** : toute modification porte `version` (409 `version_conflict`) ; la réservation est verrouillée pendant la modification.
+* **Statuts** : une chambre déjà « en séjour » ne peut que voir son **départ** modifié (le changement de chambre en séjour relève du module Réception). Une réservation annulée / non présentée / terminée n'est plus modifiable (409 `reservation_not_editable`). Il n'y a **aucune suppression** de réservation (droit refusé même en SQL) : on annule.
+* **Numérotation** : `PRÉFIXE-AAAA-0001`, un compteur par établissement et par année (le préfixe est un réglage).
+* Les paiements d'une réservation sont portés par sa **note** (`folios`, créée avec la réservation) ; la prise de paiement est l'objet du module Facturation.
+
 ## 8. Cycle de vie des abonnements
 
 `pnpm api:lifecycle` (cron horaire) ou `POST /platform/jobs/lifecycle` :
@@ -179,6 +202,7 @@ rend les numéros de pièces illisibles : la sauvegarder séparément de la base
 | `active → past_due` | échéance dépassée, non renouvelée |
 | `past_due → expired` | tolérance écoulée |
 | facture de renouvellement | échéance dans ≤ 7 jours, facturation automatique, pas de résiliation prévue, **aucune facture ouverte** pour la période |
+| options de réservation échues | annulées (`expire_all_tentatives()`), chambres libérées — sans que la plateforme lise une donnée d'hôtel |
 
 Idempotente et sans effet de bord hors base. Les **droits d'usage** ne dépendent pas d'elle (voir §5).
 
@@ -191,5 +215,5 @@ Idempotente et sans effet de bord hors base. Les **droits d'usage** ne dépenden
 * **Limitation de débit en mémoire** : correcte pour une instance ; derrière plusieurs instances, la limite se répartit (à passer sur Redis ou sur le proxy).
 * **PDF de facture non généré** (les données sont complètes ; le gabarit PDF viendra avec la facturation hôtelière).
 * **Plan changé pendant qu'une facture de renouvellement est ouverte** : l'ancienne facture reste payable ; elle doit être annulée à la main (`…/void`). Cas rare, à automatiser plus tard.
-* **Aucun module métier hôtelier** (chambres, réservations, clients…) : Phases 6 et suivantes. Les routes `/_test/*` n'existent que dans les tests.
+* **Modules métier hôteliers** : chambres, clients et réservations existent ; calendrier, facturation client, réception, housekeeping, restaurant, finances, personnel et rapports suivent (Phase 6). Les routes `/_test/*` n'existent que dans les tests.
 * Prix des forfaits : **valeurs d'exemple** (Starter 80 000 / Business 180 000 / Premium 350 000 Ar par mois, Enterprise sur devis) ; à fixer avec le propriétaire du produit depuis la console. Taxe SaaS : 0 % par défaut, à valider avec un comptable.

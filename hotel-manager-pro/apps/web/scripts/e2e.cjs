@@ -244,6 +244,145 @@ async function modulesJourney(browser, hotel, admin) {
     ok(!(await bodyText(hotel)).includes('Efface'), 'un client anonymisé disparaît du fichier');
   }
 
+  section('Réservations : disponibilité, création multi-chambres, prix figés, option, modification, annulation');
+  {
+    let dlg;
+    await hotel.goto(`${BASE}/reservations`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByText('Aucune réservation pour le moment')), 'sans réservation, l\'écran invite à créer la première');
+    ok(!/Bientôt/.test(await hotel.getByRole('button', { name: /^Réservations/ }).innerText()), 'le module Réservations n\'est plus « Bientôt »');
+    await hotel.getByRole('link', { name: 'Créer une réservation' }).click();
+    await hotel.waitForURL('**/reservations/new');
+
+    // disponibilité : tarif saisonnier + week-end, calculés comme le serveur le fera
+    await hotel.getByLabel('Arrivée').fill('2027-07-09');
+    await hotel.getByLabel('Départ').fill('2027-07-12');
+    ok(await visible(hotel.getByText(/6 chambres libres/)), 'la recherche annonce 6 chambres libres en Standard');
+    ok(/720\s?000\sAr pour 3 nuits/.test(await bodyText(hotel)), 'le prix du séjour est celui du simulateur (vendredi + samedi au tarif week-end)');
+    await hotel.getByRole('button', { name: 'Ajouter une chambre Standard' }).click();
+    await hotel.getByRole('button', { name: 'Ajouter une chambre Standard' }).click();
+    ok((await hotel.getByRole('list', { name: 'Chambres choisies' }).getByRole('listitem').count()) === 2, 'deux chambres choisies pour la même réservation');
+    await hotel.getByRole('button', { name: /^Retirer Standard/ }).first().click();
+    ok((await hotel.getByRole('list', { name: 'Chambres choisies' }).getByRole('listitem').count()) === 1, 'une chambre retirée');
+
+    await hotel.getByRole('button', { name: 'Enregistrer la réservation' }).click();
+    ok(await visible(hotel.getByText('Choisissez le client.')), 'client obligatoire');
+    await hotel.getByRole('searchbox', { name: /^Client/ }).fill('hanitra');
+    await hotel.getByRole('button', { name: /Hanitra Rakoto/ }).click();
+    await hotel.getByLabel('Acompte demandé').fill('200000');
+    await hotel.getByRole('button', { name: 'Enregistrer la réservation' }).click();
+    await hotel.waitForURL(/\/reservations\/[0-9a-f-]{36}$/);
+    const first = hotel.url();
+    ok(await toast(hotel, /Réservation RES-\d{4}-0001 créée/), 'réservation créée, référence séquentielle');
+    await hotel.getByRole('heading', { name: /^RES-\d{4}-0001$/, level: 1 }).waitFor();
+    let txt = await bodyText(hotel);
+    ok(/Chambre 101/.test(txt), 'la première chambre libre est attribuée automatiquement');
+    ok(/720\s?000\sAr/.test(txt) && /Acompte attendu/.test(txt), 'total figé et acompte attendu');
+    ok(/Reste à payer/.test(txt), 'le solde est affiché');
+
+    // la chambre occupée n'est plus proposée sur ces nuits
+    await hotel.goto(`${BASE}/reservations/new`, { waitUntil: 'networkidle' });
+    await hotel.getByLabel('Arrivée').fill('2027-07-10');
+    await hotel.getByLabel('Départ').fill('2027-07-11');
+    ok(await visible(hotel.getByText(/5 chambres libres/)), 'sur des nuits qui chevauchent, la chambre déjà réservée n\'est plus proposée (anti double réservation)');
+    await hotel.getByLabel('Chambre', { exact: true }).click();
+    ok((await hotel.getByRole('option', { name: /Chambre 101/ }).count()) === 0, 'la chambre 101 est absente du choix manuel');
+    await hotel.keyboard.press('Escape');
+
+    // option avec échéance, puis confirmation
+    await hotel.getByRole('button', { name: 'Ajouter une chambre Standard' }).click();
+    await hotel.getByRole('searchbox', { name: /^Client/ }).fill('hanitra');
+    await hotel.getByRole('button', { name: /Hanitra Rakoto/ }).click();
+    await hotel.getByRole('radio', { name: 'Option' }).click();
+    ok(await visible(hotel.getByLabel(/Échéance de l'option/)), 'une option demande une échéance');
+    await hotel.getByRole('button', { name: 'Enregistrer la réservation' }).click();
+    await hotel.waitForURL(/\/reservations\/[0-9a-f-]{36}$/);
+    ok(await visible(hotel.getByText(/Option valable jusqu'au/)), 'l\'option annonce son échéance');
+    await hotel.getByRole('button', { name: 'Confirmer' }).first().click();
+    await hotel.getByRole('dialog').getByRole('button', { name: 'Confirmer' }).click();
+    ok(await toast(hotel, 'Réservation confirmée'), 'option confirmée');
+    ok(await gone(hotel.getByText(/Option valable jusqu'au/)), 'plus d\'échéance après confirmation');
+
+    // modification de la première réservation : informations, puis prolongation d'une nuit (prix des nuits conservées figés)
+    await hotel.goto(first, { waitUntil: 'networkidle' });
+    await hotel.getByRole('button', { name: 'Modifier', exact: true }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel('Demandes particulières').fill('Lit bébé');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Réservation modifiée'), 'informations modifiées');
+    ok(await visible(hotel.getByText('Lit bébé')), 'la demande particulière figure sur la réservation');
+    await hotel.getByRole('button', { name: 'Modifier la chambre 101' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel('Départ').fill('2027-07-13');
+    await dlg.getByRole('button', { name: 'Enregistrer' }).click();
+    ok(await toast(hotel, 'Chambre modifiée'), 'séjour prolongé');
+    txt = await bodyText(hotel);
+    ok(/920\s?000\sAr/.test(txt), 'la nuit ajoutée est chiffrée au tarif en vigueur (720 000 + 200 000)');
+    await hotel.getByText('Prix nuit par nuit').click();
+    ok(/260\s?000\sAr/.test(await bodyText(hotel)), 'le détail nuit par nuit montre le tarif week-end');
+    ok(await visible(hotel.getByText('Chambre modifiée').first()), 'l\'historique trace la modification');
+
+    // annulation avec motif
+    await hotel.getByRole('button', { name: 'Annuler', exact: true }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByRole('button', { name: 'Annuler la réservation' }).click();
+    ok(/Indiquez le motif/.test(await dlg.innerText()), 'le motif d\'annulation est exigé');
+    await dlg.getByLabel(/Motif/).fill('Client malade');
+    await dlg.getByRole('button', { name: 'Annuler la réservation' }).click();
+    ok(await toast(hotel, 'Réservation annulée'), 'réservation annulée');
+    ok(/Client malade/.test(await bodyText(hotel)), 'le motif est conservé');
+    ok((await hotel.getByRole('button', { name: 'Modifier', exact: true }).count()) === 0, 'une réservation annulée ne se modifie plus');
+
+    // la chambre est libérée ; la liste filtre et retrouve
+    await hotel.goto(`${BASE}/reservations/new`, { waitUntil: 'networkidle' });
+    await hotel.getByLabel('Arrivée').fill('2027-07-10');
+    await hotel.getByLabel('Départ').fill('2027-07-11');
+    ok(await visible(hotel.getByText(/5 chambres libres/)), 'l\'annulation libère la chambre (la seconde réservation en occupe une)');
+    await hotel.goto(`${BASE}/reservations`, { waitUntil: 'networkidle' });
+    ok((await hotel.getByRole('row').filter({ hasText: 'RES-' }).count()) === 2, 'la liste montre les deux réservations');
+    await pick(hotel, 'État', 'Annulées');
+    await hotel.waitForTimeout(500);
+    ok((await hotel.getByRole('row').filter({ hasText: 'RES-' }).count()) === 1 && /Annulée/.test(await bodyText(hotel)), 'le filtre « Annulées » ne garde que la réservation annulée');
+  }
+
+  section('Calendrier : grille d\'occupation, séjours, blocage de chambre');
+  {
+    let dlg;
+    await hotel.goto(`${BASE}/calendar?from=2027-07-08&days=7`, { waitUntil: 'networkidle' });
+    ok(await visible(hotel.getByRole('region', { name: "Grille d'occupation" })), 'la grille d\'occupation s\'affiche');
+    ok(!/Bientôt/.test(await hotel.getByRole('button', { name: /^Calendrier/ }).innerText().catch(() => '')), 'le module Calendrier n\'est plus « Bientôt »');
+    const stay = hotel.getByRole('button', { name: /Chambre 102, Hanitra Rakoto, du 10 juil\. 2027 au 11 juil\. 2027, confirmée/ });
+    ok(await visible(stay), 'le séjour confirmé apparaît sur la bonne chambre et les bonnes nuits', (await bodyText(hotel)).slice(0, 300));
+    ok(await hotel.getByRole('button', { name: /RES-.*annulée|Chambre 101, Hanitra/ }).count() === 0, 'la réservation annulée n\'occupe plus la grille');
+    ok(/1\/6/.test(await hotel.getByRole('row').filter({ hasText: 'Occupation' }).innerText()), 'la ligne d\'occupation compte 1 chambre sur 6 la nuit du séjour');
+    await stay.click();
+    dlg = hotel.getByRole('dialog');
+    ok(/Hanitra Rakoto/.test(await dlg.innerText()) && (await dlg.getByRole('link', { name: 'Ouvrir la réservation' }).count()) === 1, 'le panneau du séjour mène à la réservation');
+    await hotel.keyboard.press('Escape');
+
+    // blocage : impossible sur une chambre occupée, possible ailleurs, puis levé
+    await hotel.getByRole('button', { name: 'Bloquer une chambre' }).click();
+    dlg = hotel.getByRole('dialog');
+    await dlg.getByLabel(/^Chambre/).click();
+    await hotel.getByRole('option', { name: /Chambre 102/ }).click();
+    await dlg.getByLabel(/^Du/).fill('2027-07-10');
+    await dlg.getByLabel(/^Au/).fill('2027-07-12');
+    await dlg.getByRole('button', { name: 'Bloquer la chambre' }).click();
+    ok(await visible(dlg.getByText(/pas disponible/)), 'bloquer une chambre déjà réservée est refusé, dans la fenêtre');
+    await dlg.getByLabel(/^Chambre/).click();
+    await hotel.getByRole('option', { name: /Chambre 103/ }).click();
+    await dlg.getByRole('button', { name: 'Bloquer la chambre' }).click();
+    ok(await toast(hotel, 'Chambre bloquée'), 'chambre libre bloquée');
+    const blocked = hotel.getByRole('button', { name: /Chambre 103 bloquée : Maintenance/ });
+    ok(await visible(blocked), 'le blocage apparaît (zone hachurée, motif écrit)');
+    await blocked.click();
+    await hotel.getByRole('button', { name: 'Lever le blocage' }).click();
+    await hotel.getByRole('dialog').getByRole('button', { name: 'Lever le blocage' }).click();
+    ok(await toast(hotel, 'Blocage levé'), 'blocage levé');
+    ok(await gone(hotel.getByRole('button', { name: /Chambre 103 bloquée/ })), 'la zone hachurée disparaît');
+    await hotel.getByRole('button', { name: '7 jours plus tard' }).click();
+    ok(/from=2027-07-15/.test(hotel.url()), 'la navigation par période est dans l\'adresse (lien partageable)');
+  }
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -312,13 +451,21 @@ async function modulesJourney(browser, hotel, admin) {
   /* ================================================================ 2. Navigation et modules à venir */
   section('Navigation et modules à venir');
   {
-    ok((await hotel.getByText('Bientôt', { exact: true }).count()) >= 10, 'les modules non développés sont signalés « Bientôt »');
-    await hotel.getByRole('button', { name: /Réservations/ }).click();
-    await hotel.waitForURL('**/reservations');
-    const t = await bodyText(hotel);
-    ok(/Réservations : bientôt disponible/.test(t), 'un module non développé le dit franchement');
-    ok(!/\d{2,} réservations/.test(t), 'aucune fausse donnée dans un module à venir');
-    ok((await hotel.title()).startsWith('Réservations'), 'le titre de l\'onglet suit la page', await hotel.title());
+    // Premier module encore « Bientôt » (la liste se réduit à mesure que les modules sont développés)
+    const soonCount = await hotel.getByText('Bientôt', { exact: true }).count();
+    if (soonCount === 0) {
+      ok(true, 'tous les modules sont développés : plus aucun « Bientôt »');
+    } else {
+      const soonBtn = hotel.getByRole('button').filter({ has: hotel.getByText('Bientôt', { exact: true }) }).first();
+      const label = (await soonBtn.innerText()).replace(/Bientôt/, '').trim();
+      ok(soonCount >= 1, 'les modules non développés sont signalés « Bientôt »');
+      await soonBtn.click();
+      await hotel.waitForURL(/\/(calendar|reception|housekeeping|restaurant|billing|finances|staff|reports)$/);
+      const t = await bodyText(hotel);
+      ok(new RegExp(`${label} : bientôt disponible`).test(t), 'un module non développé le dit franchement', t.slice(0, 200));
+      ok(!/\d{2,} (réservations|clients|chambres)/.test(t), 'aucune fausse donnée dans un module à venir');
+      ok((await hotel.title()).startsWith(label), 'le titre de l\'onglet suit la page', await hotel.title());
+    }
     await hotel.keyboard.press('Control+k');
     ok(await visible(hotel.getByRole('dialog', { name: /Palette/ })), 'palette de commandes (Ctrl+K)');
     await hotel.keyboard.type('abonnement');
@@ -382,7 +529,7 @@ async function modulesJourney(browser, hotel, admin) {
     await row.first().getByRole('button', { name: /Détails/ }).click();
     const drawer = hotel.getByRole('dialog');
     await drawer.getByRole('button', { name: 'Déclarer un paiement' }).click();
-    ok(/Aucun moyen de paiement n'est ouvert/.test(await hotel.getByRole('dialog').last().innerText()), 'tant que la plateforme n\'ouvre aucun moyen de paiement, l\'hôtel ne peut rien déclarer');
+    ok(await visible(hotel.getByRole('dialog').last().getByText(/Aucun moyen de paiement n'est ouvert/)), 'tant que la plateforme n\'ouvre aucun moyen de paiement, l\'hôtel ne peut rien déclarer');
     await hotel.keyboard.press('Escape');
     await hotel.keyboard.press('Escape');
   }
@@ -635,12 +782,14 @@ async function modulesJourney(browser, hotel, admin) {
         await h.locator('input[autocomplete="current-password"]').fill(NEW_PASSWORD);
         await h.getByRole('button', { name: 'Se connecter' }).click();
         await h.waitForURL('**/overview');
-        for (const route of ['/overview', '/reservations', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
+        for (const route of ['/overview', '/reservations', '/reservations/new', '/calendar', '/rooms', '/rooms/categories', '/rooms/rates', '/guests', '/settings/hotel', '/settings/subscription', '/settings/invoices', '/settings/support', '/settings/account', '/design']) {
           await h.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
           await audit(h, `${route} — ${scheme} ${size.n}`, size.n !== 'tablette' ? `hotel${route.replace(/\//g, '-')}-${scheme}-${size.n}` : null);
         }
         const gid = (await (await h.request.get(`${BASE}/api/v1/guests`)).json()).items?.[0]?.id;
         if (gid) { await h.goto(`${BASE}/guests/${gid}`, { waitUntil: 'networkidle' }); await audit(h, `/guests/:id — ${scheme} ${size.n}`, size.n === 'mobile' ? `hotel-guest-${scheme}` : null); }
+        const rid = (await (await h.request.get(`${BASE}/api/v1/reservations`)).json()).items?.[0]?.id;
+        if (rid) { await h.goto(`${BASE}/reservations/${rid}`, { waitUntil: 'networkidle' }); await audit(h, `/reservations/:id — ${scheme} ${size.n}`, size.n === 'mobile' ? `hotel-reservation-${scheme}` : null); }
         // fenêtres et panneaux (focus piégé, feuille basculante sur mobile)
         await h.goto(`${BASE}/settings/invoices`, { waitUntil: 'networkidle' });
         await h.getByRole('row').filter({ hasText: 'FS-' }).first().getByRole('button', { name: /Détails/ }).click().catch(async () => h.getByRole('button', { name: /FS-\d{4}-\d{6}/ }).first().click());

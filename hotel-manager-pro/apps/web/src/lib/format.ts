@@ -50,3 +50,6 @@ export function initials(name: string): string {
   const last = parts.length > 1 ? (parts[parts.length - 1]![0] ?? '') : (parts[0]![1] ?? '');
   return (first + last).toUpperCase();
 }
+
+/** Date calendaire « AAAA-MM-JJ » (arrivée, départ, nuit) affichée telle quelle, sans décalage de fuseau. */
+export const formatDay = (d: string | null | undefined, long = false): string => (d ? formatDate(`${d}T12:00:00Z`, { timeZone: 'UTC', long }) : '—');
