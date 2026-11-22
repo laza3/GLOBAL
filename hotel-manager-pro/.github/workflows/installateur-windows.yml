@@ -29,6 +29,18 @@ jobs:
       - name: Construction de l'installateur
         run: node scripts/build-windows-installer.mjs
         shell: bash
+      - name: Assistant graphique (captures d'écran)
+        continue-on-error: true
+        run: ./scripts/capture-assistant-installateur.ps1
+        shell: pwsh
+      - name: Captures de l'assistant
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-assistant
+          path: ${{ runner.temp }}/captures/*.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Test de bout en bout (installation, démarrage, navigateur, sauvegarde, restauration, mise à jour, désinstallation)
         run: ./scripts/test-windows-installer.ps1
         shell: pwsh

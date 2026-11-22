@@ -1,4 +1,4 @@
-; Installateur Windows de Hotel Manager Pro (version locale) — construit par scripts/build-windows-installer.mjs
+﻿; Installateur Windows de Hotel Manager Pro (version locale) — construit par scripts/build-windows-installer.mjs
 ; Définitions passées par le script : VERSION, PAYLOAD (dossier du paquet), OUTFILE (.exe produit), ASSETS (dossier installer/)
 Unicode true
 
